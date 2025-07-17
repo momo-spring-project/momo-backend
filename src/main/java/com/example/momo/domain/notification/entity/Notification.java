@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Table(name = "notification")
+@Table(name = "notifications")
 @Getter
 @Entity
 @NoArgsConstructor
