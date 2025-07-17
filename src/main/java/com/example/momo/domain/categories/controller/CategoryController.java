@@ -31,17 +31,11 @@ public class CategoryController {
 	}
 
 	// 카테고리 조회
-	// RequestBody(CategoryIdList) 없을 경우 전체 조회
 	@GetMapping
 	public ResponseEntity<List<CategoryResponseDto>> getCategories(
-		@RequestBody(required = false) CategoryFindRequestDto request
+		@RequestParam(required = false) List<Integer> ids
 	) {
-		List<CategoryResponseDto> response;
-		if(request == null) {
-			response = categoryService.getAllCategories();
-		} else {
-			response = categoryService.getCategoriesByIds(request);
-		}
+		List<CategoryResponseDto> response = categoryService.getCategories(ids);
 		return ResponseEntity.ok(response);
 	}
 

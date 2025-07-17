@@ -29,24 +29,18 @@ public class CategoryServiceImpl implements CategoryService{
 		return new CategoryResponseDto(savedCategory.getId(), savedCategory.getName(), category.getDescription());
 	}
 
-	// 전체 Category 목록 조회
+	// 카테고리 조회
 	@Override
 	@Transactional(readOnly = true)
-	public List<CategoryResponseDto> getAllCategories() {
+	public List<CategoryResponseDto> getCategories(List<Integer> categoryIds) {
 
-		List<Category> categories = categoryRepository.findAll();
-
-		return categories.stream()
-			.map(CategoryResponseDto::new)
-			.toList();
-	}
-
-	// Category ID 이용해서 조회
-	@Override
-	@Transactional(readOnly = true)
-	public List<CategoryResponseDto> getCategoriesByIds(CategoryFindRequestDto request) {
-
-		List<Category> categories = categoryRepository.findAllByIdIn(request.getCategoryIds());
+		// ID 목록 없으면 전체 조회, 있으면 목록 조회
+		List<Category> categories;
+		if(categoryIds == null) {
+			categories = categoryRepository.findAll();
+		} else {
+			categories = categoryRepository.findAllByIdIn(categoryIds);
+		}
 
 		return categories.stream()
 			.map(CategoryResponseDto::new)

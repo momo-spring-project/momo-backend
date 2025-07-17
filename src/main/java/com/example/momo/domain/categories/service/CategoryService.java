@@ -10,9 +10,7 @@ import java.util.List;
 public interface CategoryService {
 	CategoryResponseDto addCategory(CategoryAddRequestDto request);
 
-	List<CategoryResponseDto> getAllCategories();
-
-	List<CategoryResponseDto> getCategoriesByIds(CategoryFindRequestDto request);
+	List<CategoryResponseDto> getCategories(List<Integer> categoryIds);
 
 	CategoryResponseDto updateCategory(Integer categoryId, CategoryUpdateRequestDto request);
 }
