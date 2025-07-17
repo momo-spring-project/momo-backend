@@ -11,14 +11,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Table(name = "meeting_participants")
 @Getter
 @Entity
-@NoArgsConstructor
-public class MeetingParticipants extends BaseCreateEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class MeetingParticipant extends BaseCreateEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,7 +27,7 @@ public class MeetingParticipants extends BaseCreateEntity {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(nullable = false, name = "meeting_id")
-	private Meetings meeting;
+	private Meeting meeting;
 
 	@Column(nullable = false, name = "user_id")
 	private Long userId;

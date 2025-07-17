@@ -13,6 +13,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,9 +23,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class Meetings extends BaseEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Meeting extends BaseEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,7 +61,7 @@ public class Meetings extends BaseEntity {
 	@Column(nullable = false, name = "latitude")
 	private Double latitude;
 
-	@Column(nullable = false, name = "longititude")
+	@Column(nullable = false, name = "longitude")
 	private Double longitude;
 
 	@Column(nullable = false, name = "participation_fee")
