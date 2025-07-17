@@ -9,8 +9,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class CategoryUpdateRequestDto {
-	@NotEmpty
 	private String categoryName;
-	@NotEmpty
 	private String description;
 }

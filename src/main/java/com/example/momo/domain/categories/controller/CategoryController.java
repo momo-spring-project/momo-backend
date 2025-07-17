@@ -1,7 +1,6 @@
 package com.example.momo.domain.categories.controller;
 
 import com.example.momo.domain.categories.dto.CategoryAddRequestDto;
-import com.example.momo.domain.categories.dto.CategoryFindRequestDto;
 import com.example.momo.domain.categories.dto.CategoryResponseDto;
 import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
 import com.example.momo.domain.categories.service.CategoryService;
@@ -43,7 +42,7 @@ public class CategoryController {
 	@PatchMapping("/{categoryId}")
 	public ResponseEntity<CategoryResponseDto> updateCategory(
 		@PathVariable Integer categoryId,
-		@Valid @RequestBody CategoryUpdateRequestDto request
+		@RequestBody CategoryUpdateRequestDto request
 	) {
 		CategoryResponseDto response = categoryService.updateCategory(categoryId, request);
 		return ResponseEntity.ok(response);

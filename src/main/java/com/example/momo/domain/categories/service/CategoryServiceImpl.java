@@ -3,12 +3,12 @@ package com.example.momo.domain.categories.service;
 import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
 import com.example.momo.domain.categories.repository.CategoryRepository;
 import com.example.momo.domain.categories.dto.CategoryAddRequestDto;
-import com.example.momo.domain.categories.dto.CategoryFindRequestDto;
 import com.example.momo.domain.categories.dto.CategoryResponseDto;
 import com.example.momo.domain.categories.entity.Category;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -53,12 +53,24 @@ public class CategoryServiceImpl implements CategoryService{
 	@Transactional
 	public CategoryResponseDto updateCategory(Integer id, CategoryUpdateRequestDto request) {
 
-		Category category = categoryRepository.findById(id)
-			.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+		// 입력 잘못됐을 경우 예외처리(공백 포함)
+		if(request.getCategoryName() != null && !StringUtils.hasText(request.getCategoryName())) {
+			throw new IllegalArgumentException("Blank category name");
+		}
+		if(request.getDescription() != null && !StringUtils.hasText(request.getDescription())) {
+			throw new IllegalArgumentException("Blank category description");
+		}
 
 		// 변경사항 없을 경우 예외처리
 		if(request.getCategoryName() == null && request.getDescription() == null) {
-			throw new IllegalArgumentException("No Change");
+			throw new IllegalArgumentException("No Change(null)");
+		}
+
+		Category category = categoryRepository.findById(id)
+			.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+
+		if(category.getName().equals(request.getCategoryName()) && category.getDescription().equals(request.getDescription())) {
+			throw new IllegalArgumentException("No Change(same)");
 		}
 
 		if(request.getCategoryName() != null) category.updateName(request.getCategoryName());
