@@ -1,0 +1,39 @@
+package com.example.momo.domain.users.domain;
+
+import com.example.momo.domain.common.entity.BaseCreateEntity;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Table(name = "user_ratings")
+@Getter
+@Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UserRating extends BaseCreateEntity {
+
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
+
+	@Column(nullable = false, name = "reviewer_id")
+	private Long reviewerId;
+
+	@Column(nullable = false, name = "meeting_id")
+	private Long meetingId;
+
+	@Column(nullable = false, name = "rating_score")
+	private Integer ratingScore;
+
+	public UserRating(Long reviewerId, Long meetingId, Integer ratingScore) {
+		this.reviewerId = reviewerId;
+		this.meetingId = meetingId;
+		this.ratingScore = ratingScore;
+	}
+}
