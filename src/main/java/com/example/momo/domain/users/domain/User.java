@@ -31,15 +31,15 @@ public class User extends BaseEntity {
 	@Column(name = "score")
 	private Double score = 50.0;
 
-	@Column(name = "latitude", precision = 10, scale = 8)
-	private BigDecimal latitude;
+	@Column(name = "latitude")
+	private Double latitude;
 
-	@Column(name = "longitude", precision = 11, scale = 8)
-	private BigDecimal longitude;
+	@Column(name = "longitude")
+	private Double longitude;
 
 	@Builder
 	public User(String nickname, String email, String password,
-				Integer score, BigDecimal latitude, BigDecimal longitude) {
+				Integer score, Double latitude, Double longitude) {
 		this.nickname = nickname;
 		this.email = email;
 		this.password = password;
