@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
@@ -30,14 +30,14 @@ public class JwtUtil {
                 throw new IllegalArgumentException("JWT 시크릿 키가 설정되지 않았습니다.");
             }
 
-            byte[] bytes = Base64.getDecoder().decode(secret);
+            byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
             if (bytes.length < 32) {
                 throw new IllegalArgumentException("JWT 시크릿 키는 최소 32바이트 이상이어야 합니다.");
             }
 
             secretKey = new SecretKeySpec(bytes, signatureAlgorithm);
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "JWT 설정 오류");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
