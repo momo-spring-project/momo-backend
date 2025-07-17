@@ -42,7 +42,7 @@ public class JwtUtil {
     }
 
     public String createToken(Long userId, String email, String nickname) {
-        return Jwts.builder()
+        return "Bearer "+ Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("email", email)
                 .claim("nickname", nickname)
