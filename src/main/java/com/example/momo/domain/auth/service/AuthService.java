@@ -1,9 +1,6 @@
 package com.example.momo.domain.auth.service;
 
-import com.example.momo.domain.auth.dto.AuthUser;
-import com.example.momo.domain.auth.dto.LoginRequest;
-import com.example.momo.domain.auth.dto.LoginResponse;
-import com.example.momo.domain.auth.dto.RegisterRequest;
+import com.example.momo.domain.auth.dto.*;
 import com.example.momo.domain.users.entity.User;
 import com.example.momo.domain.users.infra.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,7 +44,16 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
 
         return new LoginResponse(user.getId(), user.getEmail(), user.getNickname());
+    }
 
+    @Transactional
+    public void withdraw(WithdrawRequest request, AuthUser authUser) {
+        // TODO : 커스텀 예외로 변경
+        User user = userRepository.findByIdAndIsDeletedFalse(authUser.getId()).orElseThrow(() -> new EntityNotFoundException("회원이 존재하지 않습니다."));
+        //  비밀번호 검증
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+
+        user.delete();
     }
 
 }

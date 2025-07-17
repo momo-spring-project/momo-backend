@@ -1,9 +1,6 @@
 package com.example.momo.domain.auth.controller;
 
-import com.example.momo.domain.auth.dto.AuthUser;
-import com.example.momo.domain.auth.dto.LoginRequest;
-import com.example.momo.domain.auth.dto.LoginResponse;
-import com.example.momo.domain.auth.dto.RegisterRequest;
+import com.example.momo.domain.auth.dto.*;
 import com.example.momo.domain.auth.service.AuthService;
 import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.global.utils.JwtUtil;
@@ -11,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -34,4 +32,12 @@ public class AuthController {
                 .body(ApiResponse.success("로그인에 성공했습니다.", response));
     }
 
+    @DeleteMapping("withdraw")
+    public ResponseEntity<ApiResponse<Void>> withdraw(
+            @RequestBody @Valid WithdrawRequest request,
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        authService.withdraw(request, authUser);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(ApiResponse.success("회원 탈퇴에 성공했습니다.", null));
+    }
 }
