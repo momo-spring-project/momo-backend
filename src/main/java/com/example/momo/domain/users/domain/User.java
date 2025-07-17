@@ -5,6 +5,7 @@ import com.example.momo.domain.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,27 +31,35 @@ public class User extends BaseEntity {
 	@Column(name = "score")
 	private Double score = 50.0;
 
-	@Column(name = "latitude")
-	private Double latitude;
+	@Column(name = "latitude", precision = 10, scale = 8)
+	private BigDecimal latitude;
 
-	@Column(name = "longitude")
-	private Double longitude;
+	@Column(name = "longitude", precision = 11, scale = 8)
+	private BigDecimal longitude;
 
-
+	@Builder
+	public User(String nickname, String email, String password,
+				Integer score, BigDecimal latitude, BigDecimal longitude) {
+		this.nickname = nickname;
+		this.email = email;
+		this.password = password;
+		this.score = score != null ? score : 50.0;
+		this.latitude = latitude;
+		this.longitude = longitude;
+	}
 	// === 연관관계 (OneToMany 단방향) ===
 
-	// 사용자 관심 카테고리
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "user_id")
 	private List<UserCategory> categories = new ArrayList<>();
 
 	// 팔로우
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "follower_id")
 	private List<UserFollow> following = new ArrayList<>();
 
 	// 내가 받은 평가들
-	@OneToMany(cascade = CascadeType.ALL)
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
 }
