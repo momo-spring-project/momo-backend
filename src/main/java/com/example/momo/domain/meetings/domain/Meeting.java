@@ -70,7 +70,7 @@ public class Meeting extends BaseEntity {
 	private Double longitude;
 
 	@Column(nullable = false, name = "min_enter_score")
-	private Double minEnterScore;
+	private Double minEnterScore = 0.0;
 
 	@OneToMany(cascade = {CascadeType.PERSIST})
 	@JoinColumn(name = "meeting_id")
