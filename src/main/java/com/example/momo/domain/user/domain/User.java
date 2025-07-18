@@ -1,13 +1,23 @@
-package com.example.momo.domain.users.domain;
+package com.example.momo.domain.user.domain;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.momo.domain.common.entity.BaseEntity;
 
-import jakarta.persistence.*;
-import lombok.*;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Table(name = "users")
 @Getter
@@ -31,15 +41,15 @@ public class User extends BaseEntity {
 	@Column(name = "score")
 	private Double score = 50.0;
 
-	@Column(name = "latitude", precision = 10, scale = 8)
-	private BigDecimal latitude;
+	@Column(name = "latitude")
+	private Double latitude;
 
-	@Column(name = "longitude", precision = 11, scale = 8)
-	private BigDecimal longitude;
+	@Column(name = "longitude")
+	private Double longitude;
 
 	@Builder
 	public User(String nickname, String email, String password,
-				Integer score, BigDecimal latitude, BigDecimal longitude) {
+		Integer score, Double latitude, Double longitude) {
 		this.nickname = nickname;
 		this.email = email;
 		this.password = password;
@@ -47,19 +57,24 @@ public class User extends BaseEntity {
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}
+
 	// === 연관관계 (OneToMany 단방향) ===
 
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "user_id")
 	private List<UserCategory> categories = new ArrayList<>();
 
-	// 팔로우
+	// 내가 팔로잉을 하는 사람들의 리스트
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "follower_id")
-	private List<UserFollow> following = new ArrayList<>();
+	private List<UserFollow> followings = new ArrayList<>();
 
 	// 내가 받은 평가들
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
+
+	public void updateInfo(String nickname, String email) {
+	}
+
 }

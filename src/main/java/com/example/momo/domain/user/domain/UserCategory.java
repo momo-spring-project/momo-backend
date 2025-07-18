@@ -1,4 +1,4 @@
-package com.example.momo.domain.users.domain;
+package com.example.momo.domain.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,9 +21,9 @@ public class UserCategory {
 	private Long id;
 
 	@Column(name = "category_id", nullable = false)
-	private Long categoryId;
+	private Integer categoryId;
 
-	public UserCategory(Long categoryId) {
+	public UserCategory(Integer categoryId) {
 		this.categoryId = categoryId;
 	}
 }
