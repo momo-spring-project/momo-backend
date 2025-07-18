@@ -1,4 +1,4 @@
-package com.example.momo.domain.users.domain;
+package com.example.momo.domain.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
