@@ -1,4 +1,4 @@
-package com.example.momo.domain.meetings.entity;
+package com.example.momo.domain.meetings.domain;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -68,6 +68,9 @@ public class Meeting extends BaseEntity {
 
 	@Column(nullable = false, name = "longitude")
 	private Double longitude;
+
+	@Column(nullable = false, name = "min_enter_score")
+	private Double minEnterScore;
 
 	@OneToMany(cascade = {CascadeType.PERSIST})
 	@JoinColumn(name = "meeting_id")
