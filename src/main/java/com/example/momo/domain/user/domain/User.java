@@ -59,7 +59,6 @@ public class User extends BaseEntity {
 	}
 
 	// === 연관관계 (OneToMany 단방향) ===
-
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
 	@JoinColumn(name = "user_id")
 	private List<UserCategory> categories = new ArrayList<>();
@@ -74,7 +73,23 @@ public class User extends BaseEntity {
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
 
-	public void updateInfo(String nickname, String email) {
+	// === 업데이트 메서드들 ===
+	public void updateNickname(String nickname) {
+		this.nickname = nickname;
 	}
 
+	public void updateEmail(String email) {
+		this.email = email;
+	}
+
+	public void updatePassword(String password) {
+		this.password = password;
+	}
+
+	public void updateCategories(List<Integer> categoryIds) {
+		this.categories.clear();
+		categoryIds.forEach(categoryId ->
+			this.categories.add(new UserCategory(categoryId))
+		);
+	}
 }
