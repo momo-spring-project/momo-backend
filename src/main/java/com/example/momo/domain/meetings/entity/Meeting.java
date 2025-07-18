@@ -69,7 +69,7 @@ public class Meeting extends BaseEntity {
 	@Column(nullable = false, name = "longitude")
 	private Double longitude;
 
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+	@OneToMany(cascade = {CascadeType.PERSIST})
 	@JoinColumn(name = "meeting_id")
 	private List<MeetingParticipant> participants = new ArrayList<>();
 
