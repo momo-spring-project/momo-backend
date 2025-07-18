@@ -5,10 +5,20 @@ import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.user.domain.User;
 
+import java.util.Optional;
+
 @Repository
 public interface UserJpaRepository extends JpaRepository<User, Long> {
 
 	boolean existsByEmailAndIdNot(String email, Long id);
 
 	boolean existsByNicknameAndIdNot(String nickname, Long id);
+
+	boolean existsByEmail(String email);
+
+	boolean existsByNickname(String nickname);
+
+	Optional<User> findByEmailAndIsDeletedFalse(String email);
+
+	Optional<User> findByIdAndIsDeletedFalse(Long id);
 }

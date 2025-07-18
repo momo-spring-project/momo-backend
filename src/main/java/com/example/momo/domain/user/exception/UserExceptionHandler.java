@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.momo.domain.common.dto.ApiResponse;
 
-@RestControllerAdvice(basePackages = "com.example.momo.domain.user")
+@RestControllerAdvice(basePackages = {"com.example.momo.domain.user","com.example.momo.domain.auth"})
 public class UserExceptionHandler {
 
 	@ExceptionHandler(UserException.class)
