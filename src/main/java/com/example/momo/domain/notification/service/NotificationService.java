@@ -1,11 +1,11 @@
 package com.example.momo.domain.notification.service;
 
-import com.example.momo.domain.notification.dto.NotificationEvent;
+import com.example.momo.domain.notification.dto.meeting.NotificationMeetingCommand;
 
 public interface NotificationService {
-	void processNotification(NotificationEvent event);
+	void processNotification(NotificationMeetingCommand command);
 
-	void createNotification(NotificationEvent event);
+	void createNotification(NotificationMeetingCommand command);
 
-	void sendNotification(NotificationEvent event);
+	void sendNotification(NotificationMeetingCommand command);
 }
