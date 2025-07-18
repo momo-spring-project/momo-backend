@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +19,7 @@ import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -86,5 +88,17 @@ public class UserController {
 	) {
 		userService.updateEmail(currentUserId, request);
 		return ResponseEntity.ok(ApiResponse.success("이메일이 변경되었습니다.", null));
+	}
+
+	// 특정 사용자 평가하기
+	@PostMapping("/{targetUserId}/ratings")
+	public ResponseEntity<ApiResponse<Void>> createUserRating(
+		@RequestHeader("user_id") Long reviewerId, // TODO : 임시로 설정
+		@PathVariable Long targetUserId,
+		@Valid @RequestBody UserRatingCreateRequestDto request
+	) {
+		userService.createUserRating(reviewerId, targetUserId, request);
+
+		return ResponseEntity.ok(ApiResponse.success("사용자 평가가 등록되었습니다.", null));
 	}
 }
