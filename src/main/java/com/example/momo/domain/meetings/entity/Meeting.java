@@ -1,10 +1,13 @@
 package com.example.momo.domain.meetings.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.example.momo.domain.common.entity.BaseEntity;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +15,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -63,6 +68,10 @@ public class Meeting extends BaseEntity {
 
 	@Column(nullable = false, name = "longitude")
 	private Double longitude;
+
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+	@JoinColumn(name = "meeting_id")
+	private List<MeetingParticipant> participants = new ArrayList<>();
 
 	@Column(nullable = false, name = "participation_fee")
 	private int participationFee = 0;
