@@ -1,11 +1,6 @@
 package com.example.momo.domain.user.infra;
 
-import java.util.List;
-
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.user.domain.User;
@@ -32,4 +27,12 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	@Query("SELECT u FROM User u " +
 		"WHERE u.id IN (SELECT uf.followerId FROM UserFollow uf WHERE uf.followingId = :userId)")
 	List<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
+
+	boolean existsByEmail(String email);
+
+	boolean existsByNickname(String nickname);
+
+	Optional<User> findByEmailAndIsDeletedFalse(String email);
+
+	Optional<User> findByIdAndIsDeletedFalse(Long id);
 }

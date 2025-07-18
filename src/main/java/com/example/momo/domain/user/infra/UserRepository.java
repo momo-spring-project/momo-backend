@@ -1,9 +1,6 @@
 package com.example.momo.domain.user.infra;
 
-import java.util.List;
 import java.util.Optional;
-
-import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
 
@@ -29,4 +26,14 @@ public interface UserRepository {
 	 * @return 팔로워 목록
 	 */
 	List<User> findFollowersByUserId(Long userId, Pageable pageable);
+	// ----------------------------------
+	boolean existsByEmail(String email);
+
+	boolean existsByNickname(String nickname);
+
+	void save(User user);
+
+	Optional<User> findByEmailAndIsDeletedFalse(String email);
+
+	Optional<User> findByIdAndIsDeletedFalse(Long id);
 }
