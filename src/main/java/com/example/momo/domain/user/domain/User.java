@@ -86,6 +86,10 @@ public class User extends BaseEntity {
 		this.password = password;
 	}
 
+	public void updateScore(Double score) {
+		this.score = score;
+	}
+
 	public void updateCategories(List<Integer> categoryIds) {
 		this.categories.clear();
 		categoryIds.forEach(categoryId ->

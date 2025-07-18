@@ -26,4 +26,6 @@ public interface UserService {
 	void updateEmail(Long userId, UserEmailUpdateRequestDto request);
 
 	void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request);
+
+	void recalculateUserScore(Long userId);
 }

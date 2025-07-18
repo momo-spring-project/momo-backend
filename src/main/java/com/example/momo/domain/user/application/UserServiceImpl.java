@@ -162,4 +162,66 @@ public class UserServiceImpl implements UserService {
 		// 실제 구현시에는 MeetingParticipant 테이블을 조회하여
 		// 두 사용자가 모두 해당 모임에 참가했는지 확인해야 함
 	}
+
+	@Override
+	@Transactional
+	public void recalculateUserScore(Long userId) {
+		User user = validateAndGetUser(userId);
+
+		// 1. 평점 점수 계산 (60%)
+		double ratingScore = calculateRatingScore(user);
+
+		// 2. 참석률 점수 계산 (30%) - TODO: Meeting 도메인 연동 후 구현
+		double attendanceScore = calculateAttendanceScore(user);
+
+		// 3. 활동도 점수 계산 (10%) - TODO: Meeting 도메인 연동 후 구현
+		double activityScore = calculateActivityScore(user);
+
+		// 4. 총 점수 계산
+		double totalScore = ratingScore + attendanceScore + activityScore;
+
+		// 5. 점수 업데이트
+		user.updateScore(totalScore);
+		// JPA 더티체킹으로 자동 저장
+	}
+
+	/**
+	 * 평점 기반 점수 계산 (60%)
+	 * 평점 4.5/5.0 → (4.5/5.0) * 60 = 54점
+	 */
+	private double calculateRatingScore(User user) {
+		if (user.getRatings().isEmpty()) {
+			// 신규 사용자는 기본 점수 (3.0/5.0 기준으로 36점)
+			return 36.0;
+		}
+
+		// 평균 평점 계산
+		double averageRating = user.getRatings().stream()
+			.mapToInt(UserRating::getRatingScore)
+			.average()
+			.orElse(3.0); // 기본값 3.0
+
+		// 5점 만점을 60점 만점으로 변환
+		return (averageRating / 5.0) * 60.0;
+	}
+
+	/**
+	 * 참석률 기반 점수 계산 (30%)
+	 * TODO: Meeting 도메인과 연동하여 구현
+	 */
+	private double calculateAttendanceScore(User user) {
+		// 임시로 기본 점수 반환
+		// 실제 구현시에는 모임 신청 수 대비 실제 참석 수 계산
+		return 21.0; // 70% 참석률 가정
+	}
+
+	/**
+	 * 활동도 기반 점수 계산 (10%)
+	 * TODO: Meeting 도메인과 연동하여 구현
+	 */
+	private double calculateActivityScore(User user) {
+		// 임시로 기본 점수 반환
+		// 실제 구현시에는 최근 3개월 모임 참가 횟수 계산
+		return 7.0; // 월 평균 1-2회 활동 가정
+	}
 }
