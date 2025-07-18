@@ -29,8 +29,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request,
-                                                            HttpServletResponse servletResponse) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         // Access 토큰과 Refresh 토큰 발행
         String access = jwtUtil.createToken("access", response.getId(), response.getEmail(), "USER", response.getNickname(), JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
@@ -73,6 +72,8 @@ public class AuthController {
     }
 
     private String extractedRefreshToken(HttpServletRequest request) {
+        if(request.getCookies() == null) return null;
+
         String refreshToken = null;
         for (Cookie cookie : request.getCookies()) {
             if (cookie.getName().equals("refresh")) {
