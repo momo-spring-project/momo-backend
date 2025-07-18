@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
+import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
@@ -223,5 +224,56 @@ public class UserServiceImpl implements UserService {
 		// 임시로 기본 점수 반환
 		// 실제 구현시에는 최근 3개월 모임 참가 횟수 계산
 		return 7.0; // 월 평균 1-2회 활동 가정
+	}
+
+	@Override
+	@Transactional
+	public void followUser(Long followerId, Long followingId) {
+		// 1. 자기 자신 팔로우 방지
+		if (followerId.equals(followingId)) {
+			throw UserException.cannotFollowSelf();
+		}
+
+		// 2. 팔로워(나) 존재 확인
+		User follower = validateAndGetUser(followerId);
+
+		// 3. 팔로잉 대상 존재 확인
+		validateAndGetUser(followingId);
+
+		// 4. 이미 팔로우했는지 확인
+		boolean alreadyFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+
+		if (alreadyFollowing) {
+			throw UserException.alreadyFollowing();
+		}
+
+		// 5. 팔로우 관계 생성 및 추가
+		UserFollow userFollow = new UserFollow(followerId, followingId);
+		follower.getFollowings().add(userFollow);
+	}
+
+	@Override
+	@Transactional
+	public void unfollowUser(Long followerId, Long followingId) {
+		// 1. 자기 자신 언팔로우 방지 (사실상 불가능하지만 안전장치)
+		if (followerId.equals(followingId)) {
+			throw UserException.cannotFollowSelf();
+		}
+
+		// 2. 팔로워(나) 존재 확인
+		User follower = validateAndGetUser(followerId);
+
+		// 3. 팔로잉 대상 존재 확인
+		validateAndGetUser(followingId);
+
+		// 4. 팔로우 관계 찾기
+		UserFollow followToRemove = follower.getFollowings().stream()
+			.filter(follow -> follow.getFollowingId().equals(followingId))
+			.findFirst()
+			.orElseThrow(UserException::notFollowing);
+
+		// 5. 팔로우 관계 제거
+		follower.getFollowings().remove(followToRemove);
 	}
 }

@@ -1,6 +1,7 @@
 package com.example.momo.domain.user.api;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -100,5 +101,25 @@ public class UserController {
 		userService.createUserRating(reviewerId, targetUserId, request);
 
 		return ResponseEntity.ok(ApiResponse.success("사용자 평가가 등록되었습니다.", null));
+	}
+
+	// 사용자 팔로우
+	@PostMapping("/{followingId}/followings")
+	public ResponseEntity<ApiResponse<Void>> followUser(
+		@RequestHeader("user_id") Long followerId, // TODO : 임시로 설정
+		@PathVariable Long followingId
+	) {
+		userService.followUser(followerId, followingId);
+		return ResponseEntity.ok(ApiResponse.success("팔로우가 완료되었습니다.", null));
+	}
+
+	// 사용자 언팔로우
+	@DeleteMapping("/{followingId}/followings")
+	public ResponseEntity<ApiResponse<Void>> unfollowUser(
+		@RequestHeader("user_id") Long followerId, // TODO : 임시로 설정
+		@PathVariable Long followingId
+	) {
+		userService.unfollowUser(followerId, followingId);
+		return ResponseEntity.ok(ApiResponse.success("언팔로우가 완료되었습니다.", null));
 	}
 }

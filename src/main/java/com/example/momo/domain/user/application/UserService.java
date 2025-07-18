@@ -28,4 +28,8 @@ public interface UserService {
 	void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request);
 
 	void recalculateUserScore(Long userId);
+
+	void followUser(Long followerId, Long followingId);
+
+	void unfollowUser(Long followerId, Long followingId);
 }
