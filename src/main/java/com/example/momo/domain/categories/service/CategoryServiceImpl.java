@@ -1,6 +1,8 @@
 package com.example.momo.domain.categories.service;
 
 import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
+import com.example.momo.domain.categories.exception.CategoryException;
+import com.example.momo.domain.categories.exception.CategoryExceptionCode;
 import com.example.momo.domain.categories.repository.CategoryRepository;
 import com.example.momo.domain.categories.dto.CategoryAddRequestDto;
 import com.example.momo.domain.categories.dto.CategoryResponseDto;
@@ -47,7 +49,6 @@ public class CategoryServiceImpl implements CategoryService{
 			.toList();
 	}
 
-	// TODO 예외처리 변경
 	// Category 수정
 	@Override
 	@Transactional
@@ -55,22 +56,23 @@ public class CategoryServiceImpl implements CategoryService{
 
 		// 입력 잘못됐을 경우 예외처리(공백 포함)
 		if(request.getCategoryName() != null && !StringUtils.hasText(request.getCategoryName())) {
-			throw new IllegalArgumentException("Blank category name");
+			throw new CategoryException(CategoryExceptionCode.BLANK_CATEGORY_NAME);
 		}
 		if(request.getDescription() != null && !StringUtils.hasText(request.getDescription())) {
-			throw new IllegalArgumentException("Blank category description");
+			throw new CategoryException(CategoryExceptionCode.BLANK_CATEGORY_DESCRIPTION);
 		}
 
-		// 변경사항 없을 경우 예외처리
+		// 입력이 모두 null 일 경우 예외처리
 		if(request.getCategoryName() == null && request.getDescription() == null) {
-			throw new IllegalArgumentException("No Change(null)");
+			throw new CategoryException(CategoryExceptionCode.NULL_INPUT);
 		}
 
 		Category category = categoryRepository.findById(id)
-			.orElseThrow(() -> new IllegalArgumentException("Category not found"));
+			.orElseThrow(() -> new CategoryException(CategoryExceptionCode.CATEGORY_NOT_FOUND));
 
+		// 변경사항 없을 경우 예외처리
 		if(category.getName().equals(request.getCategoryName()) && category.getDescription().equals(request.getDescription())) {
-			throw new IllegalArgumentException("No Change(same)");
+			throw new CategoryException(CategoryExceptionCode.NOT_UPDATE_CATEGORY);
 		}
 
 		if(request.getCategoryName() != null) category.updateName(request.getCategoryName());
