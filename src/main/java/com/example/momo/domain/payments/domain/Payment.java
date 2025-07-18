@@ -1,17 +1,13 @@
-
 package com.example.momo.domain.payments.domain;
 
 import com.example.momo.domain.common.entity.BaseCreateEntity;
-import com.example.momo.domain.meetings.domain.Meeting;
 import com.example.momo.domain.payments.enums.PaymentStatus;
-import com.example.momo.domain.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
 
 import static jakarta.persistence.EnumType.STRING;
-import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 import static lombok.AccessLevel.PROTECTED;
 
@@ -32,13 +28,11 @@ public class Payment extends BaseCreateEntity {
 	@GeneratedValue(strategy = IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = LAZY)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
-	@ManyToOne(fetch = LAZY)
-	@JoinColumn(name = "meeting_id", nullable = false)
-	private Meeting meeting;
+	@Column(name = "meeting_id", nullable = false)
+	private Long meetingId;
 
 	@Column(nullable = false)
 	private int amount;
@@ -61,10 +55,10 @@ public class Payment extends BaseCreateEntity {
 	private Long version;
 
 	// V1: 무료 결제 생성 (참가비 0원)
-	public static Payment createFree(User user, Meeting meeting) {
+	public static Payment createFree(Long userId, Long meetingId) {
 		return Payment.builder()
-				.user(user)
-				.meeting(meeting)
+				.userId(userId)
+				.meetingId(meetingId)
 				.amount(0)
 				.paymentMethod("FREE")
 				.status(PaymentStatus.COMPLETED)
@@ -73,10 +67,10 @@ public class Payment extends BaseCreateEntity {
 	}
 
 	// V1: 유료 결제 생성 (모의 결제로 바로 완료)
-	public static Payment createPaid(User user, Meeting meeting, int amount, String paymentMethod) {
+	public static Payment createPaid(Long userId, Long meetingId int amount, String paymentMethod) {
 		return Payment.builder()
-				.user(user)
-				.meeting(meeting)
+				.userId(userId)
+				.meetingId(meetingId)
 				.amount(amount)
 				.paymentMethod(paymentMethod)
 				.status(PaymentStatus.COMPLETED)
