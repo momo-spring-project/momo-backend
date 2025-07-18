@@ -148,6 +148,7 @@ public class UserServiceImpl implements UserService {
 
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
+		recalculateUserScore(targetUserId);
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
