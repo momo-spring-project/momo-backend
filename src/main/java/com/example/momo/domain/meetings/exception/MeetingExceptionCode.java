@@ -5,8 +5,18 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum MeetingExceptionCode {
-	//404
-	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),;
+	// 400
+	MEETING_IS_UNAVAILABLE(HttpStatus.BAD_REQUEST, "Meeting is unavailable"),
+
+	// 403
+	INSUFFICIENT_SCORE(HttpStatus.FORBIDDEN, "Insufficient score"),
+
+	// 404
+	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),
+	PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "Participant not found"),
+
+	// 409
+	ALREADY_PARTICIPATED(HttpStatus.CONFLICT, "Already participated");
 
 	private final HttpStatus httpStatus;
 	private final String message;
