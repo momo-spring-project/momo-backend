@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.momo.domain.notification.dto.meeting.NotificationMeetingEvent;
 import com.example.momo.domain.notification.entity.Notification;
 import com.example.momo.domain.notification.repository.NotificationJpaRepository;
-import com.example.momo.global.websocket.WebSocketHandler;
+import com.example.momo.global.socket.WebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.example.momo.global.websocket;
+package com.example.momo.global.socket;
 
 import java.io.IOException;
 import java.util.Map;
