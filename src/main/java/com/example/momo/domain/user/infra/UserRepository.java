@@ -30,4 +30,3 @@ public interface UserRepository {
 	 */
 	List<User> findFollowersByUserId(Long userId, Pageable pageable);
 }
-}
