@@ -33,6 +33,24 @@ public class UserException extends RuntimeException {
 		return new UserException("DUPLICATE_EMAIL", "이미 사용 중인 이메일입니다.", HttpStatus.CONFLICT);
 	}
 
+	// === 평가 관련 예외 ===
+	public static UserException cannotRateSelf() {
+		return new UserException("CANNOT_RATE_SELF", "자기 자신을 평가할 수 없습니다.", HttpStatus.BAD_REQUEST);
+	}
+
+	public static UserException notSameMeetingParticipants() {
+		return new UserException("NOT_SAME_MEETING_PARTICIPANTS", "같은 모임에 참가한 사용자만 평가할 수 있습니다.",
+			HttpStatus.BAD_REQUEST);
+	}
+
+	public static UserException duplicateRating() {
+		return new UserException("DUPLICATE_RATING", "같은 모임에서 이미 해당 사용자를 평가했습니다.", HttpStatus.CONFLICT);
+	}
+
+	public static UserException targetUserNotFound() {
+		return new UserException("TARGET_USER_NOT_FOUND", "평가 대상자를 찾을 수 없습니다.", HttpStatus.NOT_FOUND);
+	}
+
 	private UserException(String errorCode, String message, HttpStatus httpStatus) {
 		super(message);
 		this.errorCode = errorCode;

@@ -7,10 +7,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
+import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.domain.user.infra.UserRepository;
 
@@ -110,5 +112,54 @@ public class UserServiceImpl implements UserService {
 		}
 
 		user.updateEmail(request.email());
+	}
+
+	@Override
+	@Transactional
+	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
+		// 1. 자기 자신 평가 방지
+		if (reviewerId.equals(targetUserId)) {
+			throw UserException.cannotRateSelf();
+		}
+
+		// 2. 평가자 존재 확인
+		User reviewer = validateAndGetUser(reviewerId);
+
+		// 3. 평가 대상자 존재 확인
+		User targetUser = userRepository.findById(targetUserId)
+			.orElseThrow(UserException::targetUserNotFound);
+
+		// 4. 같은 모임 참가 여부 확인
+		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
+		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
+
+		// 5. 중복 평가 확인 - targetUser의 ratings에서 확인
+		boolean alreadyRated = targetUser.getRatings().stream()
+			.anyMatch(rating ->
+				rating.getReviewerId().equals(reviewerId) &&
+					rating.getMeetingId().equals(request.meetingId())
+			);
+
+		if (alreadyRated) {
+			throw UserException.duplicateRating();
+		}
+
+		// 6. 평가 생성 및 targetUser의 ratings에 추가
+		UserRating userRating = new UserRating(
+			reviewerId,
+			request.meetingId(),
+			request.ratingScore()
+		);
+
+		// User 애그리거트를 통해 평가 추가
+		targetUser.getRatings().add(userRating);
+		// JPA 더티체킹으로 자동 저장
+	}
+
+	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
+		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
+		// 현재는 임시로 모든 경우를 허용
+		// 실제 구현시에는 MeetingParticipant 테이블을 조회하여
+		// 두 사용자가 모두 해당 모임에 참가했는지 확인해야 함
 	}
 }

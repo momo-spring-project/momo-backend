@@ -7,6 +7,7 @@ import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 
 public interface UserService {
 
@@ -24,4 +25,5 @@ public interface UserService {
 
 	void updateEmail(Long userId, UserEmailUpdateRequestDto request);
 
+	void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request);
 }
