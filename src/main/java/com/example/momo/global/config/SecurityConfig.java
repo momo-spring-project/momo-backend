@@ -1,5 +1,7 @@
 package com.example.momo.global.config;
 
+import com.example.momo.global.filter.JwtAccessDeniedHandler;
+import com.example.momo.global.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.filter.JwtFilter;
 import com.example.momo.global.utils.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtUtil jwtUtil;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         return new CorsConfigurationSource(){
@@ -53,6 +58,10 @@ public class SecurityConfig {
                 .addFilterAt(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(configure -> configure
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
                 .build();
     }
