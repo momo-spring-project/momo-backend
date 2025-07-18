@@ -1,4 +1,4 @@
-package com.example.momo.domain.meetings.entity;
+package com.example.momo.domain.meetings.domain;
 
 import com.example.momo.domain.common.entity.BaseCreateEntity;
 
