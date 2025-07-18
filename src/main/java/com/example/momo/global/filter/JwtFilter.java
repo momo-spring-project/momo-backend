@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,10 +27,10 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String authorization = request.getHeader("Authorization");
+        String accessToken = request.getHeader("Authorization");
 
         // Authorization 해더 값이 없으면 다음 filter로 넘김
-        if (!StringUtils.hasText(authorization) || !authorization.startsWith("Bearer ")) {
+        if (!StringUtils.hasText(accessToken) || !accessToken.startsWith("Bearer ")) {
             log.info("토큰이 존재하지 않습니다.");
             filterChain.doFilter(request, response);
             return;
@@ -37,12 +38,16 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
 
             // 앞에 Bearer 부분 제거 후 순수 토큰만 획득
-            String token = jwtUtil.subStringToken(authorization);
+            accessToken = jwtUtil.subStringToken(accessToken);
 
-            Long userId = jwtUtil.getUserId(token);
-            String email = jwtUtil.getEmail(token);
-            String nickname = jwtUtil.getNickname(token);
-            String role = jwtUtil.getRole(token);
+            if(!jwtUtil.getCategory(accessToken).equals("access")){
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access 토큰입니다.");
+            }
+
+            Long userId = jwtUtil.getUserId(accessToken);
+            String email = jwtUtil.getEmail(accessToken);
+            String nickname = jwtUtil.getNickname(accessToken);
+            String role = jwtUtil.getRole(accessToken);
 
             AuthUser authUser = new AuthUser(userId, email, nickname);
 

@@ -3,9 +3,11 @@ package com.example.momo.global.utils;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +20,11 @@ import java.util.Date;
 @Component
 @Slf4j(topic = "jwtUtil")
 public class JwtUtil {
+
+    public static final long ACCESS_TOKEN_EXPIRE_TIME_MS = 10 * 60 * 1000L; //10분
+    public static final long REFRESH_TOKEN_EXPIRE_TIME_MS = 24 * 60 * 60 * 1000L; //24시간
+    public static final long REFRESH_TOKEN_EXPIRE_TIME_S = 24 * 60 * 60;
+
     @Value("${jwt.secret.key}")
     private String secret;
     private SecretKey secretKey;
@@ -41,16 +48,22 @@ public class JwtUtil {
         }
     }
 
-    public String createToken(Long userId, String email, String nickname) {
-        return "Bearer "+ Jwts.builder()
+    public String createToken(String category, Long userId, String email,String role, String nickname, Long expireMs) {
+
+        return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .claim("category", category)
                 .claim("email", email)
                 .claim("nickname", nickname)
-                .claim("role", "USER")
+                .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 86400000L))
+                .expiration(new Date(System.currentTimeMillis() + expireMs))
                 .signWith(secretKey)
                 .compact();
+    }
+
+    public String getCategory(String token) {
+        return getClaim(token).get("category", String.class);
     }
 
     public Long getUserId(String token) {
@@ -91,6 +104,16 @@ public class JwtUtil {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "JWT 토큰이 잘못되었습니다.");
         }
+    }
+
+    public ResponseCookie createRefreshTokenCookie(String refresh) {
+
+        return ResponseCookie.from("refresh", refresh)
+                .httpOnly(true)  // XSS 공격을 막기 위해서 Http Only 설정을 해준다.
+//                .secure(true) // https 통신 사용할 때 설정
+                .maxAge(24 * 60 * 60) //refresh 토큰의 만료시간과 동일하게 설정
+                .path("/api/v1/auth/reissue")
+                .build();
     }
 
 }
