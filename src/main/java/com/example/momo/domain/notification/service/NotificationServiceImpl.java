@@ -1,48 +1,51 @@
 package com.example.momo.domain.notification.service;
 
-import java.io.IOException;
-
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.notification.dto.meeting.NotificationMeetingCommand;
+import com.example.momo.domain.notification.dto.meeting.NotificationMeetingEvent;
 import com.example.momo.domain.notification.entity.Notification;
-import com.example.momo.domain.notification.repository.NotificationRepository;
+import com.example.momo.domain.notification.repository.NotificationJpaRepository;
 import com.example.momo.global.websocket.WebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationServiceImpl implements NotificationService {
 
-	private final NotificationRepository notificationRepository;
+	private final NotificationJpaRepository notificationJpaRepository;
 
 	private final WebSocketHandler webSocketHandler;
 
+	private final ApplicationContext applicationContext;
+
+	@Override
+	@Transactional
+	public void processNotification(NotificationMeetingEvent command) {
+		//save 와 send 모두 별도의 transaction 에서 처리하기 위해 proxy 객체 사용
+		NotificationService proxy = applicationContext.getBean(NotificationService.class);
+		proxy.saveNotification(command);
+		proxy.sendNotification(command);
+
+	}
+
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void processNotification(NotificationMeetingCommand command) {
-		createNotification(command);
-		sendNotification(command);
-
-	}
-
-	@Override
-	public void createNotification(NotificationMeetingCommand command) {
+	public void saveNotification(NotificationMeetingEvent command) {
 		Notification notification = command.toEntity();
 
-		notificationRepository.save(notification);
+		notificationJpaRepository.save(notification);
 
 	}
 
 	@Override
-	public void sendNotification(NotificationMeetingCommand command) {
-		try {
-			webSocketHandler.sendToUser(command.userId(), command.content());
-		} catch (IOException e) {
-			// fallback: 로그 or DB 저장
-		}
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void sendNotification(NotificationMeetingEvent command) {
+		webSocketHandler.sendToUser(command.toMessage());
 	}
 }
