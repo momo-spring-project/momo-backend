@@ -39,6 +39,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new RuntimeException("user not found"));
 
+		// 이미 참가했으면 예외처리
 		if(!meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
