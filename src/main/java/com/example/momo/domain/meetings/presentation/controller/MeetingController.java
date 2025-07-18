@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/v1/meetings")
-public class MeetingCoreController {
+public class MeetingController {
 
 	private final MeetingService meetingCoreService;
 
