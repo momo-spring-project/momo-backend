@@ -1,4 +1,4 @@
-package com.example.momo.global.socket;
+package com.example.momo.global.socket.handler;
 
 import java.io.IOException;
 import java.util.Map;
@@ -12,7 +12,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import com.example.momo.domain.notification.dto.meeting.NotificationMessage;
+import com.example.momo.global.socket.dto.NotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;

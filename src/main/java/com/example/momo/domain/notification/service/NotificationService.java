@@ -1,6 +1,9 @@
 package com.example.momo.domain.notification.service;
 
-import com.example.momo.domain.notification.dto.meeting.NotificationMeetingEvent;
+import java.util.List;
+
+import com.example.momo.domain.notification.dto.NotificationResponse;
+import com.example.momo.global.event.NotificationMeetingEvent;
 
 public interface NotificationService {
 	/**
@@ -18,9 +21,17 @@ public interface NotificationService {
 	void saveNotification(NotificationMeetingEvent command);
 
 	/**
-	 * WebSocket 을 통해 사용자에게 실시간으로 알림 메시지를 전송합니다.
+	 * 특정 사용자의 알림 목록을 조회합니다.
 	 *
-	 * @param command 메시지 전송에 필요한 정보를 담은 객체
+	 * @param userId 알림을 조회할 사용자의 ID
+	 * @return 해당 사용자의 알림 목록
+	 */
+	List<NotificationResponse> getNotifications(Long userId);
+
+	/**
+	 * 사용자에게 실시간 알림 메시지를 전송하는 로직을 불러옵니다.
+	 *
+	 * @param command 전송할 알림 정보를 담은 객체
 	 */
 	void sendNotification(NotificationMeetingEvent command);
 }
