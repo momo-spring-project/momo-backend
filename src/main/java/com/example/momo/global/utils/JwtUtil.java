@@ -47,13 +47,11 @@ public class JwtUtil {
         }
     }
 
-    public String createToken(String category, Long userId, String email,String role, String nickname, Long expireMs) {
+    public String createToken(String category, Long userId, String role, Long expireMs) {
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("category", category)
-                .claim("email", email)
-                .claim("nickname", nickname)
                 .claim("role", role)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + expireMs))
@@ -67,14 +65,6 @@ public class JwtUtil {
 
     public Long getUserId(String token) {
         return Long.parseLong(getClaim(token).getSubject());
-    }
-
-    public String getEmail(String token) {
-        return getClaim(token).get("email", String.class);
-    }
-
-    public String getNickname(String token) {
-        return getClaim(token).get("nickname", String.class);
     }
 
     public String getRole(String token) {

@@ -32,8 +32,8 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         // Access 토큰과 Refresh 토큰 발행
-        String access = jwtUtil.createToken("access", response.getId(), response.getEmail(), "USER", response.getNickname(), JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
-        String refresh = jwtUtil.createToken("refresh", response.getId(), response.getEmail(), "USER", response.getNickname(), JwtUtil.REFRESH_TOKEN_EXPIRE_TIME_MS);
+        String access = jwtUtil.createToken("access", response.getId(),  "USER", JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
+        String refresh = jwtUtil.createToken("refresh", response.getId(),  "USER",  JwtUtil.REFRESH_TOKEN_EXPIRE_TIME_MS);
 
 
         return ResponseEntity.status(HttpStatus.OK)
@@ -60,11 +60,9 @@ public class AuthController {
         if(!jwtUtil.getCategory(refreshToken).equals("refresh")) ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.fail("유효하지 않은 토큰입니다.",null));
 
         Long userId = jwtUtil.getUserId(refreshToken);
-        String nickname = jwtUtil.getNickname(refreshToken);
         String role = jwtUtil.getRole(refreshToken);
-        String email = jwtUtil.getEmail(refreshToken);
 
-        String accessToken = jwtUtil.createToken("access", userId, email, role, nickname, JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
+        String accessToken = jwtUtil.createToken("access", userId, role, JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
