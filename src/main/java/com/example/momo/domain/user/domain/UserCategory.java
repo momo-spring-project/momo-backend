@@ -1,4 +1,4 @@
-package com.example.momo.domain.categories;
+package com.example.momo.domain.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -6,22 +6,24 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Table(name = "categories")
+@Table(name = "user_categories")
 @Getter
 @Entity
-@NoArgsConstructor
-public class Categories {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class UserCategory {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, unique = true, name = "name")
-	private String name;
+	@Column(name = "category_id", nullable = false)
+	private Integer categoryId;
 
-	@Column(name = "description")
-	private String description;
+	public UserCategory(Integer categoryId) {
+		this.categoryId = categoryId;
+	}
 }
