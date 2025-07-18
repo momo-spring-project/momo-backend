@@ -2,8 +2,11 @@ package com.example.momo.domain.user.application;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -32,4 +35,14 @@ public interface UserService {
 	void followUser(Long followerId, Long followingId);
 
 	void unfollowUser(Long followerId, Long followingId);
+
+	/**
+	 * 특정 사용자가 팔로잉하는 사용자 목록 조회
+	 */
+	List<UserFollowInfoResponseDto> getFollowings(Long userId, Pageable pageable);
+
+	/**
+	 * 특정 사용자를 팔로우하는 사용자 목록 조회
+	 */
+	List<UserFollowInfoResponseDto> getFollowers(Long userId, Pageable pageable);
 }

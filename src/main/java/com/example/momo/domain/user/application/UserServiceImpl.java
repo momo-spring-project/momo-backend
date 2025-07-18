@@ -2,14 +2,15 @@ package com.example.momo.domain.user.application;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -50,24 +51,16 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
-		try {
-			User user = validateAndGetUser(userId);
+		User user = validateAndGetUser(userId);
 
-			// 서비스에서 직접 카테고리 업데이트 처리
-			user.getCategories().clear();
-			categoryIds.forEach(categoryId ->
-				user.getCategories().add(new UserCategory(categoryId))
-			);
+		// TODO: 카테고리 존재 여부 검증 (CategoryService 연동 후 구현)
+		// List<Category> categories = categoryService.getCategories(categoryIds);
+		// if (categories.size() != categoryIds.size()) {
+		//     throw UserException.invalidCategoryIds();
+		// }
 
-			// JPA 더티체킹으로 자동 업데이트
-			return user;
-		} catch (UserException e) {
-			// UserException은 그대로 전파
-			throw e;
-		} catch (Exception e) {
-			// 기타 예외(DB 제약조건 위반 등)는 카테고리 관련 예외로 변환
-			throw UserException.invalidCategoryIds();
-		}
+		user.updateCategories(categoryIds);
+		return user;
 	}
 
 	@Override
@@ -148,13 +141,13 @@ public class UserServiceImpl implements UserService {
 		// 6. 평가 생성 및 targetUser의 ratings에 추가
 		UserRating userRating = new UserRating(
 			reviewerId,
+			targetUserId,
 			request.meetingId(),
 			request.ratingScore()
 		);
 
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
-		// JPA 더티체킹으로 자동 저장
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
@@ -183,7 +176,6 @@ public class UserServiceImpl implements UserService {
 
 		// 5. 점수 업데이트
 		user.updateScore(totalScore);
-		// JPA 더티체킹으로 자동 저장
 	}
 
 	/**
@@ -238,7 +230,7 @@ public class UserServiceImpl implements UserService {
 		User follower = validateAndGetUser(followerId);
 
 		// 3. 팔로잉 대상 존재 확인
-		validateAndGetUser(followingId);
+		User following = validateAndGetUser(followingId);
 
 		// 4. 이미 팔로우했는지 확인
 		boolean alreadyFollowing = follower.getFollowings().stream()
@@ -251,6 +243,9 @@ public class UserServiceImpl implements UserService {
 		// 5. 팔로우 관계 생성 및 추가
 		UserFollow userFollow = new UserFollow(followerId, followingId);
 		follower.getFollowings().add(userFollow);
+
+		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
+		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
 	}
 
 	@Override
@@ -265,7 +260,7 @@ public class UserServiceImpl implements UserService {
 		User follower = validateAndGetUser(followerId);
 
 		// 3. 팔로잉 대상 존재 확인
-		validateAndGetUser(followingId);
+		User following = validateAndGetUser(followingId);
 
 		// 4. 팔로우 관계 찾기
 		UserFollow followToRemove = follower.getFollowings().stream()
@@ -275,5 +270,38 @@ public class UserServiceImpl implements UserService {
 
 		// 5. 팔로우 관계 제거
 		follower.getFollowings().remove(followToRemove);
+
+		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
+		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserFollowInfoResponseDto> getFollowings(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인
+		validateAndGetUser(userId);
+
+		// 2. 팔로잉 목록 조회
+		List<User> followings = userRepository.findFollowingsByUserId(userId, pageable);
+
+		// 3. DTO 변환
+		return followings.stream()
+			.map(UserFollowInfoResponseDto::new)
+			.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserFollowInfoResponseDto> getFollowers(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인
+		validateAndGetUser(userId);
+
+		// 2. 팔로워 목록 조회
+		List<User> followers = userRepository.findFollowersByUserId(userId, pageable);
+
+		// 3. DTO 변환
+		return followers.stream()
+			.map(UserFollowInfoResponseDto::new)
+			.toList();
 	}
 }

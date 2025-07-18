@@ -1,7 +1,9 @@
 package com.example.momo.domain.user.infra;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.user.domain.User;
@@ -27,5 +29,15 @@ public class UserRepositoryImpl implements UserRepository {
 	@Override
 	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
+	}
+
+	@Override
+	public List<User> findFollowingsByUserId(Long userId, Pageable pageable) {
+		return userJpaRepository.findFollowingsByUserId(userId, pageable);
+	}
+
+	@Override
+	public List<User> findFollowersByUserId(Long userId, Pageable pageable) {
+		return userJpaRepository.findFollowersByUserId(userId, pageable);
 	}
 }

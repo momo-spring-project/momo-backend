@@ -41,6 +41,12 @@ public class User extends BaseEntity {
 	@Column(name = "score")
 	private Double score = 50.0;
 
+	@Column(name = "following_count", nullable = false)
+	private Integer followingCount = 0;
+
+	@Column(name = "follower_count", nullable = false)
+	private Integer followerCount = 0;
+
 	@Column(name = "latitude")
 	private Double latitude;
 
@@ -49,7 +55,7 @@ public class User extends BaseEntity {
 
 	@Builder
 	public User(String nickname, String email, String password,
-		Integer score, Double latitude, Double longitude) {
+		Double score, Double latitude, Double longitude) {
 		this.nickname = nickname;
 		this.email = email;
 		this.password = password;
@@ -88,6 +94,22 @@ public class User extends BaseEntity {
 
 	public void updateScore(Double score) {
 		this.score = score;
+	}
+
+	public void incrementFollowingCount() {
+		this.followingCount++;
+	}
+
+	public void decrementFollowingCount() {
+		this.followingCount--;
+	}
+
+	public void incrementFollowerCount() {
+		this.followerCount++;
+	}
+
+	public void decrementFollowerCount() {
+		this.followerCount--;
 	}
 
 	public void updateCategories(List<Integer> categoryIds) {

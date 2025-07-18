@@ -1,5 +1,9 @@
 package com.example.momo.domain.user.api;
 
+import java.util.List;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.common.dto.ApiResponse;
@@ -17,6 +22,7 @@ import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -121,5 +127,53 @@ public class UserController {
 	) {
 		userService.unfollowUser(followerId, followingId);
 		return ResponseEntity.ok(ApiResponse.success("언팔로우가 완료되었습니다.", null));
+	}
+
+	// 특정 사용자의 팔로잉 목록 조회
+	@GetMapping("/{userId}/followings")
+	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getUserFollowings(
+		@PathVariable Long userId,
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		List<UserFollowInfoResponseDto> response = userService.getFollowings(userId, pageable);
+		return ResponseEntity.ok(ApiResponse.success("팔로잉 목록을 조회했습니다.", response));
+	}
+
+	// 특정 사용자의 팔로워 목록 조회
+	@GetMapping("/{userId}/followers")
+	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getUserFollowers(
+		@PathVariable Long userId,
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		List<UserFollowInfoResponseDto> response = userService.getFollowers(userId, pageable);
+		return ResponseEntity.ok(ApiResponse.success("팔로워 목록을 조회했습니다.", response));
+	}
+
+	// 내 팔로잉 목록 조회
+	@GetMapping("/me/followings")
+	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getMyFollowings(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		List<UserFollowInfoResponseDto> response = userService.getFollowings(currentUserId, pageable);
+		return ResponseEntity.ok(ApiResponse.success("내 팔로잉 목록을 조회했습니다.", response));
+	}
+
+	// 내 팔로워 목록 조회
+	@GetMapping("/me/followers")
+	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getMyFollowers(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@RequestParam(defaultValue = "0") int page,
+		@RequestParam(defaultValue = "20") int size
+	) {
+		Pageable pageable = PageRequest.of(page, size);
+		List<UserFollowInfoResponseDto> response = userService.getFollowers(currentUserId, pageable);
+		return ResponseEntity.ok(ApiResponse.success("내 팔로워 목록을 조회했습니다.", response));
 	}
 }
