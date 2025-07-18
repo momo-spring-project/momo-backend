@@ -7,7 +7,7 @@ import com.example.momo.domain.user.domain.User;
 public interface UserRepository {
 	Optional<User> findById(Long id);
 
-	boolean existsByEmail(String email);
+	boolean existsByEmailAndIdNot(String email, Long id);
 
-	boolean existsByNickname(String nickname);
+	boolean existsByNicknameAndIdNot(String nickname, Long id);
 }
