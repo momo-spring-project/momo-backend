@@ -8,4 +8,7 @@ import com.example.momo.domain.user.domain.User;
 @Repository
 public interface UserJpaRepository extends JpaRepository<User, Long> {
 
+	boolean existsByEmailAndIdNot(String email, Long id);
+
+	boolean existsByNicknameAndIdNot(String nickname, Long id);
 }
