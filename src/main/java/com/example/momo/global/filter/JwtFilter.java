@@ -1,7 +1,10 @@
 package com.example.momo.global.filter;
 
+import com.example.momo.domain.auth.controller.exception.AuthException;
 import com.example.momo.domain.auth.dto.AuthUser;
+import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.global.utils.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,15 +12,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -25,6 +29,8 @@ import java.util.List;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String accessToken = request.getHeader("Authorization");
@@ -41,7 +47,7 @@ public class JwtFilter extends OncePerRequestFilter {
             accessToken = jwtUtil.subStringToken(accessToken);
 
             if(!jwtUtil.getCategory(accessToken).equals("access")){
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access 토큰입니다.");
+                throw new AuthException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access 토큰입니다.");
             }
 
             Long userId = jwtUtil.getUserId(accessToken);
@@ -62,9 +68,13 @@ public class JwtFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authToken);
 
             filterChain.doFilter(request, response);
-        } catch (ResponseStatusException e) {
+        } catch (AuthException e) {
             log.error("JWT 예외", e);
-            response.sendError(e.getStatusCode().value());
+            response.setStatus(e.getStatusCode().value());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.getWriter().write(objectMapper.writeValueAsString(ApiResponse.fail(e.getReason(),null)));
+
         }
     }
 }

@@ -1,16 +1,15 @@
 package com.example.momo.global.utils;
 
+import com.example.momo.domain.auth.controller.exception.AuthException;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.SecurityException;
 import jakarta.annotation.PostConstruct;
-import jakarta.servlet.http.Cookie;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -44,7 +43,7 @@ public class JwtUtil {
 
             secretKey = new SecretKeySpec(bytes, signatureAlgorithm);
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+            throw new AuthException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -84,10 +83,10 @@ public class JwtUtil {
 
     public String subStringToken(String rawToken) {
         if (!StringUtils.hasText(rawToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "토큰이 존재하지 않습니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "토큰이 존재하지 않습니다.");
         }
         if (!rawToken.startsWith(tokenPrefix)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "잘못된 토큰 형식입니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "잘못된 토큰 형식입니다.");
         }
         return rawToken.split(" ")[1];
     }
@@ -96,13 +95,13 @@ public class JwtUtil {
         try{
             return Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token).getPayload();
         } catch (ExpiredJwtException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다.");
         } catch (SecurityException | MalformedJwtException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "잘못된 JWT 서명입니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "잘못된 JWT 서명입니다.");
         } catch (UnsupportedJwtException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "지원되지 않는 JWT 토큰입니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "지원되지 않는 JWT 토큰입니다.");
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "JWT 토큰이 잘못되었습니다.");
+            throw new AuthException(HttpStatus.UNAUTHORIZED, "JWT 토큰이 잘못되었습니다.");
         }
     }
 

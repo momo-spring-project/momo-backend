@@ -4,6 +4,7 @@ import com.example.momo.global.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.filter.JwtFilter;
 import com.example.momo.global.utils.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final ObjectMapper objectMapper;
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -55,7 +57,7 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterAt(new JwtFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAt(new JwtFilter(jwtUtil,objectMapper), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
