@@ -30,14 +30,14 @@ public class NotificationController {
 	}
 
 	@PostMapping("/notifications")
-	public ResponseEntity<String> saveNotification(@RequestBody NotificationMeetingEvent command) {
-		notificationService.saveNotification(command);
+	public ResponseEntity<String> saveNotification(@RequestBody NotificationMeetingEvent event) {
+		notificationService.saveNotification(event);
 		return ResponseEntity.ok("저장완료");
 	}
 
-	@PostMapping("/users/{userId}/notifications")
-	public ResponseEntity<String> sendToUser(@RequestBody NotificationMeetingEvent command) {
-		notificationService.sendNotification(command);  // WebSocket 푸시 실행
-		return ResponseEntity.ok("전송됨: " + command.content());
+	@PostMapping("/admin/notifications")
+	public ResponseEntity<String> sendToUser(@RequestBody NotificationMeetingEvent event) {
+		notificationService.sendNotification(event);  // WebSocket 푸시 실행
+		return ResponseEntity.ok("전송됨: " + event.content());
 	}
 }
