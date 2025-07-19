@@ -28,4 +28,29 @@ public class UserRepositoryImpl implements UserRepository {
 	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
 	}
+
+	@Override
+	public boolean existsByEmail(String email) {
+		return userJpaRepository.existsByEmail(email);
+	}
+
+	@Override
+	public boolean existsByNickname(String nickname) {
+		return userJpaRepository.existsByNickname(nickname);
+	}
+
+	@Override
+	public void save(User user) {
+		userJpaRepository.save(user);
+	}
+
+	@Override
+	public Optional<User> findByEmailAndIsDeletedFalse(String email) {
+		return userJpaRepository.findByEmailAndIsDeletedFalse(email);
+	}
+
+	@Override
+	public Optional<User> findByIdAndIsDeletedFalse(Long id) {
+		return userJpaRepository.findByIdAndIsDeletedFalse(id);
+	}
 }
