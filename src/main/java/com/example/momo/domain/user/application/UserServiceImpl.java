@@ -3,9 +3,13 @@ package com.example.momo.domain.user.application;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.categories.dto.CategoryResponseDto;
+import com.example.momo.domain.categories.exception.CategoryException;
+import com.example.momo.domain.categories.service.CategoryService;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
@@ -25,6 +29,8 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
 	private final UserRepository userRepository;
+	private final CategoryService categoryService;
+	private final BCryptPasswordEncoder passwordEncoder;
 
 	@Override
 	@Transactional(readOnly = true)
@@ -52,14 +58,19 @@ public class UserServiceImpl implements UserService {
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
 		User user = validateAndGetUser(userId);
 
-		// TODO: 카테고리 존재 여부 검증 (CategoryService 연동 후 구현)
-		// List<Category> categories = categoryService.getCategories(categoryIds);
-		// if (categories.size() != categoryIds.size()) {
-		//     throw UserException.invalidCategoryIds();
-		// }
+		try {
+			List<CategoryResponseDto> categories = categoryService.getCategories(categoryIds);
 
-		user.updateCategories(categoryIds);
-		return user;
+			if (categories.size() != categoryIds.size()) {
+				throw UserException.invalidCategoryIds();
+			}
+
+			user.updateCategories(categoryIds);
+			return user;
+
+		} catch (CategoryException e) {
+			throw UserException.invalidCategoryIds();
+		}
 	}
 
 	@Override
@@ -67,8 +78,7 @@ public class UserServiceImpl implements UserService {
 	public void updatePassword(Long userId, UserPasswordUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
 
-		// 서비스에서 현재 비밀번호 확인 (TODO: 암호화된 비밀번호와 비교)
-		if (!user.getPassword().equals(request.currentPassword())) {
+		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
 			throw UserException.passwordMismatch();
 		}
 
@@ -76,7 +86,7 @@ public class UserServiceImpl implements UserService {
 			throw UserException.passwordConfirmMismatch();
 		}
 
-		user.updatePassword(request.newPassword());
+		user.updatePassword(passwordEncoder.encode(request.newPassword()));
 	}
 
 	@Override
@@ -94,9 +104,8 @@ public class UserServiceImpl implements UserService {
 	@Transactional
 	public void updateEmail(Long userId, UserEmailUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
-
-		// 서비스에서 현재 비밀번호 확인 (TODO: 암호화된 비밀번호와 비교)
-		if (!user.getPassword().equals(request.currentPassword())) {
+		
+		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
 			throw UserException.passwordMismatch();
 		}
 
