@@ -1,0 +1,44 @@
+name: MOMO CI v1 (build only)
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest        # GitHub에서 제공하는 Ubuntu VM
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      # gradlew 실행권한 부여
+      - run: chmod +x ./gradlew
+
+      # 테스트는 아직 없으니 제외하고 빌드만 수행
+      - name: Gradle build (skip tests)
+        run: ./gradlew clean build -x test
+
+
+#코드가 깨지지 않고 잘 컴파일되고 빌드 되는지만 확인했습니다
+#build.gradle 설정 이상이 없는지
+#의존성 잘 받아오는지
+#java 문법 에러 없는지
+#기본적인 컴파일 및 빌드 통과 여부
+
+#v3정도에
+#test코드
+#mysql/redis 컨테이너(통합 테스트에서 db 연결 시)
+#secrets 사용(db pw,jwt 등) 외부 배포나 실제 연동 시점
+#추가하면 될 것 같습니다
+
+
+
+

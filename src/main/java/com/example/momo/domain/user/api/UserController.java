@@ -1,12 +1,90 @@
 package com.example.momo.domain.user.api;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.momo.domain.common.dto.ApiResponse;
+import com.example.momo.domain.user.application.UserService;
+import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
+import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
 public class UserController {
+
+	private final UserService userService;
+
+	// 특정 사용자 정보 조회
+	@GetMapping("{userId}")
+	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getUserInfo(
+		@PathVariable Long userId
+	) {
+		UserInfoResponseDto response = userService.getUserById(userId);
+		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
+	}
+
+	// 현재 로그인안 사용자 정보 조회 (추후에 수정 예정)
+	@GetMapping("/me")
+	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser(
+		@RequestHeader("user_id") Long currentUserId // TODO : 임시로 설정
+	) {
+		UserInfoResponseDto response = userService.getCurrentUser(currentUserId);
+		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
+	}
+
+	// 내 관심 카테고리 수정
+	@PatchMapping("/me/categories")
+	public ResponseEntity<ApiResponse<UserCategoryUpdateResponseDto>> updateMyCategories(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@Valid @RequestBody UserCategoryUpdateRequestDto request
+	) {
+		User user = userService.updateUserCategories(currentUserId, request.categoryIds());
+		UserCategoryUpdateResponseDto response = new UserCategoryUpdateResponseDto(user);
+		return ResponseEntity.ok(ApiResponse.success("내 관심 카테고리가 수정되었습니다.", response));
+	}
+
+	// 내 비밀번호 수정
+	@PatchMapping("/me/password")
+	public ResponseEntity<ApiResponse<Void>> updateMyPassword(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@Valid @RequestBody UserPasswordUpdateRequestDto request
+	) {
+		userService.updatePassword(currentUserId, request);
+		return ResponseEntity.ok(ApiResponse.success("비밀번호가 변경되었습니다.", null));
+	}
+
+	// 내 닉네임 수정
+	@PatchMapping("/me/nickname")
+	public ResponseEntity<ApiResponse<Void>> updateMyNickname(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@Valid @RequestBody UserNicknameUpdateRequestDto request
+	) {
+		userService.updateNickname(currentUserId, request);
+		return ResponseEntity.ok(ApiResponse.success("닉네임이 변경되었습니다.", null));
+	}
+
+	// 내 이메일 수정
+	@PatchMapping("/me/email")
+	public ResponseEntity<ApiResponse<Void>> updateMyEmail(
+		@RequestHeader("user_id") Long currentUserId, // TODO : 임시로 설정
+		@Valid @RequestBody UserEmailUpdateRequestDto request
+	) {
+		userService.updateEmail(currentUserId, request);
+		return ResponseEntity.ok(ApiResponse.success("이메일이 변경되었습니다.", null));
+	}
 }
