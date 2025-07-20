@@ -1,11 +1,13 @@
 package com.example.momo.domain.user.infra;
 
+import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
 
 public interface UserRepository {
-	Optional<User> findById(Long id);
 
 	boolean existsByEmailAndIdNot(String email, Long id);
 
@@ -26,7 +28,8 @@ public interface UserRepository {
 	 * @return 팔로워 목록
 	 */
 	List<User> findFollowersByUserId(Long userId, Pageable pageable);
-	// ----------------------------------
+
+	// Auth 쪽에서 사용
 	boolean existsByEmail(String email);
 
 	boolean existsByNickname(String nickname);

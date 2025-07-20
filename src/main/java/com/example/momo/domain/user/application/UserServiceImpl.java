@@ -29,9 +29,8 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional(readOnly = true)
 	public UserInfoResponseDto getUserById(Long userId) {
-		User user = userRepository.findById(userId)
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(UserException::userNotFound);
-
 		return new UserInfoResponseDto(user);
 	}
 
@@ -44,7 +43,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional(readOnly = true)
 	public User validateAndGetUser(Long userId) {
-		return userRepository.findById(userId)
+		return userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(UserException::userNotFound);
 	}
 
@@ -120,7 +119,7 @@ public class UserServiceImpl implements UserService {
 		User reviewer = validateAndGetUser(reviewerId);
 
 		// 3. 평가 대상자 존재 확인
-		User targetUser = userRepository.findById(targetUserId)
+		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
 			.orElseThrow(UserException::targetUserNotFound);
 
 		// 4. 같은 모임 참가 여부 확인
