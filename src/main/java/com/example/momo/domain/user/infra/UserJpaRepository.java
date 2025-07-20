@@ -23,7 +23,8 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	 * UserFollow 테이블을 통해 following_id에 해당하는 User들을 조회
 	 */
 	@Query("SELECT u FROM User u " +
-		"WHERE u.id IN (SELECT uf.followingId FROM UserFollow uf WHERE uf.followerId = :userId)")
+		"WHERE u.id IN (SELECT uf.followingId FROM UserFollow uf WHERE uf.followerId = :userId) " +
+		"AND u.isDeleted = false")
 	List<User> findFollowingsByUserId(@Param("userId") Long userId, Pageable pageable);
 
 	/**
@@ -31,7 +32,8 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	 * UserFollow 테이블을 통해 follower_id에 해당하는 User들을 조회
 	 */
 	@Query("SELECT u FROM User u " +
-		"WHERE u.id IN (SELECT uf.followerId FROM UserFollow uf WHERE uf.followingId = :userId)")
+		"WHERE u.id IN (SELECT uf.followerId FROM UserFollow uf WHERE uf.followingId = :userId) " +
+		"AND u.isDeleted = false")
 	List<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
 
 	boolean existsByEmail(String email);
