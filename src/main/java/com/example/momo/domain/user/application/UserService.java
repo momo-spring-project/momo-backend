@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -37,12 +37,12 @@ public interface UserService {
 	void unfollowUser(Long followerId, Long followingId);
 
 	/**
-	 * 특정 사용자가 팔로잉하는 사용자 목록 조회
+	 * 특정 사용자가 팔로잉하는 사용자 목록 조회 (미리 집계된 totalCount 활용)
 	 */
-	List<UserFollowInfoResponseDto> getFollowings(Long userId, Pageable pageable);
+	UserFollowListResponseDto getFollowings(Long userId, Pageable pageable);
 
 	/**
-	 * 특정 사용자를 팔로우하는 사용자 목록 조회
+	 * 특정 사용자를 팔로우하는 사용자 목록 조회 (미리 집계된 totalCount 활용)
 	 */
-	List<UserFollowInfoResponseDto> getFollowers(Long userId, Pageable pageable);
+	UserFollowListResponseDto getFollowers(Long userId, Pageable pageable);
 }

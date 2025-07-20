@@ -3,6 +3,7 @@ package com.example.momo.domain.user.application;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -104,7 +106,7 @@ public class UserServiceImpl implements UserService {
 	@Transactional
 	public void updateEmail(Long userId, UserEmailUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
-		
+
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
 			throw UserException.passwordMismatch();
 		}
@@ -286,31 +288,47 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<UserFollowInfoResponseDto> getFollowings(Long userId, Pageable pageable) {
-		// 1. 사용자 존재 확인
-		validateAndGetUser(userId);
+	public UserFollowListResponseDto getFollowings(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowingCount(); // 미리 집계된 값 사용!
 
-		// 2. 팔로잉 목록 조회
-		List<User> followings = userRepository.findFollowingsByUserId(userId, pageable);
+		// 2. 팔로잉 목록 조회 (COUNT 쿼리 없음)
+		Slice<User> followingsSlice = userRepository.findFollowingsByUserId(userId, pageable);
 
-		// 3. DTO 변환
-		return followings.stream()
+		List<UserFollowInfoResponseDto> followingsList = followingsSlice.getContent()
+			.stream()
 			.map(UserFollowInfoResponseDto::new)
 			.toList();
+
+		return new UserFollowListResponseDto(
+			followingsList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<UserFollowInfoResponseDto> getFollowers(Long userId, Pageable pageable) {
-		// 1. 사용자 존재 확인
-		validateAndGetUser(userId);
+	public UserFollowListResponseDto getFollowers(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowerCount(); // 미리 집계된 값 사용!
 
-		// 2. 팔로워 목록 조회
-		List<User> followers = userRepository.findFollowersByUserId(userId, pageable);
+		// 2. 팔로워 목록 조회 (COUNT 쿼리 없음)
+		Slice<User> followersSlice = userRepository.findFollowersByUserId(userId, pageable);
 
-		// 3. DTO 변환
-		return followers.stream()
+		List<UserFollowInfoResponseDto> followersList = followersSlice.getContent()
+			.stream()
 			.map(UserFollowInfoResponseDto::new)
 			.toList();
+
+		return new UserFollowListResponseDto(
+			followersList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
 	}
 }

@@ -1,9 +1,9 @@
 package com.example.momo.domain.user.infra;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 
 import com.example.momo.domain.user.domain.User;
 
@@ -14,20 +14,20 @@ public interface UserRepository {
 	boolean existsByNicknameAndIdNot(String nickname, Long id);
 
 	/**
-	 * 특정 사용자가 팔로잉하는 사용자들 조회 (페이징)
+	 * 특정 사용자가 팔로잉하는 사용자들 조회 (COUNT 쿼리 없음)
 	 * @param userId 조회할 사용자 ID
 	 * @param pageable 페이징 정보
-	 * @return 팔로잉하는 사용자 목록
+	 * @return 팔로잉하는 사용자 목록 (Slice)
 	 */
-	List<User> findFollowingsByUserId(Long userId, Pageable pageable);
+	Slice<User> findFollowingsByUserId(Long userId, Pageable pageable);
 
 	/**
-	 * 특정 사용자를 팔로우하는 사용자들 조회 (페이징)
+	 * 특정 사용자를 팔로우하는 사용자들 조회 (COUNT 쿼리 없음)
 	 * @param userId 조회할 사용자 ID
 	 * @param pageable 페이징 정보
-	 * @return 팔로워 목록
+	 * @return 팔로워 목록 (Slice)
 	 */
-	List<User> findFollowersByUserId(Long userId, Pageable pageable);
+	Slice<User> findFollowersByUserId(Long userId, Pageable pageable);
 
 	// Auth 쪽에서 사용
 	boolean existsByEmail(String email);

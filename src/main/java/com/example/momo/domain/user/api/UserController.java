@@ -1,7 +1,5 @@
 package com.example.momo.domain.user.api;
 
-import java.util.List;
-
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -24,7 +22,7 @@ import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
 import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
@@ -49,7 +47,7 @@ public class UserController {
 		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
 	}
 
-	// 현재 로그인안 사용자 정보 조회 (추후에 수정 예정)
+	// 현재 로그인안 사용자 정보 조회
 	@GetMapping("/me")
 	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser(
 		@AuthenticationPrincipal AuthUser authUser
@@ -133,51 +131,51 @@ public class UserController {
 			.body(ApiResponse.success("언팔로우가 완료되었습니다.", null));
 	}
 
-	// 특정 사용자의 팔로잉 목록 조회
+	// 특정 사용자의 팔로잉 목록 조회 (미리 집계된 totalCount 활용)
 	@GetMapping("/{userId}/followings")
-	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getUserFollowings(
+	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getUserFollowings(
 		@PathVariable Long userId,
 		@RequestParam(defaultValue = "0") int page,
 		@RequestParam(defaultValue = "20") int size
 	) {
 		Pageable pageable = PageRequest.of(page, size);
-		List<UserFollowInfoResponseDto> response = userService.getFollowings(userId, pageable);
+		UserFollowListResponseDto response = userService.getFollowings(userId, pageable);
 		return ResponseEntity.ok(ApiResponse.success("팔로잉 목록을 조회했습니다.", response));
 	}
 
-	// 특정 사용자의 팔로워 목록 조회
+	// 특정 사용자의 팔로워 목록 조회 (미리 집계된 totalCount 활용)
 	@GetMapping("/{userId}/followers")
-	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getUserFollowers(
+	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getUserFollowers(
 		@PathVariable Long userId,
 		@RequestParam(defaultValue = "0") int page,
 		@RequestParam(defaultValue = "20") int size
 	) {
 		Pageable pageable = PageRequest.of(page, size);
-		List<UserFollowInfoResponseDto> response = userService.getFollowers(userId, pageable);
+		UserFollowListResponseDto response = userService.getFollowers(userId, pageable);
 		return ResponseEntity.ok(ApiResponse.success("팔로워 목록을 조회했습니다.", response));
 	}
 
-	// 내 팔로잉 목록 조회
+	// 내 팔로잉 목록 조회 (미리 집계된 totalCount 활용)
 	@GetMapping("/me/followings")
-	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getMyFollowings(
+	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getMyFollowings(
 		@AuthenticationPrincipal AuthUser authUser,
 		@RequestParam(defaultValue = "0") int page,
 		@RequestParam(defaultValue = "20") int size
 	) {
 		Pageable pageable = PageRequest.of(page, size);
-		List<UserFollowInfoResponseDto> response = userService.getFollowings(authUser.getId(), pageable);
+		UserFollowListResponseDto response = userService.getFollowings(authUser.getId(), pageable);
 		return ResponseEntity.ok(ApiResponse.success("내 팔로잉 목록을 조회했습니다.", response));
 	}
 
-	// 내 팔로워 목록 조회
+	// 내 팔로워 목록 조회 (미리 집계된 totalCount 활용)
 	@GetMapping("/me/followers")
-	public ResponseEntity<ApiResponse<List<UserFollowInfoResponseDto>>> getMyFollowers(
+	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getMyFollowers(
 		@AuthenticationPrincipal AuthUser authUser,
 		@RequestParam(defaultValue = "0") int page,
 		@RequestParam(defaultValue = "20") int size
 	) {
 		Pageable pageable = PageRequest.of(page, size);
-		List<UserFollowInfoResponseDto> response = userService.getFollowers(authUser.getId(), pageable);
+		UserFollowListResponseDto response = userService.getFollowers(authUser.getId(), pageable);
 		return ResponseEntity.ok(ApiResponse.success("내 팔로워 목록을 조회했습니다.", response));
 	}
 }
