@@ -4,7 +4,7 @@ import java.util.Optional;
 
 public interface MeetingRepository {
 
-	Optional<Meeting> findByMeetingId(Long meetingId);
+	Optional<Meeting> findById(Long meetingId);
 
 	Meeting save(Meeting meeting);
 }

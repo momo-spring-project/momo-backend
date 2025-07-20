@@ -16,7 +16,7 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	private final MeetingJpaRepository meetingJpaRepository;
 
 	@Override
-	public Optional<Meeting> findByMeetingId(Long id) {
+	public Optional<Meeting> findById(Long id) {
 		return meetingJpaRepository.findById(id);
 	}
 

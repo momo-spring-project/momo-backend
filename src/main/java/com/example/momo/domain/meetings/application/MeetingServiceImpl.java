@@ -32,7 +32,7 @@ public class MeetingServiceImpl implements MeetingService {
 	public MeetingResponse updateMeeting(MeetingUpdateRequest request, Long meetingId, Long userId) {
 
 		// TODO : 예외처리
-		Meeting meeting = meetingRepository.findByMeetingId(meetingId).orElseThrow();
+		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
 		meeting.updateMeeting(request, userId);
 		return new MeetingResponse(meeting);
 	}
@@ -41,7 +41,7 @@ public class MeetingServiceImpl implements MeetingService {
 	public MeetingResponse searchMeeting(Long meetingId) {
 
 		// TODO : 예외처리
-		Meeting meeting = meetingRepository.findByMeetingId(meetingId).orElseThrow();
+		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
 		return new MeetingResponse(meeting);
 	}
 
@@ -50,7 +50,7 @@ public class MeetingServiceImpl implements MeetingService {
 	public MeetingResponse updateMeetingStatus(Long meetingId, MeetingStatus status) {
 
 		// TODO : 예외처리
-		Meeting meeting = meetingRepository.findByMeetingId(meetingId).orElseThrow();
+		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
 		meeting.updateStatus(status);
 		return new MeetingResponse(meeting);
 	}
