@@ -1,10 +1,9 @@
 package com.example.momo.domain.meetings.exception;
 
-import lombok.Getter;
+import com.example.momo.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
-@Getter
-public enum MeetingExceptionCode {
+public enum MeetingExceptionCode implements ErrorCode {
 	// 400
 	MEETING_IS_UNAVAILABLE(HttpStatus.BAD_REQUEST, "Meeting is unavailable"),
 
@@ -30,5 +29,15 @@ public enum MeetingExceptionCode {
 	MeetingExceptionCode (HttpStatus httpStatus, String message) {
 		this.httpStatus = httpStatus;
 		this.message = message;
+	}
+
+	@Override
+	public String getMessage() {
+		return this.message;
+	}
+
+	@Override
+	public HttpStatus getStatus() {
+		return this.httpStatus;
 	}
 }

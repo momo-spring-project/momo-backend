@@ -55,8 +55,8 @@ public class MeetingParticipantController {
 	public ResponseEntity<ApiResponse<ParticipantResponseDto>> updateParticipantStatus(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId,
-		@RequestParam(required = false) double lat,
-		@RequestParam(required = false) double lng
+		@RequestParam(required = false) Double lat,
+		@RequestParam(required = false) Double lng
 	) {
 		lat = 37.298219;
 		lng = 126.966289;

@@ -13,14 +13,12 @@ import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.infra.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeetingParticipantServiceImpl implements MeetingParticipantService {
@@ -74,6 +72,10 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Long> getParticipants(Long meetingId) {
+		if(!meetingRepository.existsById(meetingId)) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
+		}
+
 		return meetingParticipantRepository.findParticipantsIdsByMeetingId(meetingId);
 	}
 

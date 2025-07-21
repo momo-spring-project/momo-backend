@@ -19,4 +19,9 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	public Optional<Meeting> findById(Long id) {
 		return meetingJpaRepository.findById(id);
 	}
+
+	@Override
+	public boolean existsById(Long id) {
+		return meetingJpaRepository.existsById(id);
+	}
 }

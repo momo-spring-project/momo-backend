@@ -4,4 +4,6 @@ import java.util.Optional;
 
 public interface MeetingRepository {
 	Optional<Meeting> findById(Long id);
+
+	boolean existsById(Long id);
 }
