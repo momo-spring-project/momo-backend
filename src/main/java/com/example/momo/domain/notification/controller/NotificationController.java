@@ -32,15 +32,18 @@ public class NotificationController {
 			ApiResponse.success("알림 정보 조회.", notificationService.getNotifications(authUser.getId())));
 	}
 
-	@PostMapping("/notifications")
-	public ResponseEntity<ApiResponse<NotificationResponse>> saveNotification(
+	//todo : 관리자용 로직. 추후 관리자 업데이트 시 재사용 예정
+	@PostMapping("/admin/notifications")
+	public ResponseEntity<ApiResponse<Void>> saveNotification(
 		@RequestBody NotificationMeetingEvent event) {
-		return ResponseEntity.ok(ApiResponse.success("알림 정보 저장", notificationService.saveNotification(event)));
+		notificationService.saveNotification(event);
+		return ResponseEntity.ok(ApiResponse.success("알림 정보 저장", null));
 	}
 
-	@PostMapping("/admin/notifications")
-	public ResponseEntity<String> sendToUser(@RequestBody NotificationMeetingEvent event) {
+	//todo : 관리자용 로직. 추후 관리자 업데이트 시 재사용 예정
+	@PostMapping("/admin/notifications/send")
+	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationMeetingEvent event) {
 		notificationService.sendNotification(event);  // WebSocket 푸시 실행
-		return ResponseEntity.ok("전송됨: " + event.content());
+		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + event.content(), null));
 	}
 }

@@ -17,9 +17,8 @@ public interface NotificationService {
 	 * 알림 정보를 데이터베이스에 저장합니다.
 	 *
 	 * @param command 저장할 알림 정보를 담은 객체
-	 * @return 저장된 알림 정보 
 	 */
-	NotificationResponse saveNotification(NotificationMeetingEvent command);
+	void saveNotification(NotificationMeetingEvent command);
 
 	/**
 	 * 특정 사용자의 알림 목록을 조회합니다.

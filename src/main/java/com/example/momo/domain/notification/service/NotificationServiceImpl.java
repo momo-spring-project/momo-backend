@@ -2,6 +2,7 @@ package com.example.momo.domain.notification.service;
 
 import java.util.List;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,9 +35,14 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public NotificationResponse saveNotification(NotificationMeetingEvent command) {
-
-		return new NotificationResponse(notificationRepository.save(command.toEntity()));
+	public void saveNotification(NotificationMeetingEvent command) {
+		try {
+			notificationRepository.save(command.toEntity());
+		} catch (DataIntegrityViolationException e) {
+			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
+		} catch (Exception e) {
+			log.error("알림 저장 실패: {}", e.getMessage(), e);
+		}
 	}
 
 	@Override
