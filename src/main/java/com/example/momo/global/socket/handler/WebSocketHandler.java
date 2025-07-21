@@ -13,8 +13,9 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.example.momo.global.socket.dto.NotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -26,13 +27,18 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WebSocketHandler extends TextWebSocketHandler {
 	// userId → session 매핑 저장소
 	private final Map<Long, WebSocketSession> userSessions = new ConcurrentHashMap<>();
 
 	//Json 타입 변경
 	private final ObjectMapper objectMapper;
+
+	public WebSocketHandler() {
+		this.objectMapper = new ObjectMapper()
+			.registerModule(new JavaTimeModule())
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+	}
 
 	/**
 	 * 클라이언트와 WebSocket 연결이 성공적으로 수립되었을 때 호출됩니다.
