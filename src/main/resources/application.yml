@@ -19,3 +19,9 @@ spring:
 jwt:
   secret:
     key: ${SECRET_KEY}
+
+toss:
+  payments:
+    secret-key: ${TOSS_SECRET_KEY}
+    client-key: ${TOSS_CLIENT_KEY}
+    base-url: ${TOSS_BASE_URL}
