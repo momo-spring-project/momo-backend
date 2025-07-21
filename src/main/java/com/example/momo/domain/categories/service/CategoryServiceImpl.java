@@ -1,7 +1,5 @@
 package com.example.momo.domain.categories.service;
 
-import com.example.momo.domain.auth.dto.AuthUser;
-import com.example.momo.domain.auth.dto.UserRole;
 import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
 import com.example.momo.domain.categories.exception.CategoryException;
 import com.example.momo.domain.categories.exception.CategoryExceptionCode;
@@ -25,9 +23,7 @@ public class CategoryServiceImpl implements CategoryService{
 	// Category 추가
 	@Override
 	@Transactional
-	public CategoryResponseDto addCategory(AuthUser user, CategoryAddRequestDto request) {
-
-		isAdmin(user);
+	public CategoryResponseDto addCategory(CategoryAddRequestDto request) {
 
 		Category category = new Category(request.getCategoryName(), request.getDescription());
 		Category savedCategory = categoryRepository.save(category);
@@ -66,9 +62,7 @@ public class CategoryServiceImpl implements CategoryService{
 	// Category 수정
 	@Override
 	@Transactional
-	public CategoryResponseDto updateCategory(AuthUser user, Integer id, CategoryUpdateRequestDto request) {
-
-		isAdmin(user);
+	public CategoryResponseDto updateCategory(Integer id, CategoryUpdateRequestDto request) {
 
 		// 입력 잘못됐을 경우 예외처리(공백 포함)
 		if(request.getCategoryName() != null && !StringUtils.hasText(request.getCategoryName())) {
@@ -95,11 +89,5 @@ public class CategoryServiceImpl implements CategoryService{
 		if(request.getDescription() != null) category.updateDescription(request.getDescription());
 
 		return new CategoryResponseDto(category);
-	}
-
-	private void isAdmin(AuthUser user) {
-		if(!user.getRole().equals(UserRole.ADMIN.toString())) {
-			throw new CategoryException(CategoryExceptionCode.INSUFFICIENT_PERMISSION);
-		}
 	}
 }

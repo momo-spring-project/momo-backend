@@ -1,6 +1,5 @@
 package com.example.momo.domain.categories.controller;
 
-import com.example.momo.domain.auth.dto.AuthUser;
 import com.example.momo.domain.categories.dto.CategoryAddRequestDto;
 import com.example.momo.domain.categories.dto.CategoryResponseDto;
 import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
@@ -9,7 +8,6 @@ import com.example.momo.domain.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,10 +23,9 @@ public class CategoryController {
 	// 카테고리 추가
 	@PostMapping
 	public ResponseEntity<ApiResponse<CategoryResponseDto>> addCategory(
-		@AuthenticationPrincipal AuthUser authUser,
 		@Valid @RequestBody CategoryAddRequestDto request
 		) {
-		CategoryResponseDto responseData = categoryService.addCategory(authUser, request);
+		CategoryResponseDto responseData = categoryService.addCategory(request);
 		ApiResponse<CategoryResponseDto> response = ApiResponse.success("카테고리 추가를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
@@ -56,11 +53,10 @@ public class CategoryController {
 	// 카테고리 수정
 	@PatchMapping("/{categoryId}")
 	public ResponseEntity<ApiResponse<CategoryResponseDto>> updateCategory(
-		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Integer categoryId,
 		@RequestBody CategoryUpdateRequestDto request
 	) {
-		CategoryResponseDto responseData = categoryService.updateCategory(authUser, categoryId, request);
+		CategoryResponseDto responseData = categoryService.updateCategory(categoryId, request);
 		ApiResponse<CategoryResponseDto> response = ApiResponse.success("카테고리 수정을 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}

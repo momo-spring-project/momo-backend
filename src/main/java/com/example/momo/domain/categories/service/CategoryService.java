@@ -8,11 +8,11 @@ import com.example.momo.domain.categories.dto.CategoryUpdateRequestDto;
 import java.util.List;
 
 public interface CategoryService {
-	CategoryResponseDto addCategory(AuthUser authUser, CategoryAddRequestDto request);
+	CategoryResponseDto addCategory(CategoryAddRequestDto request);
 
 	List<CategoryResponseDto> getCategories(List<Integer> categoryIds);
 
-	CategoryResponseDto updateCategory(AuthUser authUser, Integer categoryId, CategoryUpdateRequestDto request);
+	CategoryResponseDto updateCategory(Integer categoryId, CategoryUpdateRequestDto request);
 
 	CategoryResponseDto getCategory(Integer categoryId);
 }
