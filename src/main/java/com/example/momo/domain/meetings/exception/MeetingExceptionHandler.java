@@ -1,9 +1,11 @@
 package com.example.momo.domain.meetings.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class MeetingExceptionHandler {
 
@@ -12,6 +14,7 @@ public class MeetingExceptionHandler {
 		MeetingExceptionCode exceptionCode = e.getExceptionCode();
 		MeetingExceptionResponseDto responseDto =
 			new MeetingExceptionResponseDto(exceptionCode.name(), e.getMessage());
-		return new ResponseEntity<>(responseDto, exceptionCode.getHttpStatus());
+		log.info("Exception caught in MeetingExceptionHandler");
+		return new ResponseEntity<>(responseDto, exceptionCode.getStatus());
 	}
 }

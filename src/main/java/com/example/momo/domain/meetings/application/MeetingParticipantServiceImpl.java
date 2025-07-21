@@ -1,30 +1,29 @@
 package com.example.momo.domain.meetings.application;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.example.momo.domain.meetings.Haversine;
 import com.example.momo.domain.meetings.domain.Meeting;
 import com.example.momo.domain.meetings.domain.MeetingParticipant;
-import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import com.example.momo.domain.meetings.domain.MeetingRepository;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.exception.MeetingException;
 import com.example.momo.domain.meetings.exception.MeetingExceptionCode;
+import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.infra.UserJpaRepository;
-
+import com.example.momo.domain.user.infra.UserRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MeetingParticipantServiceImpl implements MeetingParticipantService {
 
-	private final UserJpaRepository userRepository;
+	private final UserRepository userRepository;
 	private final MeetingRepository meetingRepository;
 	private final MeetingParticipantRepository meetingParticipantRepository;
 
@@ -38,21 +37,19 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
 
 		// Todo 구조 전환시 유저 조회 예외처리 수정 또는 제거 필요함
-		User user = userRepository.findById(userId)
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new RuntimeException("user not found"));
 
 		// 이미 참가했으면 예외처리
-		if (!meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+		if(meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
 
 		// 모임 활성화 확인
-		if (!isMeetingOpen(meeting)) {
-			throw new MeetingException(MeetingExceptionCode.MEETING_IS_UNAVAILABLE);
-		}
+		isMeetingOpen(meeting);
 
 		// 유저 자격 확인
-		if (user.getScore() < meeting.getMinEnterScore()) {
+		if(user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
@@ -60,7 +57,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 
 		// Todo 동시성 처리 필요 ( 낙관적 락 고려중 )
 		// 최대 인원 넘으면 예외처리
-		if (meeting.getParticipants().size() >= meeting.getMaxParticipantsCount()) {
+		if(meeting.getParticipants().size() >= meeting.getMaxParticipantsCount()) {
 			// 환불 알고리즘
 			throw new RuntimeException("Meeting is full");
 		}
@@ -75,9 +72,14 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	@Override
 	@Transactional(readOnly = true)
 	public List<Long> getParticipants(Long meetingId) {
+		if(!meetingRepository.existsById(meetingId)) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
+		}
+
 		return meetingParticipantRepository.findParticipantsIdsByMeetingId(meetingId);
 	}
 
+	// Todo 환불 추가
 	@Override
 	@Transactional
 	public ParticipantResponseDto cancelParticipant(Long userId, Long meetingId) {
@@ -90,24 +92,48 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 		return new ParticipantResponseDto(participant);
 	}
 
+	@Override
+	@Transactional
+	public ParticipantResponseDto updateParticipantStatus(Long userId, Long meetingId, double lat, double lng) {
+
+		Meeting meeting = meetingRepository.findById(meetingId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+
+		// 모임 활성화 확인
+		isMeetingOpen(meeting);
+
+		Double destLat = meeting.getLatitude();
+		Double destLng = meeting.getLongitude();
+
+		// 위치가 목적지 근처인지 확인
+		if(!Haversine.inDistance(destLat, destLng, lat, lng)) {
+			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
+		}
+
+		MeetingParticipant participant = meetingParticipantRepository.findByMeetingIdAndUserId(meetingId, userId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
+
+		participant.updateAttendanceStatus();
+
+		return new ParticipantResponseDto(participant);
+	}
+
 	// 모임이 활성화 되어있는 상태인지 확인
-	private boolean isMeetingOpen(Meeting meeting) {
+	private void isMeetingOpen(Meeting meeting) {
 
 		// 시작 시간 넘김
-		if (LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
-			return false;
+		if(LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
+			throw new MeetingException(MeetingExceptionCode.ALREADY_STARTED_MEETING);
 		}
 
 		// 모임 상태 FINISHED
-		if (meeting.getStatus() == MeetingStatus.FINISHED) {
-			return false;
+		if(meeting.getStatus() == MeetingStatus.FINISHED) {
+			throw new MeetingException(MeetingExceptionCode.ALREADY_FINISHED_MEETING);
 		}
 
 		// 삭제된 모임
-		if (meeting.getIsDeleted()) {
-			return false;
+		if(meeting.getIsDeleted()) {
+			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
 		}
-
-		return true;
 	}
 }
