@@ -37,7 +37,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
 
 		// Todo 구조 전환시 유저 조회 예외처리 수정 또는 제거 필요함
-		User user = userRepository.findById(userId)
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new RuntimeException("user not found"));
 
 		// 이미 참가했으면 예외처리
