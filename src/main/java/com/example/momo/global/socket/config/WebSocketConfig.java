@@ -6,6 +6,7 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 import com.example.momo.global.socket.handler.WebSocketHandler;
+import com.example.momo.global.utils.JwtHandshakeInterceptor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
 	private final WebSocketHandler handler;
+	private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
 
 	/**
 	 * WebSocket 핸들러를 특정 엔드포인트에 등록합니다.
@@ -31,6 +33,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 		log.info("WebSocket 연결 시작");
 		registry.addHandler(handler, "/ws")
+			.addInterceptors(jwtHandshakeInterceptor)
 			.setAllowedOriginPatterns("*");
 	}
 }

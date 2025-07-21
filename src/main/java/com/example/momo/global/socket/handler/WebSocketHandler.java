@@ -2,7 +2,6 @@ package com.example.momo.global.socket.handler;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.lang.NonNull;
@@ -35,13 +34,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
 	/**
 	 * 클라이언트와 WebSocket 연결이 성공적으로 수립되었을 때 호출됩니다.
-	 * 사용자 ID를 쿼리 파라미터에서 추출하고 세션을 매핑에 저장합니다.
+	 * 핸드셰이크 인터셉터에서 추출해 세션에 저장된 사용자 ID를 가져와,
+	 * 해당 사용자와 세션을 매핑에 저장합니다.
 	 *
-	 * @param session 연결된 클라이언트의 세션
+	 * @param session 연결된 클라이언트의 WebSocket 세션
 	 */
 	@Override
 	public void afterConnectionEstablished(@NonNull WebSocketSession session) {
-		Long userId = extractUserIdFromQuery(session);
+		Long userId = (Long)session.getAttributes().get("userId");
 		userSessions.put(userId, session);
 	}
 
@@ -90,17 +90,5 @@ public class WebSocketHandler extends TextWebSocketHandler {
 				log.warn("웹소켓 메시지 전송 실패: userId={}, error={}", message.userId(), e.getMessage());
 			}
 		}
-	}
-
-	/**
-	 * WebSocket 연결 URI 의 쿼리 파라미터에서 userId를 추출합니다.
-	 * 예: /ws?userId=33 → 33 추출
-	 *
-	 * @param session 연결된 세션
-	 * @return 추출된 사용자 ID
-	 */
-	private Long extractUserIdFromQuery(WebSocketSession session) {
-		String query = Objects.requireNonNull(session.getUri()).getQuery();
-		return Long.parseLong(query.split("=")[1]);
 	}
 }
