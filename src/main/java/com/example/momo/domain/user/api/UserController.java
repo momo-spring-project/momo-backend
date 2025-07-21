@@ -21,7 +21,6 @@ import com.example.momo.domain.user.application.UserService;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
-import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
@@ -85,16 +84,6 @@ public class UserController {
 	) {
 		userService.updateNickname(authUser.getId(), request);
 		return ResponseEntity.ok(ApiResponse.success("닉네임이 변경되었습니다.", null));
-	}
-
-	// 내 이메일 수정
-	@PatchMapping("/me/email")
-	public ResponseEntity<ApiResponse<Void>> updateMyEmail(
-		@AuthenticationPrincipal AuthUser authUser,
-		@Valid @RequestBody UserEmailUpdateRequestDto request
-	) {
-		userService.updateEmail(authUser.getId(), request);
-		return ResponseEntity.ok(ApiResponse.success("이메일이 변경되었습니다.", null));
 	}
 
 	// 특정 사용자 평가하기
