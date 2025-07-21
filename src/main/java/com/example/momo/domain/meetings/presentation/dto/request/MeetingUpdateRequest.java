@@ -17,7 +17,7 @@ public class MeetingUpdateRequest {
 	@NotBlank(message = "설명은 필수 사항입니다.")
 	private String description;
 
-	private int categoryId;
+	private Integer categoryId;
 
 	@NotNull(message = "최대 참여자수는 필수 사항입니다.")
 	private int maxParticipantsCount;

@@ -19,10 +19,10 @@ public class MeetingCreateRequest {
 	@NotBlank(message = "설명은 필수 사항입니다.")
 	private String description;
 
-	private int categoryId;
+	private Integer categoryId;
 
 	@NotNull(message = "최대 참여자수는 필수 사항입니다.")
-	private int maxParticipantsCount;
+	private Integer maxParticipantsCount;
 
 	@NotNull(message = "모임 날짜는 필수 사항입니다.")
 	private LocalDateTime meetingDate;
@@ -31,7 +31,7 @@ public class MeetingCreateRequest {
 	private LocalDateTime meetingEndDate;
 
 	@NotBlank(message = "모임 위치는 필수 사항입니다.")
-	private String LocationName;
+	private String locationName;
 
 	@NotNull(message = "위도는 필수 사항입니다.")
 	private Double latitude;
@@ -53,7 +53,7 @@ public class MeetingCreateRequest {
 			.maxParticipantsCount(this.maxParticipantsCount)
 			.meetingDate(this.meetingDate)
 			.meetingEndDate(this.meetingEndDate)
-			.locationName(this.LocationName)
+			.locationName(this.locationName)
 			.latitude(this.latitude)
 			.longitude(this.longitude)
 			.minEnterScore(Optional.ofNullable(this.minEnterScore).orElse(0.0))

@@ -14,7 +14,7 @@ public class MeetingResponse {
 	private final Long hostUserId;
 	private final String title;
 	private final String description;
-	private final int categoryId;
+	private final Integer categoryId;
 	private final int currentParticipantsCount;
 	private final int maxParticipantsCount;
 	private final LocalDateTime meetingDate;
