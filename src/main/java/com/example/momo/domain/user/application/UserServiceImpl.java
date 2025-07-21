@@ -1,5 +1,6 @@
 package com.example.momo.domain.user.application;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Pageable;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.momo.domain.categories.dto.CategoryResponseDto;
 import com.example.momo.domain.categories.exception.CategoryException;
 import com.example.momo.domain.categories.service.CategoryService;
+import com.example.momo.domain.meetings.infra.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
@@ -33,7 +35,9 @@ public class UserServiceImpl implements UserService {
 	private final UserRepository userRepository;
 	private final CategoryService categoryService;
 	private final BCryptPasswordEncoder passwordEncoder;
+	private final MeetingParticipantJpaRepository meetingParticipantRepository;
 
+	// === 사용자 정보 조회 ===
 	@Override
 	@Transactional(readOnly = true)
 	public UserInfoResponseDto getUserById(Long userId) {
@@ -55,6 +59,7 @@ public class UserServiceImpl implements UserService {
 			.orElseThrow(UserException::userNotFound);
 	}
 
+	// === 사용자 정보 수정 ===
 	@Override
 	@Transactional
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
@@ -118,6 +123,7 @@ public class UserServiceImpl implements UserService {
 		user.updateEmail(request.email());
 	}
 
+	// === 사용자 평가 및 점수 집계 로직 ===
 	@Override
 	@Transactional
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
@@ -133,11 +139,14 @@ public class UserServiceImpl implements UserService {
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
 			.orElseThrow(UserException::targetUserNotFound);
 
-		// 4. 같은 모임 참가 여부 확인
-		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
+		// 4. 모임 존재 확인
+		meetingParticipantRepository.findById(request.meetingId())
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 모임입니다."));
+
+		// 5. 같은 모임 참가 여부 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
-		// 5. 중복 평가 확인 - targetUser의 ratings에서 확인
+		// 6. 중복 평가 확인 - targetUser의 ratings에서 확인
 		boolean alreadyRated = targetUser.getRatings().stream()
 			.anyMatch(rating ->
 				rating.getReviewerId().equals(reviewerId) &&
@@ -148,7 +157,7 @@ public class UserServiceImpl implements UserService {
 			throw UserException.duplicateRating();
 		}
 
-		// 6. 평가 생성 및 targetUser의 ratings에 추가
+		// 7. 평가 생성 및 targetUser의 ratings에 추가
 		UserRating userRating = new UserRating(
 			reviewerId,
 			targetUserId,
@@ -162,10 +171,15 @@ public class UserServiceImpl implements UserService {
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
-		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
-		// 현재는 임시로 모든 경우를 허용
-		// 실제 구현시에는 MeetingParticipant 테이블을 조회하여
-		// 두 사용자가 모두 해당 모임에 참가했는지 확인해야 함
+		// 평가자가 해당 모임에 참가했는지 확인
+		boolean reviewerParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, reviewerId);
+
+		// 평가 대상자가 해당 모임에 참가했는지 확인
+		boolean targetParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, targetUserId);
+
+		if (!reviewerParticipated || !targetParticipated) {
+			throw UserException.notSameMeetingParticipants();
+		}
 	}
 
 	@Override
@@ -176,11 +190,11 @@ public class UserServiceImpl implements UserService {
 		// 1. 평점 점수 계산 (60%)
 		double ratingScore = calculateRatingScore(user);
 
-		// 2. 참석률 점수 계산 (30%) - TODO: Meeting 도메인 연동 후 구현
-		double attendanceScore = calculateAttendanceScore(user);
+		// 2. 참석률 점수 계산 (30%)
+		double attendanceScore = calculateAttendanceScore(userId);
 
-		// 3. 활동도 점수 계산 (10%) - TODO: Meeting 도메인 연동 후 구현
-		double activityScore = calculateActivityScore(user);
+		// 3. 활동도 점수 계산 (10%)
+		double activityScore = calculateActivityScore(userId);
 
 		// 4. 총 점수 계산
 		double totalScore = ratingScore + attendanceScore + activityScore;
@@ -211,24 +225,52 @@ public class UserServiceImpl implements UserService {
 
 	/**
 	 * 참석률 기반 점수 계산 (30%)
-	 * TODO: Meeting 도메인과 연동하여 구현
+	 * 신청한 모임 대비 실제 참석한 모임의 비율
 	 */
-	private double calculateAttendanceScore(User user) {
-		// 임시로 기본 점수 반환
-		// 실제 구현시에는 모임 신청 수 대비 실제 참석 수 계산
-		return 21.0; // 70% 참석률 가정
+	private double calculateAttendanceScore(Long userId) {
+		// 사용자가 참가 신청한 총 모임 수
+		long totalParticipations = meetingParticipantRepository.countByUserId(userId);
+
+		if (totalParticipations == 0) {
+			// 참가한 모임이 없는 신규 사용자는 기본 점수 (70% 가정)
+			return 21.0;
+		}
+
+		// 실제 참석한 모임 수 (attendanceStatus = true)
+		long attendedMeetings = meetingParticipantRepository.countByUserIdAndAttendanceStatusTrue(userId);
+
+		// 참석률 계산
+		double attendanceRate = (double)attendedMeetings / totalParticipations;
+
+		// 30점 만점으로 변환
+		return attendanceRate * 30.0;
 	}
 
 	/**
 	 * 활동도 기반 점수 계산 (10%)
-	 * TODO: Meeting 도메인과 연동하여 구현
+	 * 최근 3개월 모임 참가 횟수 기준
 	 */
-	private double calculateActivityScore(User user) {
-		// 임시로 기본 점수 반환
-		// 실제 구현시에는 최근 3개월 모임 참가 횟수 계산
-		return 7.0; // 월 평균 1-2회 활동 가정
+	private double calculateActivityScore(Long userId) {
+		// 최근 3개월 기준 날짜
+		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+
+		// 최근 3개월간 참가한 모임 수
+		long recentParticipations = meetingParticipantRepository.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
+
+		// 월 평균 참가 횟수 계산
+		double monthlyAverage = recentParticipations / 3.0;
+
+		// 활동도 점수 계산
+		if (monthlyAverage >= 2) {
+			return 10.0; // 월 평균 2회 이상
+		} else if (monthlyAverage >= 1) {
+			return 7.0;  // 월 평균 1-2회
+		} else {
+			return 3.0;  // 월 평균 1회 미만
+		}
 	}
 
+	// === 팔로우 기능 ===
 	@Override
 	@Transactional
 	public void followUser(Long followerId, Long followingId) {
