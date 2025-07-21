@@ -47,13 +47,13 @@ public class Meeting extends BaseEntity {
 	private String description;
 
 	@Column(name = "category_id")
-	private int categoryId;
+	private Integer categoryId;
 
 	@Column(nullable = false, name = "current_participants_count")
 	private int currentParticipantsCount;
 
 	@Column(nullable = false, name = "max_participants_count")
-	private int maxParticipantsCount;
+	private Integer maxParticipantsCount;
 
 	@Column(nullable = false, name = "meeting_date")
 	private LocalDateTime meetingDate;
@@ -78,14 +78,14 @@ public class Meeting extends BaseEntity {
 	private List<MeetingParticipant> participants = new ArrayList<>();
 
 	@Column(nullable = false, name = "participation_fee")
-	private int participationFee = 0;
+	private int participationFee;
 
 	// TODO : 추후 Converter 변경 고려
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, name = "status")
 	private MeetingStatus status; // 모집중, 모집완료
 
-	public void updateMeeting(MeetingUpdateRequest request, Long userId) {
+	public void updateMeeting(MeetingUpdateRequest request) {
 		this.title = request.getTitle();
 		this.description = request.getDescription();
 		this.categoryId = request.getCategoryId();
