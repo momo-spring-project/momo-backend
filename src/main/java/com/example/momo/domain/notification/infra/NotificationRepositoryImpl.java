@@ -16,8 +16,9 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 	private final NotificationJpaRepository notificationJpaRepository;
 
 	@Override
-	public Notification save(Notification notification) {
-		return notificationJpaRepository.save(notification);
+	public void save(Notification notification) {
+
+		notificationJpaRepository.save(notification);
 	}
 
 	@Override

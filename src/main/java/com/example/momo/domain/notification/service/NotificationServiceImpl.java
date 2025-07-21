@@ -26,18 +26,10 @@ public class NotificationServiceImpl implements NotificationService {
 	private final NotificationSender notificationSender;
 
 	@Override
-	@Transactional
-	public void processNotification(NotificationMeetingEvent command) {
-
-		saveNotification(command);
-		sendNotification(command);
-	}
-
-	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void saveNotification(NotificationMeetingEvent command) {
+	public void saveNotification(NotificationMeetingEvent event) {
 		try {
-			notificationRepository.save(command.toEntity());
+			notificationRepository.save(event.toEntity());
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
@@ -52,8 +44,8 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
-	public void sendNotification(NotificationMeetingEvent command) {
+	public void sendNotification(NotificationMeetingEvent event) {
 
-		notificationSender.send(command.toMessage());
+		notificationSender.send(event.toMessage());
 	}
 }

@@ -6,7 +6,7 @@ import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.domain.NotificationResponse;
 
 public interface NotificationRepository {
-	Notification save(Notification notification);
+	void save(Notification notification);
 
 	List<NotificationResponse> findAllByUserId(Long userId);
 }
