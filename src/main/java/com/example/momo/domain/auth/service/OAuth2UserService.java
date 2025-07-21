@@ -62,14 +62,14 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 			);
 			userRepository.save(user);
 			userSocialRepository.save(
-				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.valueOf(registrationId)));
+				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
 			log.info("계정({})을 생성하고 {} 계정을 연동합니다.", user.getEmail(), registrationId);
 
 			// 연동된 계정은 없지만 해당 이메일로 회원가입 되어있을 때 자동 연동
 		} else if (userSocial == null && !optionalUser.isEmpty()) {
 			user = optionalUser.get();
 			userSocialRepository.save(
-				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.valueOf(registrationId)));
+				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
 			log.info("계정({})에 {} 계정을 연동합니다.", user.getEmail(), registrationId);
 			// 연동된 계정이 있을 때
 		} else {
