@@ -31,7 +31,17 @@ public class CategoryServiceImpl implements CategoryService{
 		return new CategoryResponseDto(savedCategory.getId(), savedCategory.getName(), category.getDescription());
 	}
 
-	// 카테고리 조회
+	// 단일 카테고리 조회
+	@Override
+	public CategoryResponseDto getCategory(Integer categoryId) {
+
+		Category category = categoryRepository.findById(categoryId)
+			.orElseThrow(() -> new CategoryException(CategoryExceptionCode.CATEGORY_NOT_FOUND));
+
+		return new CategoryResponseDto(category);
+	}
+
+	// 카테고리 (다수, 전체)조회
 	@Override
 	@Transactional(readOnly = true)
 	public List<CategoryResponseDto> getCategories(List<Integer> categoryIds) {

@@ -31,4 +31,9 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	public Page<Meeting> findAllByTitleContaining(String title, Pageable pageable) {
 		return meetingJpaRepository.findAllByTitleContainingAndIsDeletedFalse(title, pageable);
 	}
+
+	@Override
+	public boolean existsById(Long id) {
+		return meetingJpaRepository.existsById(id);
+	}
 }

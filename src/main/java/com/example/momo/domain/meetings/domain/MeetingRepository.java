@@ -12,4 +12,6 @@ public interface MeetingRepository {
 	Meeting save(Meeting meeting);
 
 	Page<Meeting> findAllByTitleContaining(String title, Pageable pageable);
+
+	boolean existsById(Long id);
 }

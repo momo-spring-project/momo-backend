@@ -32,7 +32,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         // Access 토큰과 Refresh 토큰 발행
-        String access = jwtUtil.createToken("access", response.getId(),  "USER", JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
+        String access = jwtUtil.createToken("access", response.getId(),  "ADMIN", JwtUtil.ACCESS_TOKEN_EXPIRE_TIME_MS);
         String refresh = jwtUtil.createToken("refresh", response.getId(),  "USER",  JwtUtil.REFRESH_TOKEN_EXPIRE_TIME_MS);
 
 
