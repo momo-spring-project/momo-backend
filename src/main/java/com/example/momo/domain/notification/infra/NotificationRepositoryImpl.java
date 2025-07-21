@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.notification.domain.Notification;
-import com.example.momo.domain.notification.domain.NotificationResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +21,7 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 	}
 
 	@Override
-	public List<NotificationResponse> findAllByUserId(Long userId) {
+	public List<Notification> findAllByUserId(Long userId) {
 		return notificationJpaRepository.findAllByUserId(userId);
 	}
 }

@@ -40,7 +40,9 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	public List<NotificationResponse> getNotifications(Long userId) {
 
-		return notificationRepository.findAllByUserId(userId);
+		return notificationRepository.findAllByUserId(userId).stream()
+			.map(NotificationResponse::from)
+			.toList();
 	}
 
 	@Override
