@@ -32,6 +32,11 @@ public class UserRepositoryImpl implements UserRepository {
 	}
 
 	@Override
+	public int deleteUserFollow(Long followerId, Long followingId) {
+		return userJpaRepository.deleteUserFollow(followerId, followingId);
+	}
+
+	@Override
 	public boolean existsByEmail(String email) {
 		return userJpaRepository.existsByEmail(email);
 	}
