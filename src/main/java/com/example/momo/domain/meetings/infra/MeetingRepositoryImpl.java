@@ -2,6 +2,8 @@ package com.example.momo.domain.meetings.infra;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meetings.domain.Meeting;
@@ -17,11 +19,16 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 
 	@Override
 	public Optional<Meeting> findById(Long id) {
-		return meetingJpaRepository.findById(id);
+		return meetingJpaRepository.findByIdAndIsDeletedFalse(id);
 	}
 
 	@Override
 	public Meeting save(Meeting meeting) {
 		return meetingJpaRepository.save(meeting);
+	}
+
+	@Override
+	public Page<Meeting> findAllByTitleContaining(String title, Pageable pageable) {
+		return meetingJpaRepository.findAllByTitleContaining(title, pageable);
 	}
 }
