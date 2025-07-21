@@ -1,6 +1,7 @@
 package com.example.momo.domain.auth.dto;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class NaverResponse implements OAuth2Response {
 	private final Map<String, Object> attribute;
@@ -27,7 +28,7 @@ public class NaverResponse implements OAuth2Response {
 
 	@Override
 	public String getNickname() {
-		return attribute.get("name").toString();
+		return "NAVER:" + UUID.randomUUID().toString().substring(0, 18);
 	}
 
 	@Override
