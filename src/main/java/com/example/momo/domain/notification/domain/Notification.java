@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.entity;
+package com.example.momo.domain.notification.domain;
 
 import com.example.momo.domain.common.entity.BaseCreateEntity;
 
@@ -7,11 +7,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Table(name = "notification")
+@Table(
+	name = "notifications",
+	indexes = {
+		@Index(name = "idx_notification_user_id_id_desc", columnList = "user_id, id DESC")
+	}
+)
 @Getter
 @Entity
 @NoArgsConstructor

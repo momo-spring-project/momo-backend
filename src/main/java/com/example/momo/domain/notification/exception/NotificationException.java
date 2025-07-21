@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.entity.exception;
+package com.example.momo.domain.notification.exception;
 
 import com.example.momo.global.exception.BaseException;
 import com.example.momo.global.exception.ErrorCode;
