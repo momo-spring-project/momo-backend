@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingCreateRequest;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingUpdateRequest;
+import com.example.momo.domain.meetings.presentation.dto.response.MeetingPagingResponse;
 import com.example.momo.domain.meetings.presentation.dto.response.MeetingResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,21 @@ public class MeetingServiceImpl implements MeetingService {
 	}
 
 	@Override
-	public MeetingResponse updateMeetingStatus(Long meetingId, MeetingStatus status) {
+	public MeetingResponse updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId) {
 
-		return meetingCoreService.updateMeetingStatus(meetingId, status);
+		return meetingCoreService.updateMeetingStatus(meetingId, status, userId);
+	}
+
+	@Override
+	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, int page, int size) {
+
+		return meetingCoreService.getMeetings(title, page, size);
+	}
+
+	@Override
+	public void deleteMeeting(Long meetingId, Long userId) {
+
+		meetingCoreService.deleteMeeting(meetingId, userId);
 	}
 
 }
