@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.example.momo.domain.common.entity.BaseEntity;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
+import com.example.momo.domain.meetings.presentation.dto.request.MeetingUpdateRequest;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -46,13 +47,13 @@ public class Meeting extends BaseEntity {
 	private String description;
 
 	@Column(name = "category_id")
-	private Long categoryId;
+	private Integer categoryId;
 
 	@Column(nullable = false, name = "current_participants_count")
 	private int currentParticipantsCount;
 
 	@Column(nullable = false, name = "max_participants_count")
-	private int maxParticipantsCount;
+	private Integer maxParticipantsCount;
 
 	@Column(nullable = false, name = "meeting_date")
 	private LocalDateTime meetingDate;
@@ -77,10 +78,29 @@ public class Meeting extends BaseEntity {
 	private List<MeetingParticipant> participants = new ArrayList<>();
 
 	@Column(nullable = false, name = "participation_fee")
-	private int participationFee = 0;
+	private int participationFee;
 
 	// TODO : 추후 Converter 변경 고려
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, name = "status")
 	private MeetingStatus status; // 모집중, 모집완료
+
+	public void updateMeeting(MeetingUpdateRequest request) {
+		this.title = request.getTitle();
+		this.description = request.getDescription();
+		this.categoryId = request.getCategoryId();
+		this.maxParticipantsCount = request.getMaxParticipantsCount();
+		this.meetingDate = request.getMeetingDate();
+		this.meetingEndDate = request.getMeetingEndDate();
+		this.locationName = request.getLocationName();
+		this.latitude = request.getLatitude();
+		this.longitude = request.getLongitude();
+		this.minEnterScore = request.getMinEnterScore();
+		this.participationFee = request.getParticipationFee();
+		this.status = request.getStatus();
+	}
+
+	public void updateStatus(MeetingStatus status) {
+		this.status = status;
+	}
 }
