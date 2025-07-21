@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.entity;
+package com.example.momo.domain.notification.domain;
 
 import com.example.momo.domain.common.entity.BaseCreateEntity;
 

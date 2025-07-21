@@ -3,13 +3,16 @@ package com.example.momo.domain.notification.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.notification.dto.NotificationResponse;
+import com.example.momo.domain.auth.dto.AuthUser;
+import com.example.momo.domain.common.dto.ApiResponse;
+import com.example.momo.domain.notification.domain.NotificationResponse;
 import com.example.momo.domain.notification.service.NotificationService;
 import com.example.momo.global.event.NotificationMeetingEvent;
 
@@ -23,16 +26,16 @@ public class NotificationController {
 	private final NotificationService notificationService;
 
 	@GetMapping("/notifications")
-	public ResponseEntity<List<NotificationResponse>> getNotifications() {
-		Long userId = 1L;
-		List<NotificationResponse> responseList = notificationService.getNotifications(userId);
-		return ResponseEntity.ok(responseList);
+	public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotifications(
+		@AuthenticationPrincipal AuthUser authUser) {
+		return ResponseEntity.ok(
+			ApiResponse.success("알림 정보 조회.", notificationService.getNotifications(authUser.getId())));
 	}
 
 	@PostMapping("/notifications")
-	public ResponseEntity<String> saveNotification(@RequestBody NotificationMeetingEvent event) {
-		notificationService.saveNotification(event);
-		return ResponseEntity.ok("저장완료");
+	public ResponseEntity<ApiResponse<NotificationResponse>> saveNotification(
+		@RequestBody NotificationMeetingEvent event) {
+		return ResponseEntity.ok(ApiResponse.success("알림 정보 저장", notificationService.saveNotification(event)));
 	}
 
 	@PostMapping("/admin/notifications")
