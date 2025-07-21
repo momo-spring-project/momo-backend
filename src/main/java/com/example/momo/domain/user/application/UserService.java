@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
@@ -25,8 +24,6 @@ public interface UserService {
 	void updatePassword(Long userId, UserPasswordUpdateRequestDto request);
 
 	void updateNickname(Long userId, UserNicknameUpdateRequestDto request);
-
-	void updateEmail(Long userId, UserEmailUpdateRequestDto request);
 
 	void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request);
 

@@ -9,8 +9,6 @@ import com.example.momo.domain.user.domain.User;
 
 public interface UserRepository {
 
-	boolean existsByEmailAndIdNot(String email, Long id);
-
 	boolean existsByNicknameAndIdNot(String nickname, Long id);
 
 	/**

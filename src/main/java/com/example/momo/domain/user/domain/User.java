@@ -32,7 +32,7 @@ public class User extends BaseEntity {
 	@Column(nullable = false, unique = true, name = "nickname")
 	private String nickname;
 
-	@Column(nullable = false, unique = true, name = "email")
+	@Column(nullable = false, name = "email")
 	private String email;
 
 	@Column(nullable = false, name = "password")
@@ -82,10 +82,6 @@ public class User extends BaseEntity {
 	// === 업데이트 메서드들 ===
 	public void updateNickname(String nickname) {
 		this.nickname = nickname;
-	}
-
-	public void updateEmail(String email) {
-		this.email = email;
 	}
 
 	public void updatePassword(String password) {
