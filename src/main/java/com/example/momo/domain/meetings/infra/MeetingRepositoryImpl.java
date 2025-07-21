@@ -29,6 +29,6 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 
 	@Override
 	public Page<Meeting> findAllByTitleContaining(String title, Pageable pageable) {
-		return meetingJpaRepository.findAllByTitleContaining(title, pageable);
+		return meetingJpaRepository.findAllByTitleContainingAndIsDeletedFalse(title, pageable);
 	}
 }

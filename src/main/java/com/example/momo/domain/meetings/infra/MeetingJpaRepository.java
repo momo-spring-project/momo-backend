@@ -13,6 +13,6 @@ import com.example.momo.domain.meetings.domain.Meeting;
 public interface MeetingJpaRepository extends JpaRepository<Meeting, Long> {
 	Optional<Meeting> findByIdAndIsDeletedFalse(Long id);
 
-	Page<Meeting> findAllByTitleContaining(String title, Pageable pageable);
+	Page<Meeting> findAllByTitleContainingAndIsDeletedFalse(String title, Pageable pageable);
 }
 
