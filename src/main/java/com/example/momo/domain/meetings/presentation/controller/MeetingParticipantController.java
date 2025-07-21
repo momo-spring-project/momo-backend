@@ -1,5 +1,7 @@
 package com.example.momo.domain.meetings.presentation.controller;
 
+import com.example.momo.domain.auth.dto.AuthUser;
+import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.domain.meetings.application.MeetingParticipantService;
 import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -18,30 +20,49 @@ public class MeetingParticipantController {
 
 	// 모임 참가
 	@PostMapping
-	public ResponseEntity<ParticipantResponseDto> addParticipant(
-		@AuthenticationPrincipal Long userId,
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> addParticipant(
+		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto response = meetingParticipantService.addParticipant(userId, meetingId);
+		ParticipantResponseDto responseData = meetingParticipantService.addParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
 	// 참가자 조회
 	@GetMapping
-	public ResponseEntity<List<Long>> getParticipants(
+	public ResponseEntity<ApiResponse<List<Long>>> getParticipants(
 		@PathVariable Long meetingId
 	) {
-		List<Long> response = meetingParticipantService.getParticipants(meetingId);
+		List<Long> responseData = meetingParticipantService.getParticipants(meetingId);
+		ApiResponse<List<Long>> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
 	// 참가자 취소
 	@DeleteMapping
-	public ResponseEntity<ParticipantResponseDto> cancelParticipant(
-		@AuthenticationPrincipal Long userId,
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> cancelParticipant(
+		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto response = meetingParticipantService.cancelParticipant(userId, meetingId);
+		ParticipantResponseDto responseData = meetingParticipantService.cancelParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 취소를 완료했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// required = false 자동 위치 입력 가능하면 제거
+	@PatchMapping
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> updateParticipantStatus(
+		@AuthenticationPrincipal AuthUser authUser,
+		@PathVariable Long meetingId,
+		@RequestParam(required = false) double lat,
+		@RequestParam(required = false) double lng
+	) {
+		lat = 37.298219;
+		lng = 126.966289;
+		ParticipantResponseDto responseData =
+			meetingParticipantService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("모임 출석 처리되었습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 }

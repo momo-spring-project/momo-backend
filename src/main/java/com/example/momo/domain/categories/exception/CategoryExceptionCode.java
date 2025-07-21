@@ -4,7 +4,7 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 @Getter
-public enum CategoryExceptionCode {
+public enum CategoryExceptionCode{
 	// 400
 	BLANK_CATEGORY_NAME(HttpStatus.BAD_REQUEST, "Blank category name"),
 	BLANK_CATEGORY_DESCRIPTION(HttpStatus.BAD_REQUEST, "Blank category description"),
