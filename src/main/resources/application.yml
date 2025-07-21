@@ -2,6 +2,9 @@ spring:
   application:
     name: momo
 
+  profiles:
+    active: auth
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -16,6 +19,3 @@ spring:
         format_sql: true
     show-sql: true
 
-jwt:
-  secret:
-    key: ${SECRET_KEY}
