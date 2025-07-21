@@ -4,6 +4,8 @@ import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.user.domain.User;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,6 +32,7 @@ public class UserSocial {
 
 	private String providerId;
 
+	@Enumerated(EnumType.STRING)
 	private OAuth2Type type;
 
 	protected UserSocial(User user, String providerId, OAuth2Type type) {
