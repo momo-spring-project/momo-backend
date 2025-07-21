@@ -16,7 +16,6 @@ import com.example.momo.domain.meetings.infra.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
-import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
@@ -106,22 +105,6 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
-	}
-
-	@Override
-	@Transactional
-	public void updateEmail(Long userId, UserEmailUpdateRequestDto request) {
-		User user = validateAndGetUser(userId);
-
-		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
-		}
-
-		if (userRepository.existsByEmailAndIdNot(request.email(), userId)) {
-			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
-		}
-
-		user.updateEmail(request.email());
 	}
 
 	// === 사용자 평가 및 점수 집계 로직 ===
