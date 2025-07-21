@@ -23,6 +23,7 @@ import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.domain.user.infra.UserRepository;
 
@@ -42,7 +43,7 @@ public class UserServiceImpl implements UserService {
 	@Transactional(readOnly = true)
 	public UserInfoResponseDto getUserById(Long userId) {
 		User user = userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(UserException::userNotFound);
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		return new UserInfoResponseDto(user);
 	}
 
@@ -56,7 +57,7 @@ public class UserServiceImpl implements UserService {
 	@Transactional(readOnly = true)
 	public User validateAndGetUser(Long userId) {
 		return userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(UserException::userNotFound);
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 	}
 
 	// === 사용자 정보 수정 ===
@@ -69,14 +70,14 @@ public class UserServiceImpl implements UserService {
 			List<CategoryResponseDto> categories = categoryService.getCategories(categoryIds);
 
 			if (categories.size() != categoryIds.size()) {
-				throw UserException.invalidCategoryIds();
+				throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 			}
 
 			user.updateCategories(categoryIds);
 			return user;
 
 		} catch (CategoryException e) {
-			throw UserException.invalidCategoryIds();
+			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 	}
 
@@ -86,11 +87,11 @@ public class UserServiceImpl implements UserService {
 		User user = validateAndGetUser(userId);
 
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-			throw UserException.passwordMismatch();
+			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
 		if (!request.newPassword().equals(request.confirmPassword())) {
-			throw UserException.passwordConfirmMismatch();
+			throw new UserException(UserErrorCode.PASSWORD_CONFIRM_MISMATCH);
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
@@ -102,7 +103,7 @@ public class UserServiceImpl implements UserService {
 		User user = validateAndGetUser(userId);
 
 		if (userRepository.existsByNicknameAndIdNot(request.nickname(), userId)) {
-			throw UserException.duplicateNickname();
+			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
 	}
@@ -113,11 +114,11 @@ public class UserServiceImpl implements UserService {
 		User user = validateAndGetUser(userId);
 
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-			throw UserException.passwordMismatch();
+			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
 		if (userRepository.existsByEmailAndIdNot(request.email(), userId)) {
-			throw UserException.duplicateEmail();
+			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 
 		user.updateEmail(request.email());
@@ -129,7 +130,7 @@ public class UserServiceImpl implements UserService {
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
 		// 1. 자기 자신 평가 방지
 		if (reviewerId.equals(targetUserId)) {
-			throw UserException.cannotRateSelf();
+			throw new UserException(UserErrorCode.CANNOT_RATE_SELF);
 		}
 
 		// 2. 평가자 존재 확인
@@ -137,7 +138,7 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 평가 대상자 존재 확인
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
-			.orElseThrow(UserException::targetUserNotFound);
+			.orElseThrow(() -> new UserException(UserErrorCode.TARGET_USER_NOT_FOUND));
 
 		// 4. 모임 존재 확인
 		meetingParticipantRepository.findById(request.meetingId())
@@ -146,7 +147,7 @@ public class UserServiceImpl implements UserService {
 		// 5. 같은 모임 참가 여부 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
-		// 6. 중복 평가 확인 - targetUser의 ratings에서 확인
+		// 6. 중복 평가 확인 - targetUser의 ratings 에서 확인
 		boolean alreadyRated = targetUser.getRatings().stream()
 			.anyMatch(rating ->
 				rating.getReviewerId().equals(reviewerId) &&
@@ -154,7 +155,7 @@ public class UserServiceImpl implements UserService {
 			);
 
 		if (alreadyRated) {
-			throw UserException.duplicateRating();
+			throw new UserException(UserErrorCode.DUPLICATE_RATING);
 		}
 
 		// 7. 평가 생성 및 targetUser의 ratings에 추가
@@ -178,7 +179,7 @@ public class UserServiceImpl implements UserService {
 		boolean targetParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, targetUserId);
 
 		if (!reviewerParticipated || !targetParticipated) {
-			throw UserException.notSameMeetingParticipants();
+			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
 	}
 
@@ -206,18 +207,19 @@ public class UserServiceImpl implements UserService {
 	/**
 	 * 평점 기반 점수 계산 (60%)
 	 * 평점 4.5/5.0 → (4.5/5.0) * 60 = 54점
+	 * 주의: 이 메서드는 평가가 있는 사용자에 대해서만 호출됨
 	 */
 	private double calculateRatingScore(User user) {
+		// 평가받은 사용자라면 ratings가 있어야 함
 		if (user.getRatings().isEmpty()) {
-			// 신규 사용자는 기본 점수 (3.0/5.0 기준으로 36점)
-			return 36.0;
+			throw new IllegalStateException("평가 점수를 계산하려 하는데 평가가 없습니다!");
 		}
 
 		// 평균 평점 계산
 		double averageRating = user.getRatings().stream()
 			.mapToInt(UserRating::getRatingScore)
 			.average()
-			.orElse(3.0); // 기본값 3.0
+			.orElseThrow(() -> new IllegalStateException("평가 데이터가 비어있습니다!"));
 
 		// 5점 만점을 60점 만점으로 변환
 		return (averageRating / 5.0) * 60.0;
@@ -226,21 +228,23 @@ public class UserServiceImpl implements UserService {
 	/**
 	 * 참석률 기반 점수 계산 (30%)
 	 * 신청한 모임 대비 실제 참석한 모임의 비율
+	 * 주의: 이 메서드는 평가를 받을 수 있는 사용자(= 최소 1개 모임 참가)에 대해서만 호출됨
 	 */
 	private double calculateAttendanceScore(Long userId) {
 		// 사용자가 참가 신청한 총 모임 수
-		long totalParticipations = meetingParticipantRepository.countByUserId(userId);
+		long totalParticipation = meetingParticipantRepository.countByUserId(userId);
 
-		if (totalParticipations == 0) {
-			// 참가한 모임이 없는 신규 사용자는 기본 점수 (70% 가정)
-			return 21.0;
+		// 평가받을 수 있다는 것은 최소 1개 모임은 참가했다는 의미
+		// 만약 0이면 로직 오류
+		if (totalParticipation == 0) {
+			throw new IllegalStateException("평가받은 사용자인데 참가한 모임이 없습니다. 데이터 정합성 오류!");
 		}
 
 		// 실제 참석한 모임 수 (attendanceStatus = true)
 		long attendedMeetings = meetingParticipantRepository.countByUserIdAndAttendanceStatusTrue(userId);
 
 		// 참석률 계산
-		double attendanceRate = (double)attendedMeetings / totalParticipations;
+		double attendanceRate = (double)attendedMeetings / totalParticipation;
 
 		// 30점 만점으로 변환
 		return attendanceRate * 30.0;
@@ -249,24 +253,25 @@ public class UserServiceImpl implements UserService {
 	/**
 	 * 활동도 기반 점수 계산 (10%)
 	 * 최근 3개월 모임 참가 횟수 기준
+	 * 주의: 이 메서드는 모임 참가 기록이 있는 사용자에 대해서만 호출됨
 	 */
 	private double calculateActivityScore(Long userId) {
 		// 최근 3개월 기준 날짜
 		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
 
 		// 최근 3개월간 참가한 모임 수
-		long recentParticipations = meetingParticipantRepository.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
+		long recentParticipation = meetingParticipantRepository.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
 
 		// 월 평균 참가 횟수 계산
-		double monthlyAverage = recentParticipations / 3.0;
+		double monthlyAverage = recentParticipation / 3.0;
 
-		// 활동도 점수 계산
-		if (monthlyAverage >= 2) {
+		// 활동도 점수 계산 (실제 데이터만으로)
+		if (monthlyAverage >= 2.0) {
 			return 10.0; // 월 평균 2회 이상
-		} else if (monthlyAverage >= 1) {
+		} else if (monthlyAverage >= 1.0) {
 			return 7.0;  // 월 평균 1-2회
 		} else {
-			return 3.0;  // 월 평균 1회 미만
+			return 3.0;  // 월 평균 1회 미만 (0회 포함)
 		}
 	}
 
@@ -276,7 +281,7 @@ public class UserServiceImpl implements UserService {
 	public void followUser(Long followerId, Long followingId) {
 		// 1. 자기 자신 팔로우 방지
 		if (followerId.equals(followingId)) {
-			throw UserException.cannotFollowSelf();
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
 		}
 
 		// 2. 팔로워(나) 존재 확인
@@ -290,7 +295,7 @@ public class UserServiceImpl implements UserService {
 			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
 
 		if (alreadyFollowing) {
-			throw UserException.alreadyFollowing();
+			throw new UserException(UserErrorCode.ALREADY_FOLLOWING);
 		}
 
 		// 5. 팔로우 관계 생성 및 추가
@@ -306,7 +311,7 @@ public class UserServiceImpl implements UserService {
 	public void unfollowUser(Long followerId, Long followingId) {
 		// 1. 자기 자신 언팔로우 방지 (사실상 불가능하지만 안전장치)
 		if (followerId.equals(followingId)) {
-			throw UserException.cannotFollowSelf();
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
 		}
 
 		// 2. 팔로워(나) 존재 확인
@@ -319,7 +324,7 @@ public class UserServiceImpl implements UserService {
 		UserFollow followToRemove = follower.getFollowings().stream()
 			.filter(follow -> follow.getFollowingId().equals(followingId))
 			.findFirst()
-			.orElseThrow(UserException::notFollowing);
+			.orElseThrow(() -> new UserException(UserErrorCode.NOT_FOLLOWING));
 
 		// 5. 팔로우 관계 제거
 		follower.getFollowings().remove(followToRemove);

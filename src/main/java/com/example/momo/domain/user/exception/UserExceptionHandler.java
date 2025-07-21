@@ -8,18 +8,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.example.momo.domain.common.dto.ApiResponse;
 
-@RestControllerAdvice(basePackages = {"com.example.momo.domain.user","com.example.momo.domain.auth"})
+@RestControllerAdvice(basePackages = {"com.example.momo.domain.user", "com.example.momo.domain.auth"})
 public class UserExceptionHandler {
 
 	@ExceptionHandler(UserException.class)
 	public ResponseEntity<ApiResponse<Object>> handleUserException(UserException e) {
 		ApiResponse<Object> response = ApiResponse.fail(e.getMessage(), null);
-		return ResponseEntity.status(e.getHttpStatus()).body(response);
+		return ResponseEntity.status(e.getErrorCode().getStatus()).body(response);
 	}
 
 	/**
 	 * DB 제약조건 위반 (외래키 제약조건 등)
-	 * 카테고리 ID, 모임 ID, 사용자 ID 등 다양한 경우에 발생 가능
 	 */
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
