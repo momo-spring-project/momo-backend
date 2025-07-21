@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,9 +16,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import com.example.momo.domain.auth.service.OAuth2UserService;
 import com.example.momo.global.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.filter.JwtFilter;
+import com.example.momo.global.filter.OAuth2SuccessHandler;
 import com.example.momo.global.utils.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -34,6 +35,8 @@ public class SecurityConfig {
 	private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 	private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 	private final ObjectMapper objectMapper;
+	private final OAuth2UserService oAuth2UserService;
+	private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -62,7 +65,10 @@ public class SecurityConfig {
 			.formLogin(AbstractHttpConfigurer::disable)
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.oauth2Login(Customizer.withDefaults())
+			.oauth2Login(oauth2 -> oauth2
+				.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
+					.userService(oAuth2UserService))
+				.successHandler(oAuth2SuccessHandler))
 			.addFilterAt(new JwtFilter(jwtUtil, objectMapper), UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				.anyRequest().permitAll()
