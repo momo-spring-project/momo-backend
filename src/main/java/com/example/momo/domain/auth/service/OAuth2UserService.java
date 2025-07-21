@@ -77,6 +77,6 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 			log.info("계정({})에 {} 계정으로 로그인합니다.", user.getEmail(), registrationId);
 		}
 
-		return new CustomOAuth2User(user.getId());
+		return new CustomOAuth2User(user.getId(), oAuth2Response);
 	}
 }

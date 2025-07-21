@@ -1,5 +1,7 @@
 package com.example.momo.domain.auth.dto;
 
+import java.util.Map;
+
 public interface OAuth2Response {
 	// 제공자 (Ex. naver, google)
 	String getProvider();
@@ -12,4 +14,6 @@ public interface OAuth2Response {
 
 	// 닉네임
 	String getNickname();
+
+	Map<String, Object> getAttribute();
 }

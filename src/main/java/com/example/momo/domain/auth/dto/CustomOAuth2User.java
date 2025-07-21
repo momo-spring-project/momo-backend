@@ -8,14 +8,16 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 public class CustomOAuth2User extends AuthUser implements OAuth2User {
+	private final OAuth2Response oAuth2Response;
 
-	public CustomOAuth2User(Long id) {
+	public CustomOAuth2User(Long id, OAuth2Response oAuth2Response) {
 		super(id);
+		this.oAuth2Response = oAuth2Response;
 	}
 
 	@Override
 	public Map<String, Object> getAttributes() {
-		return Map.of();
+		return oAuth2Response.getAttribute();
 	}
 
 	@Override
@@ -36,6 +38,6 @@ public class CustomOAuth2User extends AuthUser implements OAuth2User {
 
 	@Override
 	public String getName() {
-		return "";
+		return oAuth2Response.getNickname();
 	}
 }
