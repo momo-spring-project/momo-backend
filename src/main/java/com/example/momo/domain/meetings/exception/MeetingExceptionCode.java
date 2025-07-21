@@ -1,7 +1,8 @@
 package com.example.momo.domain.meetings.exception;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
+
+import lombok.Getter;
 
 @Getter
 public enum MeetingExceptionCode {
@@ -10,7 +11,7 @@ public enum MeetingExceptionCode {
 
 	// 403
 	INSUFFICIENT_SCORE(HttpStatus.FORBIDDEN, "Insufficient score"),
-
+	MEETING_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting is forbidden"),
 	// 404
 	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),
 	PARTICIPANT_NOT_FOUND(HttpStatus.NOT_FOUND, "Participant not found"),
@@ -21,7 +22,7 @@ public enum MeetingExceptionCode {
 	private final HttpStatus httpStatus;
 	private final String message;
 
-	MeetingExceptionCode (HttpStatus httpStatus, String message) {
+	MeetingExceptionCode(HttpStatus httpStatus, String message) {
 		this.httpStatus = httpStatus;
 		this.message = message;
 	}
