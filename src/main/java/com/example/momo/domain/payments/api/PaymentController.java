@@ -1,49 +1,58 @@
 package com.example.momo.domain.payments.api;
 
+import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.domain.payments.application.PaymentService;
-import com.example.momo.domain.payments.dto.PaymentRequest;
+import com.example.momo.domain.payments.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payments.dto.PaymentResponse;
 import com.example.momo.domain.payments.dto.RefundRequest;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService paymentService;
+  private final PaymentService paymentService;
 
-    // 결제 요청 (v1: 바로 완료 처리)
-    @PostMapping
-    public ResponseEntity<PaymentResponse> createPayment(@RequestBody PaymentRequest request) {
-        PaymentResponse response = paymentService.processPayment(request);
-        return ResponseEntity.ok(response);
-    }
+  // 테스트 키인 결제 (카드번호 직접 입력)
+  @PostMapping("/test/keyin")
+  public ResponseEntity<ApiResponse<PaymentResponse>> testKeyIn(
+      @RequestBody CardPaymentTestRequest request) {
+    PaymentResponse response = paymentService.createTestKeyInPayment(request);
+    return ResponseEntity.ok(ApiResponse.success("테스트 키인 결제가 완료되었습니다.", response));
+  }
 
-    // 결제 내역 조회
-    @GetMapping("/meetings/{meetingId}")
-    public ResponseEntity<List<PaymentResponse>> getPaymentsByMeeting(@PathVariable Long meetingId) {
-        List<PaymentResponse> payments = paymentService.getPaymentsByMeetingId(meetingId);
-        return ResponseEntity.ok(payments);
-    }
 
-    // 사용자별 결제 내역 조회
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<List<PaymentResponse>> getPaymentsByUser(@PathVariable Long userId) {
-        List<PaymentResponse> payments = paymentService.getPaymentsByUserId(userId);
-        return ResponseEntity.ok(payments);
-    }
+  // 모임별 결제 내역 조회
+  @GetMapping("/meetings/{meetingId}")
+  public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByMeeting(
+      @PathVariable Long meetingId) {
+    List<PaymentResponse> payments = paymentService.getPaymentsByMeetingId(meetingId);
+    return ResponseEntity.ok(ApiResponse.success("모임별 결제 내역 조회가 완료되었습니다.", payments));
+  }
 
-    // 환불 처리
-    @PostMapping("/{paymentId}/refund")
-    public ResponseEntity<PaymentResponse> refundPayment(
-            @PathVariable Long paymentId,
-            @RequestBody RefundRequest request) {
-        PaymentResponse response = paymentService.refundPayment(paymentId, request);
-        return ResponseEntity.ok(response);
-    }
+  // 사용자별 결제 내역 조회
+  @GetMapping("/users/{userId}")
+  public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByUser(
+      @PathVariable Long userId) {
+    List<PaymentResponse> payments = paymentService.getPaymentsByUserId(userId);
+    return ResponseEntity.ok(ApiResponse.success("사용자별 결제 내역 조회가 완료되었습니다.", payments));
+  }
+
+  // 환불 처리
+  @PostMapping("/{paymentId}/refund")
+  public ResponseEntity<ApiResponse<PaymentResponse>> refundPayment(
+      @PathVariable Long paymentId,
+      @RequestBody RefundRequest request) {
+    PaymentResponse response = paymentService.refundPayment(paymentId, request);
+    return ResponseEntity.ok(ApiResponse.success("환불이 완료되었습니다.", response));
+  }
 }
