@@ -1,28 +1,30 @@
 package com.example.momo.domain.meetings.application;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.momo.domain.meetings.domain.Meeting;
 import com.example.momo.domain.meetings.domain.MeetingParticipant;
+import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import com.example.momo.domain.meetings.domain.MeetingRepository;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.exception.MeetingException;
 import com.example.momo.domain.meetings.exception.MeetingExceptionCode;
-import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.infra.UserRepository;
+import com.example.momo.domain.user.infra.UserJpaRepository;
+
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class MeetingParticipantServiceImpl implements MeetingParticipantService {
 
-	private final UserRepository userRepository;
+	private final UserJpaRepository userRepository;
 	private final MeetingRepository meetingRepository;
 	private final MeetingParticipantRepository meetingParticipantRepository;
 
@@ -40,17 +42,17 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 			.orElseThrow(() -> new RuntimeException("user not found"));
 
 		// 이미 참가했으면 예외처리
-		if(!meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+		if (!meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
 
 		// 모임 활성화 확인
-		if(!isMeetingOpen(meeting)) {
+		if (!isMeetingOpen(meeting)) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_UNAVAILABLE);
 		}
 
 		// 유저 자격 확인
-		if(user.getScore() < meeting.getMinEnterScore()) {
+		if (user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
@@ -58,7 +60,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 
 		// Todo 동시성 처리 필요 ( 낙관적 락 고려중 )
 		// 최대 인원 넘으면 예외처리
-		if(meeting.getParticipants().size() >= meeting.getMaxParticipantsCount()) {
+		if (meeting.getParticipants().size() >= meeting.getMaxParticipantsCount()) {
 			// 환불 알고리즘
 			throw new RuntimeException("Meeting is full");
 		}
@@ -92,17 +94,17 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 	private boolean isMeetingOpen(Meeting meeting) {
 
 		// 시작 시간 넘김
-		if(LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
+		if (LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
 			return false;
 		}
 
 		// 모임 상태 FINISHED
-		if(meeting.getStatus() == MeetingStatus.FINISHED) {
+		if (meeting.getStatus() == MeetingStatus.FINISHED) {
 			return false;
 		}
 
 		// 삭제된 모임
-		if(meeting.getIsDeleted()) {
+		if (meeting.getIsDeleted()) {
 			return false;
 		}
 
