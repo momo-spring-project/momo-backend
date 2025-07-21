@@ -45,7 +45,8 @@ public class JwtFilter extends OncePerRequestFilter {
 		accessToken = accessToken == null ? request.getHeader(HttpHeaders.AUTHORIZATION) : accessToken;
 
 		// Authorization 해더 값이 없으면 다음 filter로 넘김
-		if (!StringUtils.hasText(accessToken) || !accessToken.startsWith("Bearer ")) {
+		// accessToken의 접두사가 "Bearer " 도 아니고 "Bearer_"도 아니면 Access 토큰이 없는 것으로 간주
+		if (!StringUtils.hasText(accessToken) || !accessToken.startsWith(JwtUtil.tokenPrefix)) {
 			log.info("토큰이 존재하지 않습니다.");
 			filterChain.doFilter(request, response);
 			return;
@@ -85,7 +86,10 @@ public class JwtFilter extends OncePerRequestFilter {
 		}
 	}
 
-	private static String extractAndRemoveAccessTokenCookie(HttpServletRequest request, HttpServletResponse response) {
+	private String extractAndRemoveAccessTokenCookie(HttpServletRequest request, HttpServletResponse response) {
+		if (request.getCookies() == null)
+			return null;
+
 		String accessToken = null;
 		// 쿠키에서 Access 토큰이 있는지 확인하고 있다면 제거 후 응답 헤더에 넣어준다.
 		for (Cookie cookie : request.getCookies()) {
@@ -98,6 +102,8 @@ public class JwtFilter extends OncePerRequestFilter {
 				response.addCookie(deleteCookie);
 
 				//응답 헤더에 access 토큰을 추가한다.
+				accessToken = JwtUtil.tokenPrefix + jwtUtil.subStringToken(accessToken);
+				System.out.println(accessToken);
 				response.addHeader(HttpHeaders.AUTHORIZATION, accessToken);
 			}
 		}

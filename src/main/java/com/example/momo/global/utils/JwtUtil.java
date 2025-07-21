@@ -35,7 +35,8 @@ public class JwtUtil {
 	private String secret;
 	private SecretKey secretKey;
 	private final String signatureAlgorithm = Jwts.SIG.HS256.key().build().getAlgorithm();
-	private static final String tokenPrefix = "Bearer ";
+	public static final String tokenPrefix = "Bearer ";
+	public static final String cookieTokenPrefix = "Bearer_";
 
 	@PostConstruct
 	public void init() {
@@ -83,10 +84,10 @@ public class JwtUtil {
 		if (!StringUtils.hasText(rawToken)) {
 			throw new AuthException(HttpStatus.UNAUTHORIZED, "토큰이 존재하지 않습니다.");
 		}
-		if (!rawToken.startsWith(tokenPrefix)) {
+		if (!rawToken.startsWith(tokenPrefix) && !rawToken.startsWith(cookieTokenPrefix)) {
 			throw new AuthException(HttpStatus.UNAUTHORIZED, "잘못된 토큰 형식입니다.");
 		}
-		return rawToken.split(" ")[1];
+		return rawToken.substring(tokenPrefix.length());
 	}
 
 	private Claims getClaim(String token) {
@@ -114,7 +115,7 @@ public class JwtUtil {
 	}
 
 	public ResponseCookie createAccessTokenCookie(String access) {
-		return ResponseCookie.from("Authorization", access)
+		return ResponseCookie.from("Authorization", cookieTokenPrefix + access)
 			.httpOnly(true)  // XSS 공격을 막기 위해서 Http Only 설정을 해준다.
 			//                .secure(true) // https 통신 사용할 때 설정
 			.maxAge(10 * 60) //access 토큰의 만료시간과 동일하게 설정
