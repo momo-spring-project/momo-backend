@@ -8,17 +8,7 @@ import com.example.momo.domain.common.entity.BaseEntity;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingUpdateRequest;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -85,6 +75,9 @@ public class Meeting extends BaseEntity {
 	@Column(nullable = false, name = "status")
 	private MeetingStatus status; // 모집중, 모집완료
 
+	@Version
+	private Integer version;
+
 	public void updateMeeting(MeetingUpdateRequest request) {
 		this.title = request.getTitle();
 		this.description = request.getDescription();
@@ -102,5 +95,13 @@ public class Meeting extends BaseEntity {
 
 	public void updateStatus(MeetingStatus status) {
 		this.status = status;
+	}
+
+	public void addMeetingParticipant() {
+		this.currentParticipantsCount++;
+	}
+
+	public void removeMeetingParticipant() {
+		this.currentParticipantsCount--;
 	}
 }

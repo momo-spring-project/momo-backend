@@ -11,8 +11,10 @@ import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.infra.UserRepository;
+import com.example.momo.global.utils.RetryUtil;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +33,7 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 
 	@Override
 	@Transactional
-	public ParticipantResponseDto addParticipant(Long userId, Long meetingId) {
+	public ParticipantResponseDto registerParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId)
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
@@ -55,18 +57,13 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 
 		//결제 알고리즘
 
-		// Todo 동시성 처리 필요 ( 낙관적 락 고려중 )
-		// 최대 인원 넘으면 예외처리
-		if(meeting.getParticipants().size() >= meeting.getMaxParticipantsCount()) {
+		// 참가자 추가 중 예외 발생 시 환불
+		try {
+			return RetryUtil.retry(() -> addParticipant(meeting, user), 5);
+		} catch (OptimisticLockingFailureException e) {
 			// 환불 알고리즘
-			throw new RuntimeException("Meeting is full");
+			throw e;
 		}
-
-		MeetingParticipant participant = new MeetingParticipant(meetingId, userId);
-
-		MeetingParticipant savedParticipant = meetingParticipantRepository.save(participant);
-
-		return new ParticipantResponseDto(savedParticipant);
 	}
 
 	@Override
@@ -79,17 +76,21 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 		return meetingParticipantRepository.findParticipantsIdsByMeetingId(meetingId);
 	}
 
-	// Todo 환불 추가
 	@Override
 	@Transactional
 	public ParticipantResponseDto cancelParticipant(Long userId, Long meetingId) {
 
-		MeetingParticipant participant = meetingParticipantRepository.findByMeetingIdAndUserId(meetingId, userId)
-			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
+		Meeting meeting = meetingRepository.findById(meetingId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
 
-		em.remove(participant);
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new RuntimeException("user not found"));
 
-		return new ParticipantResponseDto(participant);
+		ParticipantResponseDto responseDto = RetryUtil.retry(() -> subParticipant(meeting, user), 5);
+
+		// 환불 알고리즘
+
+		return responseDto;
 	}
 
 	@Override
@@ -135,5 +136,42 @@ public class MeetingParticipantServiceImpl implements MeetingParticipantService 
 		if(meeting.getIsDeleted()) {
 			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
 		}
+	}
+
+	// 참가자 추가
+	@Transactional
+	protected ParticipantResponseDto addParticipant(Meeting meeting, User user) {
+
+		if(meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+
+		// 참가자 추가
+		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), user.getId());
+		MeetingParticipant savedParticipant = meetingParticipantRepository.save(participant);
+
+		// 인원 계산
+		meeting.addMeetingParticipant();
+
+		return new ParticipantResponseDto(savedParticipant);
+	}
+
+	// 참가자 감소
+	@Transactional
+	protected ParticipantResponseDto subParticipant(Meeting meeting, User user) {
+
+		if(meeting.getCurrentParticipantsCount() <= 0) {
+			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
+		}
+
+		MeetingParticipant participant = meetingParticipantRepository
+			.findByMeetingIdAndUserId(meeting.getId(), user.getId())
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
+
+		// 인원 계산, 참가자 삭제
+		meeting.removeMeetingParticipant();
+		em.remove(participant);
+
+		return new ParticipantResponseDto(participant);
 	}
 }

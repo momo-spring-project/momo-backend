@@ -5,7 +5,7 @@ import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import java.util.List;
 
 public interface MeetingParticipantService {
-	ParticipantResponseDto addParticipant(Long userId, Long meetingId);
+	ParticipantResponseDto registerParticipant(Long userId, Long meetingId);
 
 	List<Long> getParticipants(Long meetingId);
 

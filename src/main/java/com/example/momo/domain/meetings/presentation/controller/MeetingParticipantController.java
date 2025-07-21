@@ -24,7 +24,7 @@ public class MeetingParticipantController {
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingParticipantService.addParticipant(authUser.getId(), meetingId);
+		ParticipantResponseDto responseData = meetingParticipantService.registerParticipant(authUser.getId(), meetingId);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
