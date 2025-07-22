@@ -82,6 +82,10 @@ public class SecurityConfig {
 					"/api/v1/auth/reissue",
 					"/api/v1/categories/**"
 				).permitAll()
+				.requestMatchers(
+					"/swagger-ui/**",
+					"/v3/api-docs/**"
+				).permitAll()
 				.anyRequest().authenticated()
 			)
 			.exceptionHandling(configure -> configure
