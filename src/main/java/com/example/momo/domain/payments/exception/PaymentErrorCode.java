@@ -15,6 +15,11 @@ public enum PaymentErrorCode implements ErrorCode {
   TEST_KEY_ONLY("Key-in API는 테스트 키에서만 호출할 수 있습니다.", HttpStatus.FORBIDDEN),
   REFUND_NOT_ALLOWED("완료된 결제만 환불 가능합니다.", HttpStatus.BAD_REQUEST),
 
+
+  UNAUTHORIZED_PAYMENT("결제 권한이 없습니다.", HttpStatus.FORBIDDEN),
+  UNAUTHORIZED_REFUND("환불 권한이 없습니다.", HttpStatus.FORBIDDEN),
+
+
   // 5xx
   TOSS_CONFIRM_FAILED("결제 승인 실패", HttpStatus.BAD_GATEWAY),
   REFUND_FAILED("환불 처리 실패", HttpStatus.BAD_GATEWAY),

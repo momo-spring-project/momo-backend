@@ -43,13 +43,13 @@ public class PaymentServiceImpl implements PaymentService {
    * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
    */
   @Override
-  public PaymentResponse createTestKeyInPayment(CardPaymentTestRequest request) {
+  public PaymentResponse createTestKeyInPayment(CardPaymentTestRequest request, Long userId) {
     // 1. 테스트 환경 검증
     validateTestKey();
 
     // 2. 엔티티 조회
     Meeting meeting = getMeeting(request.getMeetingId());
-    User user = getUser(request.getUserId());
+    User user = getUser(userId);
     int amount = meeting.getParticipationFee();
 
     // 3. 중복 결제 확인
@@ -103,10 +103,13 @@ public class PaymentServiceImpl implements PaymentService {
    * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
    */
   @Override
-  public PaymentResponse refundPayment(Long paymentId, RefundRequest request) {
+  public PaymentResponse refundPayment(Long paymentId, Long userId, RefundRequest request) {
     Payment payment = paymentRepository.findById(paymentId)
         .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
+    if (!payment.getUserId().equals(userId)) {
+      throw new PaymentException(PaymentErrorCode.UNAUTHORIZED_REFUND);
+    }
     // 환불 가능 상태 확인
     if (payment.getStatus() != PaymentStatus.COMPLETED) {
       throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);

@@ -1,5 +1,6 @@
 package com.example.momo.domain.payments.api;
 
+import com.example.momo.domain.auth.dto.AuthUser;
 import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.domain.payments.application.PaymentService;
 import com.example.momo.domain.payments.dto.CardPaymentTestRequest;
@@ -8,6 +9,7 @@ import com.example.momo.domain.payments.dto.RefundRequest;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +27,10 @@ public class PaymentController {
   // 테스트 키인 결제 (카드번호 직접 입력)
   @PostMapping("/test/keyin")
   public ResponseEntity<ApiResponse<PaymentResponse>> testKeyIn(
-      @RequestBody CardPaymentTestRequest request) {
-    PaymentResponse response = paymentService.createTestKeyInPayment(request);
+      @RequestBody CardPaymentTestRequest request,
+      @AuthenticationPrincipal AuthUser authUser) {
+
+    PaymentResponse response = paymentService.createTestKeyInPayment(request, authUser.getId());
     return ResponseEntity.ok(ApiResponse.success("테스트 키인 결제가 완료되었습니다.", response));
   }
 
@@ -51,8 +55,9 @@ public class PaymentController {
   @PostMapping("/{paymentId}/refund")
   public ResponseEntity<ApiResponse<PaymentResponse>> refundPayment(
       @PathVariable Long paymentId,
-      @RequestBody RefundRequest request) {
-    PaymentResponse response = paymentService.refundPayment(paymentId, request);
+      @RequestBody RefundRequest request,
+      @AuthenticationPrincipal AuthUser authUser) {
+    PaymentResponse response = paymentService.refundPayment(paymentId, authUser.getId(), request);
     return ResponseEntity.ok(ApiResponse.success("환불이 완료되었습니다.", response));
   }
 }

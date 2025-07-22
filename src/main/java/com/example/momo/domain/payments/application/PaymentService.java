@@ -9,10 +9,10 @@ public interface PaymentService {
 
 
   //테스트 key-in 결제
-  PaymentResponse createTestKeyInPayment(CardPaymentTestRequest dto);
+  PaymentResponse createTestKeyInPayment(CardPaymentTestRequest dto, Long userId);
 
   //환불 처리
-  PaymentResponse refundPayment(Long paymentId, RefundRequest request);
+  PaymentResponse refundPayment(Long paymentId, Long userId, RefundRequest request);
 
   //조회 메서드들
   List<PaymentResponse> getPaymentsByMeetingId(Long meetingId);

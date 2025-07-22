@@ -15,9 +15,6 @@ public class CardPaymentTestRequest {
   @NotNull
   private Long meetingId;
 
-  @NotNull
-  private Long userId;
-
   private String cardNumber;   // 기본: 4242424242424242
   private String cardExpiry;   // 12/25
   private String cardCvc;      // 242
