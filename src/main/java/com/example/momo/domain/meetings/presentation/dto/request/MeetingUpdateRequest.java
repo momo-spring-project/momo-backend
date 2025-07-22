@@ -11,36 +11,36 @@ import lombok.Getter;
 @Getter
 public class MeetingUpdateRequest {
 
-	@NotBlank(message = "제목은 필수 사항입니다.")
+	@NotBlank
 	private String title;
 
-	@NotBlank(message = "설명은 필수 사항입니다.")
+	@NotBlank
 	private String description;
 
 	private Integer categoryId;
 
-	@NotNull(message = "최대 참여자수는 필수 사항입니다.")
+	@NotNull
 	private int maxParticipantsCount;
 
-	@NotNull(message = "모임 날짜는 필수 사항입니다.")
+	@NotNull
 	private LocalDateTime meetingDate;
 
-	@NotNull(message = "모임 마감 날짜는 필수 사항입니다.")
+	@NotNull
 	private LocalDateTime meetingEndDate;
 
-	@NotBlank(message = "모임 위치는 필수 사항입니다.")
-	private String LocationName;
+	@NotBlank
+	private String locationName;
 
-	@NotNull(message = "위도는 필수 사항입니다.")
+	@NotNull
 	private Double latitude;
 
-	@NotNull(message = "경도는 필수 사항입니다.")
+	@NotNull
 	private Double longitude;
 
 	private Double minEnterScore;
 
 	private int participationFee;
 
-	@NotNull(message = "상태는 필수 사항입니다.")
+	@NotNull
 	private MeetingStatus status;
 }
