@@ -74,8 +74,7 @@ public class TossPaymentsClient {
     String url = config.getBaseUrl() + "/payments/key-in";  // 토스 API 문서에 따른 엔드포인트
 
     HttpHeaders headers = new HttpHeaders();
-    addIdempotencyKey(headers, orderId);  // UUID 기반으로 고정된 키 사용
-    addIdempotencyKey(headers, "keyin-" + orderId);
+    addIdempotencyKey(headers, "keyin-" + orderId); // UUID 기반으로 고정된 키 사용
 
     HttpEntity<?> entity = new HttpEntity<>(payload, headers);
 
