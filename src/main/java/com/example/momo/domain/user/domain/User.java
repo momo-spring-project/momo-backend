@@ -108,6 +108,11 @@ public class User extends BaseEntity {
 		this.followerCount--;
 	}
 
+	public void updateLocation(Double latitude, Double longitude) {
+		this.latitude = latitude;
+		this.longitude = longitude;
+	}
+
 	public void updateCategories(List<Integer> categoryIds) {
 		this.categories.clear();
 		categoryIds.forEach(categoryId ->
