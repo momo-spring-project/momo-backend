@@ -1,9 +1,12 @@
 package com.example.momo.domain.notification.application;
 
-import com.example.momo.global.socket.service.NotificationSender;
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
+import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.service.WebSocketNotificationService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +18,10 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
-public class NotificationProcessor {
+public class NotificationHandler {
 
 	private final NotificationService notificationService;
-	private final NotificationSender notificationSender;
+	private final WebSocketNotificationService webSocketNotificationService;
 
 	/**
 	 * 모임 알림 이벤트를 처리합니다.
@@ -28,8 +31,15 @@ public class NotificationProcessor {
 	 * @param event 처리할 알림 이벤트 정보
 	 */
 	@Transactional
-	public void processMeeting(NotificationMeetingEvent event) {
-		notificationService.saveNotification(event); // DB 저장
-		notificationSender.send(event.toMessage()); // 사용자에게 전송
+	public void processMeeting(NotificationMeetingEventDto event) {
+		//DB 저장
+		notificationService.createNotification(event);
+
+		//사용자에게 전송
+		webSocketNotificationService.send(new WebSocketNotificationDto(
+			event.userId(),
+			event.content(),
+			LocalDateTime.now()
+		));
 	}
 }
