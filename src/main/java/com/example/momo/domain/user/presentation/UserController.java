@@ -1,4 +1,4 @@
-package com.example.momo.domain.user.api;
+package com.example.momo.domain.user.presentation;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

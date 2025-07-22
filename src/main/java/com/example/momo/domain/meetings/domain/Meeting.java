@@ -60,9 +60,11 @@ public class Meeting extends BaseEntity {
 	@Column(nullable = false, name = "longitude")
 	private Double longitude;
 
+	@Builder.Default
 	@Column(nullable = false, name = "min_enter_score")
 	private Double minEnterScore = 0.0;
 
+	@Builder.Default
 	@OneToMany(cascade = {CascadeType.PERSIST})
 	@JoinColumn(name = "meeting_id")
 	private List<MeetingParticipant> participants = new ArrayList<>();

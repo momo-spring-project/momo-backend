@@ -27,6 +27,14 @@ public interface UserRepository {
 	 */
 	Slice<User> findFollowersByUserId(Long userId, Pageable pageable);
 
+	/**
+	 * 팔로우 관계 삭제 (물리 삭제)
+	 * @param followerId 팔로워 ID
+	 * @param followingId 팔로잉 대상 ID
+	 * @return 삭제된 행 개수
+	 */
+	int deleteUserFollow(Long followerId, Long followingId);
+
 	// Auth 쪽에서 사용
 	boolean existsByEmail(String email);
 

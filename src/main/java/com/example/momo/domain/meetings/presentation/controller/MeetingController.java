@@ -1,5 +1,7 @@
 package com.example.momo.domain.meetings.presentation.controller;
 
+import java.time.LocalDateTime;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -19,6 +21,7 @@ import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.domain.meetings.application.MeetingService;
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingCreateRequest;
+import com.example.momo.domain.meetings.presentation.dto.request.MeetingStatusUpdateRequest;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingUpdateRequest;
 import com.example.momo.domain.meetings.presentation.dto.response.MeetingPagingResponse;
 import com.example.momo.domain.meetings.presentation.dto.response.MeetingResponse;
@@ -60,22 +63,23 @@ public class MeetingController {
 
 	@PatchMapping("/{meetingId}")
 	public ResponseEntity<ApiResponse<MeetingResponse>> updateMeetingStatus(@PathVariable Long meetingId,
-		@RequestBody MeetingStatus status, @AuthenticationPrincipal AuthUser authUser) {
+		@RequestBody MeetingStatusUpdateRequest request, @AuthenticationPrincipal AuthUser authUser) {
 
-		MeetingResponse response = meetingService.updateMeetingStatus(meetingId, status, authUser.getId());
+		MeetingResponse response = meetingService.updateMeetingStatus(meetingId, request.getStatus(), authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 상태 변경이 성공적으로 완료되었습니다.", response));
 	}
 
-	// TODO : 동적 필터 부분은 추후 queryDsl 추가 후 수정, 우선은 제목만 필터링 [status, meetingDate, 위도, 경도 등등]
 	@GetMapping
 	public ResponseEntity<ApiResponse<MeetingPagingResponse<MeetingResponse>>> searchMeetings(
 		@RequestParam(defaultValue = "") String title,
+		@RequestParam(required = false) MeetingStatus status,
+		@RequestParam(required = false) LocalDateTime meetingDate,
 		@RequestParam(defaultValue = "1") @Min(1) int page,
 		@RequestParam(defaultValue = "10") @Min(5) int size
 	) {
 
-		System.out.println(title);
-		MeetingPagingResponse<MeetingResponse> response = meetingService.getMeetings(title, page, size);
+		MeetingPagingResponse<MeetingResponse> response = meetingService.getMeetings(title, status, meetingDate, page,
+			size);
 		return ResponseEntity.ok(ApiResponse.success("모임 목록 조회가 성공적으로 완료되었습니다.", response));
 	}
 
