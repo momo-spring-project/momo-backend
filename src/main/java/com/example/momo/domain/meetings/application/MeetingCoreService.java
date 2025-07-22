@@ -1,5 +1,7 @@
 package com.example.momo.domain.meetings.application;
 
+import java.time.LocalDateTime;
+
 import com.example.momo.domain.meetings.enums.MeetingStatus;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingCreateRequest;
 import com.example.momo.domain.meetings.presentation.dto.request.MeetingUpdateRequest;
@@ -16,7 +18,8 @@ public interface MeetingCoreService {
 
 	MeetingResponse updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
-	MeetingPagingResponse<MeetingResponse> getMeetings(String title, int page, int size);
+	MeetingPagingResponse<MeetingResponse> getMeetings(String title, MeetingStatus status, LocalDateTime meetingDate,
+		int page, int size);
 
 	void deleteMeeting(Long meetingId, Long userId);
 }

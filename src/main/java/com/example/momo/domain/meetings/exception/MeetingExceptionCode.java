@@ -1,7 +1,8 @@
 package com.example.momo.domain.meetings.exception;
 
-import com.example.momo.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
+
+import com.example.momo.global.exception.ErrorCode;
 
 public enum MeetingExceptionCode implements ErrorCode {
 	// 400
@@ -24,11 +25,11 @@ public enum MeetingExceptionCode implements ErrorCode {
 	// 410
 	DELETED_MEETING(HttpStatus.GONE, "Deleted meeting");
 
-	private final HttpStatus httpStatus;
+	private final HttpStatus status;
 	private final String message;
 
-	MeetingExceptionCode(HttpStatus httpStatus, String message) {
-		this.httpStatus = httpStatus;
+	MeetingExceptionCode(HttpStatus status, String message) {
+		this.status = status;
 		this.message = message;
 	}
 
@@ -39,6 +40,6 @@ public enum MeetingExceptionCode implements ErrorCode {
 
 	@Override
 	public HttpStatus getStatus() {
-		return this.httpStatus;
+		return this.status;
 	}
 }
