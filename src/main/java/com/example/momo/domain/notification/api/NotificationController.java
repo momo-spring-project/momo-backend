@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.controller;
+package com.example.momo.domain.notification.api;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.dto.AuthUser;
 import com.example.momo.domain.common.dto.ApiResponse;
+import com.example.momo.domain.notification.application.NotificationService;
 import com.example.momo.domain.notification.domain.NotificationResponse;
-import com.example.momo.domain.notification.service.NotificationService;
 import com.example.momo.global.event.NotificationMeetingEvent;
 
 import lombok.RequiredArgsConstructor;

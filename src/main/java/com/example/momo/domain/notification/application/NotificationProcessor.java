@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.service;
+package com.example.momo.domain.notification.application;
 
 import org.springframework.stereotype.Service;
 
