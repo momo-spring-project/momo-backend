@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class MeetingServiceImpl implements MeetingService {
 
 	private final MeetingRepository meetingRepository;
+	private final MeetingParticipantService meetingParticipantService;
 
 	@Override
 	@Transactional
@@ -111,4 +113,29 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.delete();
 	}
+
+	/**
+	 * Meeting Participant Service
+	 */
+
+	@Override
+	public ParticipantResponseDto registerParticipant(Long userId, Long meetingId) {
+		return meetingParticipantService.registerParticipant(userId, meetingId);
+	}
+
+	@Override
+	public List<Long> getParticipants(Long meetingId) {
+		return meetingParticipantService.getParticipants(meetingId);
+	}
+
+	@Override
+	public ParticipantResponseDto cancelParticipant(Long userId, Long meetingId) {
+		return meetingParticipantService.cancelParticipant(userId, meetingId);
+	}
+
+	@Override
+	public ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng) {
+		return meetingParticipantService.updateParticipantStatus(id, meetingId, lat, lng);
+	}
+
 }

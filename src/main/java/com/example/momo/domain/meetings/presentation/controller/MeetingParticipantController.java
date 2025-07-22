@@ -3,6 +3,7 @@ package com.example.momo.domain.meetings.presentation.controller;
 import com.example.momo.domain.auth.dto.AuthUser;
 import com.example.momo.domain.common.dto.ApiResponse;
 import com.example.momo.domain.meetings.application.MeetingParticipantService;
+import com.example.momo.domain.meetings.application.MeetingService;
 import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MeetingParticipantController {
 
-	private final MeetingParticipantService meetingParticipantService;
+	private final MeetingService meetingService;
 
 	// 모임 참가
 	@PostMapping
@@ -24,7 +25,7 @@ public class MeetingParticipantController {
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingParticipantService.addParticipant(authUser.getId(), meetingId);
+		ParticipantResponseDto responseData = meetingService.registerParticipant(authUser.getId(), meetingId);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
@@ -34,7 +35,7 @@ public class MeetingParticipantController {
 	public ResponseEntity<ApiResponse<List<Long>>> getParticipants(
 		@PathVariable Long meetingId
 	) {
-		List<Long> responseData = meetingParticipantService.getParticipants(meetingId);
+		List<Long> responseData = meetingService.getParticipants(meetingId);
 		ApiResponse<List<Long>> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
@@ -45,7 +46,7 @@ public class MeetingParticipantController {
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingParticipantService.cancelParticipant(authUser.getId(), meetingId);
+		ParticipantResponseDto responseData = meetingService.cancelParticipant(authUser.getId(), meetingId);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 취소를 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
@@ -61,7 +62,7 @@ public class MeetingParticipantController {
 		lat = 37.298219;
 		lng = 126.966289;
 		ParticipantResponseDto responseData =
-			meetingParticipantService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
+			meetingService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("모임 출석 처리되었습니다", responseData);
 		return ResponseEntity.ok(response);
 	}

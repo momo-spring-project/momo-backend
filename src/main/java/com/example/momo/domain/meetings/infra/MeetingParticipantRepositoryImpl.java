@@ -1,7 +1,6 @@
 package com.example.momo.domain.meetings.infra;
 
 import com.example.momo.domain.meetings.domain.MeetingParticipant;
-import com.example.momo.domain.meetings.domain.MeetingParticipantRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

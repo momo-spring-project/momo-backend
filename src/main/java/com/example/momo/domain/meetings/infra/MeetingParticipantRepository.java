@@ -1,4 +1,6 @@
-package com.example.momo.domain.meetings.domain;
+package com.example.momo.domain.meetings.infra;
+
+import com.example.momo.domain.meetings.domain.MeetingParticipant;
 
 import java.util.List;
 import java.util.Optional;

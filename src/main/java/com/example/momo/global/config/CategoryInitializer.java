@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 // 카테고리 초기 생성
 // 개발 단계에서만 사용
-@Component
+// @Component
 @RequiredArgsConstructor
 public class CategoryInitializer {
 
