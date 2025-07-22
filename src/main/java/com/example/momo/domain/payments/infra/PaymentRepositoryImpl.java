@@ -38,4 +38,9 @@ public class PaymentRepositoryImpl implements PaymentRepository {
   public List<Payment> findByUserId(Long userId) {
     return paymentJpaRepository.findByUserId(userId);
   }
+
+  @Override
+  public void delete(Payment payment) {
+    paymentJpaRepository.delete(payment);
+  }
 }

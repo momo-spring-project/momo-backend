@@ -16,4 +16,7 @@ public interface PaymentRepository {
   List<Payment> findByMeetingId(Long meetingId);
 
   List<Payment> findByUserId(Long userId);
+
+  void delete(Payment payment);
+  
 }

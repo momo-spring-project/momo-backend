@@ -7,6 +7,8 @@ import com.example.momo.domain.payments.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payments.dto.PaymentResponse;
 import com.example.momo.domain.payments.dto.RefundRequest;
 import com.example.momo.domain.payments.enums.PaymentStatus;
+import com.example.momo.domain.payments.exception.PaymentErrorCode;
+import com.example.momo.domain.payments.exception.PaymentException;
 import com.example.momo.domain.payments.infra.PaymentRepository;
 import com.example.momo.domain.payments.infra.toss.TossPaymentsClient;
 import com.example.momo.domain.payments.infra.toss.TossPaymentsConfig;
@@ -50,58 +52,87 @@ public class PaymentServiceImpl implements PaymentService {
     User user = getUser(request.getUserId());
     int amount = meeting.getParticipationFee();
 
+    // 3. 중복 결제 확인
     if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
         meeting.getId(), user.getId(), PaymentStatus.COMPLETED)) {
-      throw new IllegalStateException("이미 결제가 완료된 사용자입니다.");
+      throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
     }
 
-    // 3. 무료 모임인 경우 별도 처리
+    // 4. 무료 모임인 경우 별도 처리
     if (amount == 0) {
       return createFreePayment(user, meeting);
     }
 
-    // 4. orderId 미리 생성
+    // 5. orderId 미리 생성
     String orderId = "order-" + UUID.randomUUID();
 
-    // 5. 토스 Key-in API 호출
-    Map<String, Object> payload = buildKeyInPayload(request, meeting, amount);
-    Map<String, Object> keyInResult = tossClient.createTestKeyInPayment(payload, orderId);
+    // 6. 토스 Key-in API 호출
+    Map<String, Object> payload = buildKeyInPayload(request, meeting, amount, orderId);
+    Map<String, Object> keyInResult;
+
+    try {
+      keyInResult = tossClient.createTestKeyInPayment(payload, orderId);
+    } catch (HttpClientErrorException e) {
+      log.error("[TOSS] Key-in 결제 생성 실패: {}", e.getResponseBodyAsString());
+      throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
+    }
+
     String paymentKey = (String) keyInResult.get("paymentKey");
     String status = (String) keyInResult.get("status");
 
-    // 6. Toss 결제 상태에 따라 처리
+    // 7. Toss 결제 상태에 따라 처리
     if ("READY".equals(status) || "WAITING_FOR_CONFIRMATION".equals(status)) {
       try {
         tossClient.confirmPayment(paymentKey, orderId, amount);
       } catch (HttpClientErrorException e) {
-        log.error("[TOSS] confirmPayment 실패: {}", e.getResponseBodyAsString());
-        throw new IllegalStateException("결제 승인 실패: " + e.getResponseBodyAsString());
+        log.error("[TOSS] 결제 승인 실패: {}", e.getResponseBodyAsString());
+        throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
       }
     } else if (!"DONE".equals(status)) {
-      throw new IllegalStateException("지원하지 않는 결제 상태입니다: " + status);
+      log.error("[TOSS] 지원하지 않는 결제 상태: {}", status);
+      throw new PaymentException(PaymentErrorCode.UNSUPPORTED_PAYMENT_STATUS);
     }
 
-    // 7. 결제 정보 저장
+    // 8. 결제 정보 저장
     return savePaidPayment(user, meeting, amount, paymentKey, orderId);
   }
 
   // ==================== 환불 처리 ====================
 
   /**
-   * 결제 환불 처리
+   * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
    */
   @Override
   public PaymentResponse refundPayment(Long paymentId, RefundRequest request) {
     Payment payment = paymentRepository.findById(paymentId)
-        .orElseThrow(() -> new IllegalArgumentException("결제 정보를 찾을 수 없습니다."));
+        .orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+    // 환불 가능 상태 확인
+    if (payment.getStatus() != PaymentStatus.COMPLETED) {
+      throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);
+    }
 
     // 토스 결제인 경우 토스 API를 통해 환불
     if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
-      tossClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
+      try {
+        tossClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
+      } catch (HttpClientErrorException e) {
+        log.error("[TOSS] 환불 실패: {}", e.getResponseBodyAsString());
+        throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
+      }
     }
-
+    // 환불 상태로 변경
     payment.refund();
-    return PaymentResponse.from(paymentRepository.save(payment));
+
+    // 환불 응답 생성 (삭제 전에 생성)
+    PaymentResponse response = PaymentResponse.from(payment);
+
+    // 결제 레코드 삭제 (재결제 가능하도록)
+    paymentRepository.delete(payment);
+    log.info("결제 환불 및 삭제 완료 - paymentId: {}, userId: {}, meetingId: {}",
+        payment.getId(), payment.getUserId(), payment.getMeetingId());
+
+    return response;
   }
 
   // ==================== 조회 메서드 ====================
@@ -112,6 +143,11 @@ public class PaymentServiceImpl implements PaymentService {
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponse> getPaymentsByMeetingId(Long meetingId) {
+    // 모임 존재 여부 확인
+    if (!meetingRepository.existsById(meetingId)) {
+      throw new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND);
+    }
+
     return paymentRepository.findByMeetingId(meetingId)
         .stream()
         .map(PaymentResponse::from)
@@ -124,6 +160,10 @@ public class PaymentServiceImpl implements PaymentService {
   @Override
   @Transactional(readOnly = true)
   public List<PaymentResponse> getPaymentsByUserId(Long userId) {
+//    // 사용자 존재 여부 확인
+//    if (!userRepository.existsByIdAndIsDeletedFalse(userId)) {
+//      throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
+//    }
     return paymentRepository.findByUserId(userId)
         .stream()
         .map(PaymentResponse::from)
@@ -147,7 +187,7 @@ public class PaymentServiceImpl implements PaymentService {
    */
   private void validateTestKey() {
     if (!tossConfig.getSecretKey().startsWith("test_")) {
-      throw new IllegalStateException("Key-in API는 테스트 키에서만 호출할 수 있습니다");
+      throw new PaymentException(PaymentErrorCode.TEST_KEY_ONLY);
     }
   }
 
@@ -156,7 +196,7 @@ public class PaymentServiceImpl implements PaymentService {
    */
   private Meeting getMeeting(Long meetingId) {
     return meetingRepository.findById(meetingId)
-        .orElseThrow(() -> new IllegalArgumentException("모임을 찾을 수 없습니다."));
+        .orElseThrow(() -> new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND));
   }
 
   /**
@@ -164,7 +204,7 @@ public class PaymentServiceImpl implements PaymentService {
    */
   private User getUser(Long userId) {
     return userRepository.findByIdAndIsDeletedFalse(userId)
-        .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        .orElseThrow(() -> new PaymentException(PaymentErrorCode.USER_NOT_FOUND));
   }
 
   /**
@@ -182,13 +222,11 @@ public class PaymentServiceImpl implements PaymentService {
    */
   private Map<String, Object> buildKeyInPayload(CardPaymentTestRequest req,
       Meeting meeting,
-      int amount) {
+      int amount, String orderId) {
 
     String[] exp = (req.getCardExpiry() != null ? req.getCardExpiry() : "12/25").split("/");
     String expMonth = exp[0];   // "12"
     String expYear = exp[1];   // "25"
-
-    String orderId = "order-" + UUID.randomUUID(); // UUID로 고유한 주문 번호 생성
 
     return Map.of(
         "amount", amount,
