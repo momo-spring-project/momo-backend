@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.category.exception.CategoryException;
 import com.example.momo.domain.category.application.CategoryService;
-import com.example.momo.domain.meeting.infra.MeetingParticipantJpaRepository;
+import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;

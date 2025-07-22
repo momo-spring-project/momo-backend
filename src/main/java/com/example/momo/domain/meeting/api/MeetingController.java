@@ -1,7 +1,9 @@
 package com.example.momo.domain.meeting.api;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -89,5 +91,53 @@ public class MeetingController {
 
 		meetingService.deleteMeeting(meetingId, authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 삭제가 성공적으로 완료되었습니다.", null));
+	}
+
+	// 모임 참가
+	@PostMapping("/{meetingId}/participants")
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> addParticipant(
+		@AuthenticationPrincipal AuthUser authUser,
+		@PathVariable Long meetingId
+	) {
+		ParticipantResponseDto responseData = meetingService.registerParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// 참가자 조회
+	@GetMapping("/{meetingId}/participants")
+	public ResponseEntity<ApiResponse<List<Long>>> getParticipants(
+		@PathVariable Long meetingId
+	) {
+		List<Long> responseData = meetingService.getParticipants(meetingId);
+		ApiResponse<List<Long>> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// 참가자 취소
+	@DeleteMapping("/{meetingId}/participants")
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> cancelParticipant(
+		@AuthenticationPrincipal AuthUser authUser,
+		@PathVariable Long meetingId
+	) {
+		ParticipantResponseDto responseData = meetingService.cancelParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 취소를 완료했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// required = false 자동 위치 입력 가능하면 제거
+	@PatchMapping("/{meetingId}/participants")
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> updateParticipantStatus(
+		@AuthenticationPrincipal AuthUser authUser,
+		@PathVariable Long meetingId,
+		@RequestParam(required = false) Double lat,
+		@RequestParam(required = false) Double lng
+	) {
+		lat = 37.298219;
+		lng = 126.966289;
+		ParticipantResponseDto responseData =
+			meetingService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("모임 출석 처리되었습니다", responseData);
+		return ResponseEntity.ok(response);
 	}
 }

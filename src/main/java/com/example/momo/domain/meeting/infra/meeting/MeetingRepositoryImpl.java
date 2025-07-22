@@ -1,10 +1,11 @@
-package com.example.momo.domain.meeting.infra;
+package com.example.momo.domain.meeting.infra.meeting;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.infra.participant.MeetingParticipantRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
