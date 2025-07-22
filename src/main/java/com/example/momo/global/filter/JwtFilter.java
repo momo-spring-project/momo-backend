@@ -103,7 +103,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
 				//응답 헤더에 access 토큰을 추가한다.
 				accessToken = JwtUtil.tokenPrefix + jwtUtil.subStringToken(accessToken);
-				System.out.println(accessToken);
 				response.addHeader(HttpHeaders.AUTHORIZATION, accessToken);
 			}
 		}

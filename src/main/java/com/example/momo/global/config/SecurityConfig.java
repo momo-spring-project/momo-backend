@@ -17,7 +17,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-
 import com.example.momo.domain.auth.service.OAuth2UserService;
 import com.example.momo.global.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.filter.JwtAuthenticationEntryPoint;
@@ -76,6 +75,7 @@ public class SecurityConfig {
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/v1/categories").hasRole("ADMIN")
 				.requestMatchers(HttpMethod.PATCH, "/api/v1/categories").hasRole("ADMIN")
+				.requestMatchers("/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**").permitAll()
 				.requestMatchers(
 					"/api/v1/auth/register",
 					"/api/v1/auth/login",
