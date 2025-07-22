@@ -1,7 +1,9 @@
 package com.example.momo.domain.meetings.application;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+import com.example.momo.domain.meetings.presentation.dto.ParticipantResponseDto;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.meetings.enums.MeetingStatus;
@@ -18,6 +20,10 @@ public class MeetingServiceImpl implements MeetingService {
 
 	private final MeetingCoreService meetingCoreService;
 	private final MeetingParticipantService meetingParticipantService;
+
+	/**
+	 * Meeting Core Service
+	 */
 
 	@Override
 	public MeetingResponse createMeeting(MeetingCreateRequest request, Long userId) {
@@ -54,6 +60,30 @@ public class MeetingServiceImpl implements MeetingService {
 	public void deleteMeeting(Long meetingId, Long userId) {
 
 		meetingCoreService.deleteMeeting(meetingId, userId);
+	}
+
+	/**
+	 * Meeting Participant Service
+	 */
+
+	@Override
+	public ParticipantResponseDto registerParticipant(Long userId, Long meetingId) {
+		return meetingParticipantService.registerParticipant(userId, meetingId);
+	}
+
+	@Override
+	public List<Long> getParticipants(Long meetingId) {
+		return meetingParticipantService.getParticipants(meetingId);
+	}
+
+	@Override
+	public ParticipantResponseDto cancelParticipant(Long userId, Long meetingId) {
+		return meetingParticipantService.cancelParticipant(userId, meetingId);
+	}
+
+	@Override
+	public ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng) {
+		return meetingParticipantService.updateParticipantStatus(id, meetingId, lat, lng);
 	}
 
 }
