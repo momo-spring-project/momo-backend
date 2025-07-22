@@ -1,18 +1,28 @@
 package com.example.momo.domain.user.application;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.categories.dto.CategoryResponseDto;
+import com.example.momo.domain.categories.exception.CategoryException;
+import com.example.momo.domain.categories.service.CategoryService;
+import com.example.momo.domain.meetings.infra.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserCategory;
+import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
-import com.example.momo.domain.user.domain.dto.UserEmailUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.domain.user.infra.UserRepository;
 
@@ -23,13 +33,16 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
 	private final UserRepository userRepository;
+	private final CategoryService categoryService;
+	private final BCryptPasswordEncoder passwordEncoder;
+	private final MeetingParticipantJpaRepository meetingParticipantRepository;
 
+	// === 사용자 정보 조회 ===
 	@Override
 	@Transactional(readOnly = true)
 	public UserInfoResponseDto getUserById(Long userId) {
-		User user = userRepository.findById(userId)
-			.orElseThrow(UserException::userNotFound);
-
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		return new UserInfoResponseDto(user);
 	}
 
@@ -42,30 +55,28 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional(readOnly = true)
 	public User validateAndGetUser(Long userId) {
-		return userRepository.findById(userId)
-			.orElseThrow(UserException::userNotFound);
+		return userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 	}
 
+	// === 사용자 정보 수정 ===
 	@Override
 	@Transactional
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
+		User user = validateAndGetUser(userId);
+
 		try {
-			User user = validateAndGetUser(userId);
+			List<CategoryResponseDto> categories = categoryService.getCategories(categoryIds);
 
-			// 서비스에서 직접 카테고리 업데이트 처리
-			user.getCategories().clear();
-			categoryIds.forEach(categoryId ->
-				user.getCategories().add(new UserCategory(categoryId))
-			);
+			if (categories.size() != categoryIds.size()) {
+				throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
+			}
 
-			// JPA 더티체킹으로 자동 업데이트
+			user.updateCategories(categoryIds);
 			return user;
-		} catch (UserException e) {
-			// UserException은 그대로 전파
-			throw e;
-		} catch (Exception e) {
-			// 기타 예외(DB 제약조건 위반 등)는 카테고리 관련 예외로 변환
-			throw UserException.invalidCategoryIds();
+
+		} catch (CategoryException e) {
+			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 	}
 
@@ -74,16 +85,15 @@ public class UserServiceImpl implements UserService {
 	public void updatePassword(Long userId, UserPasswordUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
 
-		// 서비스에서 현재 비밀번호 확인 (TODO: 암호화된 비밀번호와 비교)
-		if (!user.getPassword().equals(request.currentPassword())) {
-			throw UserException.passwordMismatch();
+		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
 		if (!request.newPassword().equals(request.confirmPassword())) {
-			throw UserException.passwordConfirmMismatch();
+			throw new UserException(UserErrorCode.PASSWORD_CONFIRM_MISMATCH);
 		}
 
-		user.updatePassword(request.newPassword());
+		user.updatePassword(passwordEncoder.encode(request.newPassword()));
 	}
 
 	@Override
@@ -92,48 +102,35 @@ public class UserServiceImpl implements UserService {
 		User user = validateAndGetUser(userId);
 
 		if (userRepository.existsByNicknameAndIdNot(request.nickname(), userId)) {
-			throw UserException.duplicateNickname();
+			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
 	}
 
-	@Override
-	@Transactional
-	public void updateEmail(Long userId, UserEmailUpdateRequestDto request) {
-		User user = validateAndGetUser(userId);
-
-		// 서비스에서 현재 비밀번호 확인 (TODO: 암호화된 비밀번호와 비교)
-		if (!user.getPassword().equals(request.currentPassword())) {
-			throw UserException.passwordMismatch();
-		}
-
-		if (userRepository.existsByEmailAndIdNot(request.email(), userId)) {
-			throw UserException.duplicateEmail();
-		}
-
-		user.updateEmail(request.email());
-	}
-
+	// === 사용자 평가 및 점수 집계 로직 ===
 	@Override
 	@Transactional
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
 		// 1. 자기 자신 평가 방지
 		if (reviewerId.equals(targetUserId)) {
-			throw UserException.cannotRateSelf();
+			throw new UserException(UserErrorCode.CANNOT_RATE_SELF);
 		}
 
 		// 2. 평가자 존재 확인
 		User reviewer = validateAndGetUser(reviewerId);
 
 		// 3. 평가 대상자 존재 확인
-		User targetUser = userRepository.findById(targetUserId)
-			.orElseThrow(UserException::targetUserNotFound);
+		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
+			.orElseThrow(() -> new UserException(UserErrorCode.TARGET_USER_NOT_FOUND));
 
-		// 4. 같은 모임 참가 여부 확인
-		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
+		// 4. 모임 존재 확인
+		meetingParticipantRepository.findById(request.meetingId())
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 모임입니다."));
+
+		// 5. 같은 모임 참가 여부 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
-		// 5. 중복 평가 확인 - targetUser의 ratings에서 확인
+		// 6. 중복 평가 확인 - targetUser의 ratings 에서 확인
 		boolean alreadyRated = targetUser.getRatings().stream()
 			.anyMatch(rating ->
 				rating.getReviewerId().equals(reviewerId) &&
@@ -141,25 +138,226 @@ public class UserServiceImpl implements UserService {
 			);
 
 		if (alreadyRated) {
-			throw UserException.duplicateRating();
+			throw new UserException(UserErrorCode.DUPLICATE_RATING);
 		}
 
-		// 6. 평가 생성 및 targetUser의 ratings에 추가
+		// 7. 평가 생성 및 targetUser의 ratings에 추가
 		UserRating userRating = new UserRating(
 			reviewerId,
+			targetUserId,
 			request.meetingId(),
 			request.ratingScore()
 		);
 
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
-		// JPA 더티체킹으로 자동 저장
+		recalculateUserScore(targetUserId);
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
-		// TODO: Meeting 도메인과 연동하여 실제 검증 로직 구현
-		// 현재는 임시로 모든 경우를 허용
-		// 실제 구현시에는 MeetingParticipant 테이블을 조회하여
-		// 두 사용자가 모두 해당 모임에 참가했는지 확인해야 함
+		// 평가자가 해당 모임에 참가했는지 확인
+		boolean reviewerParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, reviewerId);
+
+		// 평가 대상자가 해당 모임에 참가했는지 확인
+		boolean targetParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, targetUserId);
+
+		if (!reviewerParticipated || !targetParticipated) {
+			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
+		}
+	}
+
+	@Override
+	@Transactional
+	public void recalculateUserScore(Long userId) {
+		User user = validateAndGetUser(userId);
+
+		// 1. 평점 점수 계산 (60%)
+		double ratingScore = calculateRatingScore(user);
+
+		// 2. 참석률 점수 계산 (30%)
+		double attendanceScore = calculateAttendanceScore(userId);
+
+		// 3. 활동도 점수 계산 (10%)
+		double activityScore = calculateActivityScore(userId);
+
+		// 4. 총 점수 계산
+		double totalScore = ratingScore + attendanceScore + activityScore;
+
+		// 5. 점수 업데이트
+		user.updateScore(totalScore);
+	}
+
+	/**
+	 * 평점 기반 점수 계산 (60%)
+	 * 평점 4.5/5.0 → (4.5/5.0) * 60 = 54점
+	 * 주의: 이 메서드는 평가가 있는 사용자에 대해서만 호출됨
+	 */
+	private double calculateRatingScore(User user) {
+		// 평가받은 사용자라면 ratings가 있어야 함
+		if (user.getRatings().isEmpty()) {
+			throw new IllegalStateException("평가 점수를 계산하려 하는데 평가가 없습니다!");
+		}
+
+		// 평균 평점 계산
+		double averageRating = user.getRatings().stream()
+			.mapToInt(UserRating::getRatingScore)
+			.average()
+			.orElseThrow(() -> new IllegalStateException("평가 데이터가 비어있습니다!"));
+
+		// 5점 만점을 60점 만점으로 변환
+		return (averageRating / 5.0) * 60.0;
+	}
+
+	/**
+	 * 참석률 기반 점수 계산 (30%)
+	 * 신청한 모임 대비 실제 참석한 모임의 비율
+	 * 주의: 이 메서드는 평가를 받을 수 있는 사용자(= 최소 1개 모임 참가)에 대해서만 호출됨
+	 */
+	private double calculateAttendanceScore(Long userId) {
+		// 사용자가 참가 신청한 총 모임 수
+		long totalParticipation = meetingParticipantRepository.countByUserId(userId);
+
+		// 평가받을 수 있다는 것은 최소 1개 모임은 참가했다는 의미
+		// 만약 0이면 로직 오류
+		if (totalParticipation == 0) {
+			throw new IllegalStateException("평가받은 사용자인데 참가한 모임이 없습니다. 데이터 정합성 오류!");
+		}
+
+		// 실제 참석한 모임 수 (attendanceStatus = true)
+		long attendedMeetings = meetingParticipantRepository.countByUserIdAndAttendanceStatusTrue(userId);
+
+		// 참석률 계산
+		double attendanceRate = (double)attendedMeetings / totalParticipation;
+
+		// 30점 만점으로 변환
+		return attendanceRate * 30.0;
+	}
+
+	/**
+	 * 활동도 기반 점수 계산 (10%)
+	 * 최근 3개월 모임 참가 횟수 기준
+	 * 주의: 이 메서드는 모임 참가 기록이 있는 사용자에 대해서만 호출됨
+	 */
+	private double calculateActivityScore(Long userId) {
+		// 최근 3개월 기준 날짜
+		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+
+		// 최근 3개월간 참가한 모임 수
+		long recentParticipation = meetingParticipantRepository.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
+
+		// 월 평균 참가 횟수 계산
+		double monthlyAverage = recentParticipation / 3.0;
+
+		// 활동도 점수 계산 (실제 데이터만으로)
+		if (monthlyAverage >= 2.0) {
+			return 10.0; // 월 평균 2회 이상
+		} else if (monthlyAverage >= 1.0) {
+			return 7.0;  // 월 평균 1-2회
+		} else {
+			return 3.0;  // 월 평균 1회 미만 (0회 포함)
+		}
+	}
+
+	// === 팔로우 기능 ===
+	@Override
+	@Transactional
+	public void followUser(Long followerId, Long followingId) {
+		// 1. 자기 자신 팔로우 방지
+		if (followerId.equals(followingId)) {
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
+		}
+
+		// 2. 팔로워(나) 존재 확인
+		User follower = validateAndGetUser(followerId);
+
+		// 3. 팔로잉 대상 존재 확인
+		User following = validateAndGetUser(followingId);
+
+		// 4. 이미 팔로우했는지 확인
+		boolean alreadyFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+
+		if (alreadyFollowing) {
+			throw new UserException(UserErrorCode.ALREADY_FOLLOWING);
+		}
+
+		// 5. 팔로우 관계 생성 및 추가
+		UserFollow userFollow = new UserFollow(followerId, followingId);
+		follower.getFollowings().add(userFollow);
+
+		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
+		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+	}
+
+	@Override
+	@Transactional
+	public void unfollowUser(Long followerId, Long followingId) {
+		if (followerId.equals(followingId)) {
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
+		}
+
+		User follower = validateAndGetUser(followerId);
+		User following = validateAndGetUser(followingId);
+
+		boolean isFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+
+		if (!isFollowing) {
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
+
+		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
+		if (deletedCount == 0) {
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
+
+		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
+		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserFollowListResponseDto getFollowings(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowingCount(); // 미리 집계된 값 사용!
+
+		// 2. 팔로잉 목록 조회 (COUNT 쿼리 없음)
+		Slice<User> followingsSlice = userRepository.findFollowingsByUserId(userId, pageable);
+
+		List<UserFollowInfoResponseDto> followingsList = followingsSlice.getContent()
+			.stream()
+			.map(UserFollowInfoResponseDto::new)
+			.toList();
+
+		return new UserFollowListResponseDto(
+			followingsList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserFollowListResponseDto getFollowers(Long userId, Pageable pageable) {
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowerCount(); // 미리 집계된 값 사용!
+
+		// 2. 팔로워 목록 조회 (COUNT 쿼리 없음)
+		Slice<User> followersSlice = userRepository.findFollowersByUserId(userId, pageable);
+
+		List<UserFollowInfoResponseDto> followersList = followersSlice.getContent()
+			.stream()
+			.map(UserFollowInfoResponseDto::new)
+			.toList();
+
+		return new UserFollowListResponseDto(
+			followersList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
 	}
 }

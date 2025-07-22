@@ -10,4 +10,6 @@ public interface MeetingParticipantService {
 	List<Long> getParticipants(Long meetingId);
 
 	ParticipantResponseDto cancelParticipant(Long userId, Long meetingId);
+
+	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
 }

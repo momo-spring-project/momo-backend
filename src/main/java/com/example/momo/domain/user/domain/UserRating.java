@@ -22,6 +22,9 @@ public class UserRating extends BaseCreateEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Column(nullable = false, name = "target_user_id")
+	private Long targetUserId;
+
 	@Column(nullable = false, name = "reviewer_id")
 	private Long reviewerId;
 
@@ -31,8 +34,9 @@ public class UserRating extends BaseCreateEntity {
 	@Column(nullable = false, name = "rating_score")
 	private Integer ratingScore;
 
-	public UserRating(Long reviewerId, Long meetingId, Integer ratingScore) {
+	public UserRating(Long reviewerId, Long targetUserId, Long meetingId, Integer ratingScore) {
 		this.reviewerId = reviewerId;
+		this.targetUserId = targetUserId;
 		this.meetingId = meetingId;
 		this.ratingScore = ratingScore;
 	}

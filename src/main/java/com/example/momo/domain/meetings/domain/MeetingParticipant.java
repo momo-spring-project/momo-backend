@@ -35,4 +35,8 @@ public class MeetingParticipant extends BaseCreateEntity {
 		this.meetingId = meetingId;
 		this.userId = userId;
 	}
+
+	public void updateAttendanceStatus() {
+		this.attendanceStatus = true;
+	}
 }

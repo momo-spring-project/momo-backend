@@ -2,6 +2,8 @@ package com.example.momo.domain.user.infra;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.user.domain.User;
@@ -15,18 +17,23 @@ public class UserRepositoryImpl implements UserRepository {
 	private final UserJpaRepository userJpaRepository;
 
 	@Override
-	public Optional<User> findById(Long id) {
-		return userJpaRepository.findById(id);
-	}
-
-	@Override
-	public boolean existsByEmailAndIdNot(String email, Long id) {
-		return userJpaRepository.existsByEmailAndIdNot(email, id);
-	}
-
-	@Override
 	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
+	}
+
+	@Override
+	public Slice<User> findFollowingsByUserId(Long userId, Pageable pageable) {
+		return userJpaRepository.findFollowingsByUserId(userId, pageable);
+	}
+
+	@Override
+	public Slice<User> findFollowersByUserId(Long userId, Pageable pageable) {
+		return userJpaRepository.findFollowersByUserId(userId, pageable);
+	}
+
+	@Override
+	public int deleteUserFollow(Long followerId, Long followingId) {
+		return userJpaRepository.deleteUserFollow(followerId, followingId);
 	}
 
 	@Override
