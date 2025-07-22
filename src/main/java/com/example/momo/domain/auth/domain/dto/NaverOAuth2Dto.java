@@ -3,21 +3,22 @@ package com.example.momo.domain.auth.domain.dto;
 import java.util.Map;
 import java.util.UUID;
 
-public class GoogleResponse implements OAuth2Response {
+public class NaverOAuth2Dto implements OAuth2Response {
 	private final Map<String, Object> attribute;
 
-	public GoogleResponse(Map<String, Object> attribute) {
-		this.attribute = attribute;
+	public NaverOAuth2Dto(Map<String, Object> attribute) {
+
+		this.attribute = (Map<String, Object>)attribute.get("response");
 	}
 
 	@Override
 	public String getProvider() {
-		return "google";
+		return "naver";
 	}
 
 	@Override
 	public String getProviderId() {
-		return attribute.get("sub").toString();
+		return attribute.get("id").toString();
 	}
 
 	@Override
@@ -27,7 +28,7 @@ public class GoogleResponse implements OAuth2Response {
 
 	@Override
 	public String getNickname() {
-		return "GOOGLE:" + UUID.randomUUID().toString().substring(0, 18);
+		return "NAVER:" + UUID.randomUUID().toString().substring(0, 18);
 	}
 
 	@Override

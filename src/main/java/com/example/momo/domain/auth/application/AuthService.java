@@ -6,17 +6,17 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.domain.dto.AuthUser;
-import com.example.momo.domain.auth.domain.dto.LoginRequest;
-import com.example.momo.domain.auth.domain.dto.LoginResponse;
-import com.example.momo.domain.auth.domain.dto.RegisterRequest;
-import com.example.momo.domain.auth.domain.dto.WithdrawRequest;
 import com.example.momo.domain.auth.domain.UserSocial;
+import com.example.momo.domain.auth.domain.dto.AuthUser;
+import com.example.momo.domain.auth.domain.dto.LoginRequestDto;
+import com.example.momo.domain.auth.domain.dto.LoginResponseDto;
+import com.example.momo.domain.auth.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.auth.domain.dto.WithdrawRequestDto;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.domain.user.domain.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,7 +29,7 @@ public class AuthService {
 	private final UserSocialRepository userSocialRepository;
 
 	@Transactional
-	public void register(RegisterRequest request) {
+	public void registerUser(RegisterRequestDto request) {
 
 		if (userRepository.existsByNickname(request.getNickname())) {
 			throw new UserException(UserErrorCode.USER_NOT_FOUND);
@@ -49,7 +49,7 @@ public class AuthService {
 		userRepository.save(user);
 	}
 
-	public LoginResponse login(LoginRequest request) {
+	public LoginResponseDto loginUser(LoginRequestDto request) {
 		User user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
@@ -57,11 +57,11 @@ public class AuthService {
 		if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 
-		return new LoginResponse(user.getId(), user.getEmail(), user.getNickname());
+		return new LoginResponseDto(user.getId(), user.getEmail(), user.getNickname());
 	}
 
 	@Transactional
-	public void withdraw(WithdrawRequest request, AuthUser authUser) {
+	public void withdrawUser(WithdrawRequestDto request, AuthUser authUser) {
 
 		User user = userRepository.findByIdAndIsDeletedFalse(authUser.getId())
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));

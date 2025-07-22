@@ -8,11 +8,11 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.auth.domain.dto.CustomOAuth2User;
-import com.example.momo.domain.auth.domain.dto.GoogleResponse;
-import com.example.momo.domain.auth.domain.dto.NaverResponse;
-import com.example.momo.domain.auth.domain.dto.OAuth2Response;
 import com.example.momo.domain.auth.domain.UserSocial;
+import com.example.momo.domain.auth.domain.dto.CustomOAuth2User;
+import com.example.momo.domain.auth.domain.dto.GoogleOAuth2Dto;
+import com.example.momo.domain.auth.domain.dto.NaverOAuth2Dto;
+import com.example.momo.domain.auth.domain.dto.OAuth2Response;
 import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.user.domain.User;
@@ -40,9 +40,9 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 		// 각 리소스 서버에 맞는 객체 생성 (oAuthUser 객체와 User 엔티티 사이 매칭 역할)
 		OAuth2Response oAuth2Response = null;
 		if (registrationId.equals("naver"))
-			oAuth2Response = new NaverResponse(oAuth2User.getAttributes());
+			oAuth2Response = new NaverOAuth2Dto(oAuth2User.getAttributes());
 		else if (registrationId.equals("google"))
-			oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
+			oAuth2Response = new GoogleOAuth2Dto(oAuth2User.getAttributes());
 		else
 			return null;
 
