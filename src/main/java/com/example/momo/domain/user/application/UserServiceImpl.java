@@ -292,25 +292,24 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public void unfollowUser(Long followerId, Long followingId) {
-		// 1. 자기 자신 언팔로우 방지 (사실상 불가능하지만 안전장치)
 		if (followerId.equals(followingId)) {
 			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
 		}
 
-		// 2. 팔로워(나) 존재 확인
 		User follower = validateAndGetUser(followerId);
-
-		// 3. 팔로잉 대상 존재 확인
 		User following = validateAndGetUser(followingId);
 
-		// 4. 팔로우 관계 찾기
-		UserFollow followToRemove = follower.getFollowings().stream()
-			.filter(follow -> follow.getFollowingId().equals(followingId))
-			.findFirst()
-			.orElseThrow(() -> new UserException(UserErrorCode.NOT_FOLLOWING));
+		boolean isFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
 
-		// 5. 팔로우 관계 제거
-		follower.getFollowings().remove(followToRemove);
+		if (!isFollowing) {
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
+
+		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
+		if (deletedCount == 0) {
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
 
 		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
 		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
