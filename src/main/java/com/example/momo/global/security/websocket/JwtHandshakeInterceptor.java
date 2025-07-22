@@ -2,13 +2,14 @@ package com.example.momo.global.security.websocket;
 
 import java.util.Map;
 
-import com.example.momo.global.security.jwt.JwtUtil;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+
+import com.example.momo.global.security.jwt.JwtTokenProvider;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class JwtHandshakeInterceptor implements HandshakeInterceptor {
-	private final JwtUtil jwtUtil;
+	private final JwtTokenProvider jwtTokenProvider;
 
 	/**
 	 * WebSocket 핸드셰이크 전에 호출되어 JWT를 검증하고 사용자 ID를 추출하여 세션에 저장합니다.
@@ -43,7 +44,7 @@ public class JwtHandshakeInterceptor implements HandshakeInterceptor {
 			if (token != null && token.startsWith("Bearer ")) {
 				token = token.substring(7);
 				try {
-					Long userId = jwtUtil.getUserId(token);
+					Long userId = jwtTokenProvider.getUserId(token);
 					attributes.put("userId", userId);
 					return true;
 				} catch (Exception e) {
