@@ -2,6 +2,7 @@ package com.example.momo.domain.user.infra;
 
 import java.util.Optional;
 
+import com.example.momo.domain.user.domain.UserRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;

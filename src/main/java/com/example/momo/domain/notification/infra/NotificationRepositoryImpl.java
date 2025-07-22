@@ -2,6 +2,7 @@ package com.example.momo.domain.notification.infra;
 
 import java.util.List;
 
+import com.example.momo.domain.notification.domain.NotificationRepository;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.notification.domain.Notification;

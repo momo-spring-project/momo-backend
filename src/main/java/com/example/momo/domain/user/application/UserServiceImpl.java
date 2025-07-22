@@ -9,10 +9,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.categories.dto.CategoryResponseDto;
-import com.example.momo.domain.categories.exception.CategoryException;
-import com.example.momo.domain.categories.service.CategoryService;
-import com.example.momo.domain.meetings.infra.MeetingParticipantJpaRepository;
+import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
+import com.example.momo.domain.category.exception.CategoryException;
+import com.example.momo.domain.category.application.CategoryService;
+import com.example.momo.domain.meeting.infra.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
@@ -26,7 +26,7 @@ import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.domain.user.infra.UserRepository;
+import com.example.momo.domain.user.domain.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 

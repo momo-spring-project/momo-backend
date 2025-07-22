@@ -1,9 +1,9 @@
 package com.example.momo.domain.notification.application;
 
+import com.example.momo.global.socket.service.NotificationSender;
 import org.springframework.stereotype.Service;
 
-import com.example.momo.global.event.NotificationMeetingEvent;
-import com.example.momo.global.socket.service.NotificationSender;
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
