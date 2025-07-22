@@ -1,5 +1,6 @@
 package com.example.momo.domain.meetings.infra;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meetings.domain.Meeting;
 import com.example.momo.domain.meetings.domain.MeetingRepository;
+import com.example.momo.domain.meetings.enums.MeetingStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class MeetingRepositoryImpl implements MeetingRepository {
 
 	private final MeetingJpaRepository meetingJpaRepository;
+	private final MeetingQueryRepository meetingQueryRepository;
 
 	@Override
 	public Optional<Meeting> findById(Long id) {
@@ -28,8 +31,10 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
-	public Page<Meeting> findAllByTitleContaining(String title, Pageable pageable) {
-		return meetingJpaRepository.findAllByTitleContainingAndIsDeletedFalse(title, pageable);
+	public Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Pageable pageable) {
+
+		return meetingQueryRepository.findMeetings(title, meetingDate, status, pageable);
 	}
 
 	@Override

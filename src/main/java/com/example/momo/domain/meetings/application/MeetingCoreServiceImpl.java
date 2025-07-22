@@ -1,5 +1,6 @@
 package com.example.momo.domain.meetings.application;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -78,13 +79,13 @@ public class MeetingCoreServiceImpl implements MeetingCoreService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, int page, int size) {
+	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, MeetingStatus status,
+		LocalDateTime meetingDate, int page, int size) {
 
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.findAllByTitleContaining(title, pageable);
-
+		Page<Meeting> meetingPage = meetingRepository.findMeetings(title, meetingDate, status, pageable);
 		List<MeetingResponse> meetingResponses = meetingPage.stream()
 			.map(MeetingResponse::new)
 			.toList();

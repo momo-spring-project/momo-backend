@@ -1,5 +1,7 @@
 package com.example.momo.domain.meetings.application;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.meetings.enums.MeetingStatus;
@@ -42,9 +44,10 @@ public class MeetingServiceImpl implements MeetingService {
 	}
 
 	@Override
-	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, int page, int size) {
+	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, MeetingStatus status,
+		LocalDateTime meetingDate, int page, int size) {
 
-		return meetingCoreService.getMeetings(title, page, size);
+		return meetingCoreService.getMeetings(title, status, meetingDate, page, size);
 	}
 
 	@Override
