@@ -47,6 +47,8 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 			builder.and(meeting.status.eq(status));
 		}
 
+		builder.and(meeting.isDeleted.eq(false));
+
 		List<Meeting> meetingContent = queryFactory
 			.selectFrom(meeting)
 			.where(builder)
