@@ -19,6 +19,8 @@ import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
+import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
@@ -105,6 +107,16 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
+	}
+
+	@Override
+	@Transactional
+	public UserLocationResponseDto updateUserLocation(Long userId, UserLocationUpdateRequestDto request) {
+		User user = validateAndGetUser(userId);
+
+		user.updateLocation(request.latitude(), request.longitude());
+
+		return new UserLocationResponseDto(user);
 	}
 
 	// === 사용자 평가 및 점수 집계 로직 ===
@@ -243,7 +255,8 @@ public class UserServiceImpl implements UserService {
 		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
 
 		// 최근 3개월간 참가한 모임 수
-		long recentParticipation = meetingParticipantRepository.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
+		long recentParticipation = meetingParticipantRepository
+			.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
 
 		// 월 평균 참가 횟수 계산
 		double monthlyAverage = recentParticipation / 3.0;

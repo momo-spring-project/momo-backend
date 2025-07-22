@@ -35,7 +35,7 @@ public class User extends BaseEntity {
 	@Column(nullable = false, name = "email")
 	private String email;
 
-	@Column(nullable = false, name = "password")
+	@Column(name = "password")
 	private String password;
 
 	@Column(name = "score")
@@ -106,6 +106,11 @@ public class User extends BaseEntity {
 
 	public void decrementFollowerCount() {
 		this.followerCount--;
+	}
+
+	public void updateLocation(Double latitude, Double longitude) {
+		this.latitude = latitude;
+		this.longitude = longitude;
 	}
 
 	public void updateCategories(List<Integer> categoryIds) {
