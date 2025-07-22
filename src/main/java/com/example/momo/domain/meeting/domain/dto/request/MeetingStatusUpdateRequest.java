@@ -8,6 +8,6 @@ import lombok.Getter;
 @Getter
 public class MeetingStatusUpdateRequest {
 
-	@NotBlank(message = "상태값은 필수입니다.")
+	@NotBlank
 	private MeetingStatus status;
 }

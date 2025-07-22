@@ -1,9 +1,10 @@
 package com.example.momo.global.exception;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,9 +18,12 @@ import com.example.momo.global.common.dto.ApiResponse;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+	private final MessageSource messageSource;
 
 	// 비즈니스 로직에서 발생한 커스텀 예외 처리
 	@ExceptionHandler(BaseException.class)
@@ -38,7 +42,7 @@ public class GlobalExceptionHandler {
 		List<String> errors = e.getBindingResult()
 			.getAllErrors()
 			.stream()
-			.map(DefaultMessageSourceResolvable::getDefaultMessage)
+			.map(objectError -> messageSource.getMessage(objectError, Locale.KOREAN))
 			.toList();
 
 		return ResponseEntity
