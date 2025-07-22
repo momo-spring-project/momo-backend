@@ -17,12 +17,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import com.example.momo.domain.auth.service.OAuth2UserService;
-import com.example.momo.global.filter.JwtAccessDeniedHandler;
-import com.example.momo.global.filter.JwtAuthenticationEntryPoint;
-import com.example.momo.global.filter.JwtFilter;
-import com.example.momo.global.filter.OAuth2SuccessHandler;
-import com.example.momo.global.utils.JwtUtil;
+import com.example.momo.domain.auth.application.OAuth2UserService;
+import com.example.momo.global.security.filter.JwtAccessDeniedHandler;
+import com.example.momo.global.security.filter.JwtAuthenticationEntryPoint;
+import com.example.momo.global.security.filter.JwtFilter;
+import com.example.momo.global.security.oauth2.OAuth2SuccessHandler;
+import com.example.momo.global.security.jwt.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;

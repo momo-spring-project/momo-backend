@@ -2,15 +2,15 @@ package com.example.momo.domain.notification.application;
 
 import java.util.List;
 
+import com.example.momo.global.socket.service.NotificationSender;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.notification.domain.NotificationResponse;
-import com.example.momo.domain.notification.infra.NotificationRepository;
-import com.example.momo.global.event.NotificationMeetingEvent;
-import com.example.momo.global.socket.service.NotificationSender;
+import com.example.momo.domain.notification.domain.dto.NotificationResponse;
+import com.example.momo.domain.notification.domain.NotificationRepository;
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
