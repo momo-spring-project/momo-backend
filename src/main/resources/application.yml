@@ -19,6 +19,9 @@ spring:
         format_sql: true
     show-sql: true
 
+  messages:
+    basename: validations
+    encoding: UTF-8
 
 toss:
   payments:
