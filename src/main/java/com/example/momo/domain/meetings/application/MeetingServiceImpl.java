@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class MeetingServiceImpl implements MeetingService {
 
 	private final MeetingRepository meetingRepository;
+	private final MeetingParticipantService meetingParticipantService;
 
 	@Override
 	@Transactional
@@ -112,6 +113,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.delete();
 	}
+
 	/**
 	 * Meeting Participant Service
 	 */
