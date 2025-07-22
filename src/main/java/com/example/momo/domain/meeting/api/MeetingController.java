@@ -95,11 +95,11 @@ public class MeetingController {
 
 	// 모임 참가
 	@PostMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<ParticipantResponseDto>> addParticipant(
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> createParticipant(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingService.registerParticipant(authUser.getId(), meetingId);
+		ParticipantResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
@@ -116,11 +116,11 @@ public class MeetingController {
 
 	// 참가자 취소
 	@DeleteMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<ParticipantResponseDto>> cancelParticipant(
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> deleteParticipant(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingService.cancelParticipant(authUser.getId(), meetingId);
+		ParticipantResponseDto responseData = meetingService.deleteParticipant(authUser.getId(), meetingId);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 취소를 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}

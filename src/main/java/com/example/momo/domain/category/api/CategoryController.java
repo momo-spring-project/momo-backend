@@ -1,6 +1,6 @@
 package com.example.momo.domain.category.api;
 
-import com.example.momo.domain.category.domain.dto.CategoryAddRequestDto;
+import com.example.momo.domain.category.domain.dto.CategoryCreateRequestDto;
 import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.category.domain.dto.CategoryUpdateRequestDto;
 import com.example.momo.domain.category.application.CategoryService;
@@ -22,10 +22,10 @@ public class CategoryController {
 
 	// 카테고리 추가
 	@PostMapping
-	public ResponseEntity<ApiResponse<CategoryResponseDto>> addCategory(
-		@Valid @RequestBody CategoryAddRequestDto request
+	public ResponseEntity<ApiResponse<CategoryResponseDto>> createCategory(
+		@Valid @RequestBody CategoryCreateRequestDto request
 		) {
-		CategoryResponseDto responseData = categoryService.addCategory(request);
+		CategoryResponseDto responseData = categoryService.createCategory(request);
 		ApiResponse<CategoryResponseDto> response = ApiResponse.success("카테고리 추가를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}

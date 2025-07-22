@@ -78,7 +78,7 @@ public class Meeting extends BaseEntity {
 	private MeetingStatus status; // 모집중, 모집완료
 
 	@Version
-	private Integer version;
+	private Long version;
 
 	public void updateMeeting(MeetingUpdateRequest request) {
 		this.title = request.getTitle();
@@ -103,7 +103,7 @@ public class Meeting extends BaseEntity {
 		this.currentParticipantsCount++;
 	}
 
-	public void removeMeetingParticipant() {
+	public void subMeetingParticipant() {
 		this.currentParticipantsCount--;
 	}
 }

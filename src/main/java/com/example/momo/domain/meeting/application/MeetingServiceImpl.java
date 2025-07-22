@@ -131,7 +131,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional
-	public ParticipantResponseDto registerParticipant(Long userId, Long meetingId) {
+	public ParticipantResponseDto createParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
@@ -178,7 +178,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional
-	public ParticipantResponseDto cancelParticipant(Long userId, Long meetingId) {
+	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
@@ -263,7 +263,7 @@ public class MeetingServiceImpl implements MeetingService {
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(), user.getId());
 
 		// 인원 계산, 참가자 삭제
-		meeting.removeMeetingParticipant();
+		meeting.subMeetingParticipant();
 		em.remove(participant);
 
 		return new ParticipantResponseDto(participant);

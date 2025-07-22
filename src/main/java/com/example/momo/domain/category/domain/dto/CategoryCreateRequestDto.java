@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class CategoryAddRequestDto {
+public class CategoryCreateRequestDto {
 	@NotBlank
 	private String categoryName;
 	@NotBlank
