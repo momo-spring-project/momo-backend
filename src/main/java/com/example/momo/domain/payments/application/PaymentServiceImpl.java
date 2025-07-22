@@ -21,6 +21,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
@@ -139,6 +141,22 @@ public class PaymentServiceImpl implements PaymentService {
   }
 
   // ==================== 조회 메서드 ====================
+
+
+  /**
+   * 관리자용 전체 조회 메서드
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public Page<PaymentResponse> searchPayments(Long meetingId,
+      Long userId,
+      PaymentStatus status,
+      Pageable pageable) {
+
+    Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
+    return page.map(PaymentResponse::from);
+  }
+
 
   /**
    * 모임별 결제 내역 조회

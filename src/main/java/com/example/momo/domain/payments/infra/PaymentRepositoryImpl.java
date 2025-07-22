@@ -5,6 +5,8 @@ import com.example.momo.domain.payments.enums.PaymentStatus;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -42,5 +44,11 @@ public class PaymentRepositoryImpl implements PaymentRepository {
   @Override
   public void delete(Payment payment) {
     paymentJpaRepository.delete(payment);
+  }
+
+  @Override
+  public Page<Payment> searchPayments(Long meetingId, Long userId, PaymentStatus status,
+      Pageable pageable) {
+    return paymentJpaRepository.searchPayments(meetingId, userId, status, pageable);
   }
 }

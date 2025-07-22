@@ -4,10 +4,9 @@ import com.example.momo.domain.payments.infra.toss.TossPaymentsConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
 @SpringBootApplication
-@EnableJpaAuditing
+//@EnableJpaAuditing
 @EnableConfigurationProperties(TossPaymentsConfig.class)
 public class MomoApplication {
 

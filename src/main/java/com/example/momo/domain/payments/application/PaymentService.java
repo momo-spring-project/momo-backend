@@ -3,7 +3,10 @@ package com.example.momo.domain.payments.application;
 import com.example.momo.domain.payments.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payments.dto.PaymentResponse;
 import com.example.momo.domain.payments.dto.RefundRequest;
+import com.example.momo.domain.payments.enums.PaymentStatus;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface PaymentService {
 
@@ -20,5 +23,11 @@ public interface PaymentService {
   List<PaymentResponse> getPaymentsByUserId(Long userId);
 
   boolean hasUserPaidForMeeting(Long userId, Long meetingId);
+
+
+  Page<PaymentResponse> searchPayments(Long meetingId,
+      Long userId,
+      PaymentStatus status,
+      Pageable pageable);
 
 }
