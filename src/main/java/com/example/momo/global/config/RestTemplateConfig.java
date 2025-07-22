@@ -1,6 +1,6 @@
 package com.example.momo.global.config;
 
-import com.example.momo.domain.payments.infra.toss.TossPaymentsConfig;
+import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;

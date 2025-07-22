@@ -3,7 +3,7 @@ package com.example.momo.domain.user.domain;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.momo.domain.common.entity.BaseEntity;
+import com.example.momo.global.common.entity.BaseEntity;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

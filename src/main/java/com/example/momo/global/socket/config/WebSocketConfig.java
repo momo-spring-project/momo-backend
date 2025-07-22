@@ -6,7 +6,7 @@ import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
 import com.example.momo.global.socket.handler.WebSocketHandler;
-import com.example.momo.global.utils.JwtHandshakeInterceptor;
+import com.example.momo.global.security.websocket.JwtHandshakeInterceptor;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

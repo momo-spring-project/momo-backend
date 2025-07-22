@@ -1,6 +1,6 @@
 package com.example.momo.domain.user.domain;
 
-import com.example.momo.domain.common.entity.BaseCreateEntity;
+import com.example.momo.global.common.entity.BaseCreateEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
