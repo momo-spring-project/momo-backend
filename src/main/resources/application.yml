@@ -14,8 +14,13 @@ spring:
   flyway:
     enabled: true                    # Flyway 활성화
     locations: classpath:db/migration
-    baseline-on-migrate: true        # 기존 DB 있어도 마이그레이션 적용 가능
-    clean-disabled: false            # clean 기능 활성화 (개발용)
+    encoding: UTF-8
+    validate-on-migrate: true      # 마이그레이션 파일 변경 감지
+    out-of-order: false           # 순서대로 실행 강제
+    group: false                  # 트랜잭션 단위로 개별 실행
+    mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
+    clean-disabled: false
+    baseline-on-migrate: true
 
   jpa:
     hibernate:
