@@ -48,10 +48,8 @@ public class WebClientConfig {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			if(authentication != null && authentication.isAuthenticated()) {
-				System.out.println("[WebClient Filter]");
 				Object credentials = authentication.getCredentials();
 				if(credentials instanceof String token) {
-					System.out.println("[WebClient Filter] Attaching Authorization token: Bearer " + token);
 					ClientRequest newRequest = ClientRequest.from(clientRequest)
 						.headers(headers -> headers.setBearerAuth(token))
 						.build();
