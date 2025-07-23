@@ -8,7 +8,7 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 import lombok.Getter;
 
 @Getter
-public class MeetingResponse {
+public class MeetingResponseDto {
 
 	private final Long id;
 	private final Long hostUserId;
@@ -28,7 +28,7 @@ public class MeetingResponse {
 	private final LocalDateTime createdAt;
 	private final LocalDateTime updatedAt;
 
-	public MeetingResponse(Meeting meeting) {
+	public MeetingResponseDto(Meeting meeting) {
 		this.id = meeting.getId();
 		this.hostUserId = meeting.getHostUserId();
 		this.title = meeting.getTitle();
