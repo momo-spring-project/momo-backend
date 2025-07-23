@@ -15,6 +15,13 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ ********************
+ *	보험용, 사용중 x  *
+ ********************
+ */
+
+
 @Component
 @RequiredArgsConstructor
 public class ParticipantPaymentListener {

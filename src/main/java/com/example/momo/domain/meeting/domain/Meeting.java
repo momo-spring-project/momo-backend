@@ -78,7 +78,7 @@ public class Meeting extends BaseEntity {
 	private MeetingStatus status; // 모집중, 모집완료
 
 	@Version
-	private Long version;
+	private Integer version;
 
 	public void updateMeeting(MeetingUpdateRequest request) {
 		this.title = request.getTitle();
