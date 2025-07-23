@@ -11,6 +11,7 @@ public class MeetingEvents {
 	public record Create(
 		Long meetingId,
 		int categoryId,
+		String categoryName,
 		Double latitude,
 		Double longitude
 	) implements MeetingEvent {
@@ -18,12 +19,14 @@ public class MeetingEvents {
 
 	public record Update(
 		Long meetingId,
+		String meetingName,
 		List<Long> userIdList
 	) implements MeetingEvent {
 	}
 
 	public record Delete(
 		Long meetingId,
+		String meetingName,
 		List<Long> userIdList
 	) implements MeetingEvent {
 	}
