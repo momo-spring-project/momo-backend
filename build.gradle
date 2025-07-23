@@ -36,6 +36,9 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // WebClient를 위한 Spring WebFlux
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     //jwt 의존성
     implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
     implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
