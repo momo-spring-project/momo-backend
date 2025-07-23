@@ -4,7 +4,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
+import com.example.momo.domain.notification.domain.dto.NotificationDto;
+import com.example.momo.global.common.event.NotificationEvent;
 import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 import com.example.momo.global.socket.service.WebSocketNotificationService;
 
@@ -31,14 +32,22 @@ public class NotificationHandler {
 	 * @param event 처리할 알림 이벤트 정보
 	 */
 	@Transactional
-	public void processMeeting(NotificationMeetingEventDto event) {
+	public void processMeeting(NotificationEvent event) {
+		Long userId = event.userId();
+		Long meetingId = event.meetingId();
+		String content = event.content();
+
 		//DB 저장
-		notificationService.createNotification(event);
+		notificationService.createNotification(new NotificationDto(
+			userId,
+			meetingId,
+			content
+		));
 
 		//사용자에게 전송
 		webSocketNotificationService.send(new WebSocketNotificationDto(
-			event.userId(),
-			event.content(),
+			userId,
+			content,
 			LocalDateTime.now()
 		));
 	}

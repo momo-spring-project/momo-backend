@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.notification.domain.NotificationRepository;
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
+import com.example.momo.domain.notification.domain.dto.NotificationDto;
 import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
 import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 import com.example.momo.global.socket.service.WebSocketNotificationService;
@@ -29,9 +29,9 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void createNotification(NotificationMeetingEventDto event) {
+	public void createNotification(NotificationDto dto) {
 		try {
-			notificationRepository.save(event.toEntity());
+			notificationRepository.save(dto.toEntity());
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
@@ -48,11 +48,11 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
-	public void sendNotification(NotificationMeetingEventDto event) {
+	public void sendNotification(NotificationDto dto) {
 
 		webSocketNotificationService.send(new WebSocketNotificationDto(
-			event.userId(),
-			event.content(),
+			dto.userId(),
+			dto.content(),
 			LocalDateTime.now()
 		));
 	}
