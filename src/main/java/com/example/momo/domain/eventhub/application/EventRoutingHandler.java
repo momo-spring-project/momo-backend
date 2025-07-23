@@ -4,22 +4,19 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 
 //이벤트 받아서 흐름 제어
 @Component
 @RequiredArgsConstructor
-public class NotificationEventHandler {
+public class EventRoutingHandler {
 
-	private final NotificationProvider notificationProvider;
+	private final NotificationEventProvider notificationEventProvider;
 
 	private final ApplicationEventPublisher eventPublisher;
 
 	public void handleMeetingEvent(MeetingEvents.MeetingEvent event) {
-		NotificationEvent notificationEvent = notificationProvider.provider(event);
-
-		eventPublisher.publishEvent(notificationEvent);
+		eventPublisher.publishEvent(notificationEventProvider.processMeeting(event));
 	}
 }

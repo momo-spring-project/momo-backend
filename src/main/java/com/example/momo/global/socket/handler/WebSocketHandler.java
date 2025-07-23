@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
  * WebSocket 연결을 관리하고 사용자별 메시지를 전송하는 핸들러 클래스입니다.
  * 사용자의 WebSocketSession 을 userId 기준으로 저장하고,
  * 서버에서 특정 사용자에게 메시지를 보낼 수 있도록 지원합니다.
- * todo:현재는 session 방식으로 url 에 있는 userId 를 바탕으로 임시 구현 -> JWT 방식으로 변경시 로직 변경 예정
  */
 
 @Slf4j

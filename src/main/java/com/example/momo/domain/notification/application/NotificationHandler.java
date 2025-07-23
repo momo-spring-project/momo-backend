@@ -33,22 +33,24 @@ public class NotificationHandler {
 	 */
 	@Transactional
 	public void processMeeting(NotificationEvent event) {
-		Long userId = event.userId();
 		Long meetingId = event.meetingId();
 		String content = event.content();
 
-		//DB 저장
-		notificationService.createNotification(new NotificationDto(
-			userId,
-			meetingId,
-			content
-		));
+		for (Long userId : event.userIdList()) {
+			//DB 저장
+			notificationService.createNotification(new NotificationDto(
+				userId,
+				meetingId,
+				content
+			));
 
-		//사용자에게 전송
-		webSocketNotificationService.send(new WebSocketNotificationDto(
-			userId,
-			content,
-			LocalDateTime.now()
-		));
+			//사용자에게 전송
+			webSocketNotificationService.send(new WebSocketNotificationDto(
+				userId,
+				content,
+				LocalDateTime.now()
+			));
+		}
+
 	}
 }

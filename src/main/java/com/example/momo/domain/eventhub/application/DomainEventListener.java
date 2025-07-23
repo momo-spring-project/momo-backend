@@ -11,12 +11,12 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class NotificationEventHubListener {
-	private final NotificationEventHandler notificationEventHandler;
+public class DomainEventListener {
+	private final EventRoutingHandler eventRoutingHandler;
 
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handle(MeetingEvents.MeetingEvent event) {
-		notificationEventHandler.handleMeetingEvent(event);
+		eventRoutingHandler.handleMeetingEvent(event);
 	}
 }
