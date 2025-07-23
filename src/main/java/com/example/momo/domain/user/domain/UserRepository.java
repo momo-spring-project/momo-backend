@@ -8,7 +8,7 @@ import org.springframework.data.domain.Slice;
 
 public interface UserRepository {
 
-	boolean existsByNicknameAndIdNot(String nickname, Long id);
+	boolean isDuplicateNickname(String nickname, Long id);
 
 	/**
 	 * 다중 사용자 조회 (삭제되지 않은 사용자만)

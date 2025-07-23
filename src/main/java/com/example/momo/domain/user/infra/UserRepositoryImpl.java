@@ -19,7 +19,7 @@ public class UserRepositoryImpl implements UserRepository {
 	private final UserJpaRepository userJpaRepository;
 
 	@Override
-	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
+	public boolean isDuplicateNickname(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
 	}
 

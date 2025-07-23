@@ -2,7 +2,7 @@ package com.example.momo.domain.user.domain.dto;
 
 import com.example.momo.domain.user.domain.User;
 
-public record UserInfoListResponseDto(
+public record UserListResponseDto(
 	Long id,
 	String nickname,
 	String email,
@@ -12,7 +12,7 @@ public record UserInfoListResponseDto(
 	int followingCount,
 	int followerCount
 ) {
-	public UserInfoListResponseDto(User user) {
+	public UserListResponseDto(User user) {
 		this(
 			user.getId(),
 			user.getNickname(),
@@ -25,8 +25,8 @@ public record UserInfoListResponseDto(
 		);
 	}
 
-	public static UserInfoListResponseDto from(UserInfoResponseDto userInfo) {
-		return new UserInfoListResponseDto(
+	public static UserListResponseDto from(UserResponseDto userInfo) {
+		return new UserListResponseDto(
 			userInfo.id(),
 			userInfo.nickname(),
 			userInfo.email(),

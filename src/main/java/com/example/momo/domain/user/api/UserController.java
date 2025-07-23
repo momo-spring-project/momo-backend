@@ -18,14 +18,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
-import com.example.momo.domain.user.domain.dto.UserInfoListResponseDto;
+import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.domain.user.application.UserService;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
@@ -44,10 +44,10 @@ public class UserController {
 
 	// 특정 사용자 정보 조회
 	@GetMapping("{userId}")
-	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getUserInfo(
+	public ResponseEntity<ApiResponse<UserResponseDto>> getUser(
 		@PathVariable Long userId
 	) {
-		UserInfoResponseDto response = userService.getUserById(userId);
+		UserResponseDto response = userService.getUserById(userId);
 		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
 	}
 
@@ -56,7 +56,7 @@ public class UserController {
 	 * UserClient의 다건 조회를 위해 사용
 	 */
 	@GetMapping
-	public ResponseEntity<ApiResponse<List<UserInfoListResponseDto>>> getUsers(
+	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsers(
 		@RequestParam(required = false) List<Long> ids
 	) {
 		// ids 파라미터가 없으면 빈 리스트 반환
@@ -64,7 +64,7 @@ public class UserController {
 			return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", List.of()));
 		}
 
-		List<UserInfoListResponseDto> users = userService.getUsersByIds(ids);
+		List<UserListResponseDto> users = userService.getUsersByIds(ids);
 		return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", users));
 	}
 
@@ -86,10 +86,10 @@ public class UserController {
 
 	// 현재 로그인안 사용자 정보 조회
 	@GetMapping("/me")
-	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser(
+	public ResponseEntity<ApiResponse<UserResponseDto>> getMyProfile(
 		@AuthenticationPrincipal AuthUser authUser
 	) {
-		UserInfoResponseDto response = userService.getCurrentUser(authUser.getId());
+		UserResponseDto response = userService.getMyProfile(authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
 	}
 

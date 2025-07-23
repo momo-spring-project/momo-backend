@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.dto.UserInfoListResponseDto;
+import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
@@ -24,7 +24,7 @@ public interface UserService {
 	 * @param userIds 조회할 사용자 ID 목록
 	 * @return 사용자 정보 DTO 목록 (존재하지 않는 사용자는 제외)
 	 */
-	List<UserInfoListResponseDto> getUsersByIds(List<Long> userIds);
+	List<UserListResponseDto> getUsersByIds(List<Long> userIds);
 
 	/**
 	 * 사용자 존재 여부 확인
@@ -34,9 +34,9 @@ public interface UserService {
 	 */
 	List<Long> getExistingUserIds(List<Long> userIds);
 
-	UserInfoResponseDto getUserById(Long userId);
+	UserResponseDto getUserById(Long userId);
 
-	UserInfoResponseDto getCurrentUser(Long CurrentUserId);
+	UserResponseDto getMyProfile(Long CurrentUserId);
 
 	User updateUserCategories(Long userId, List<Integer> categoryIds);
 
