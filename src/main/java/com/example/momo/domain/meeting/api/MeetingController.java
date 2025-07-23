@@ -36,7 +36,7 @@ import lombok.AllArgsConstructor;
 @Validated
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/v1/meetings")
+@RequestMapping("/api/v2/meetings")
 public class MeetingController {
 
 	private final MeetingService meetingService;
@@ -96,12 +96,12 @@ public class MeetingController {
 
 	// 모임 참가
 	@PostMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<ParticipantCreateResponseDto>> createParticipant(
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> createParticipant(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantCreateResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
-		ApiResponse<ParticipantCreateResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
+		ParticipantResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 

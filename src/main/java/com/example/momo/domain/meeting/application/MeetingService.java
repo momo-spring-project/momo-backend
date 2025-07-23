@@ -30,7 +30,7 @@ public interface MeetingService {
 
 	/** Meeting Participant Service */
 
-	ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId);
+	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
 
 	ParticipantResponseDto getParticipant(Long participantId);
 

@@ -4,12 +4,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
+import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
+import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.utils.RetryUtil;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -35,11 +39,10 @@ import lombok.RequiredArgsConstructor;
 public class MeetingServiceImpl implements MeetingService {
 
 	private final ApplicationEventPublisher eventPublisher;
-
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
-
 	private final UserClient userClient;
+	private final PaymentService paymentService;
 
 	@Override
 	@Transactional
@@ -131,7 +134,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional
-	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
+	public ParticipantResponseDto createParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
@@ -150,13 +153,32 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		// 이벤트발행(테스트)
-		// 결제완료 이벤트 있으면 넣어서 테스트
+		// 현재 비동기, webClient 로 처리하면 paymentClient.결제(동기 처리) 대기
+		paymentService.createTestKeyInPayment(
+			new CardPaymentTestRequest(
+				meetingId,
+				"4242424242424242",
+				"12/25",
+				"242",
+				"881212"
+			), userId
+		);
 
-		//결제 알고리즘
+		try {
+			ParticipantResponseDto responseDto = RetryUtil.retry(() -> addParticipant(meetingId, userId), 5);
+			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
+			return responseDto;
+		} catch (OptimisticLockingFailureException e) {
+			paymentService.refundPayment(
+				1L, // event.paymentId (예상)
+				userId,
+				new RefundRequest("Join Meeting Fail")
+			);
+			throw e;
+		}
 
-		// createParticipant 에서는 결제 요청 까지만 진행
-		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
+		// createParticipant 에서는 결제 요청 까지만 진행 (이벤트 기반 비동기 처리시 사용)
+		// return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
 	}
 
 	@Override
@@ -186,10 +208,15 @@ public class MeetingServiceImpl implements MeetingService {
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
-		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, userId), 5);
+		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
 
-		// deleteParticipant 에서는 참가 취소 시키고 환불 진행하도록 Event 발행까지만 진행
-		eventPublisher.publishEvent(new ParticipationCanceledEvent(meetingId, userId));
+		paymentService.refundPayment(
+			1L,
+			userId,
+			new RefundRequest("Cancel")
+		);
+
+		eventPublisher.publishEvent(new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), user.getNickname()));
 
 		return responseDto;
 	}
@@ -218,17 +245,34 @@ public class MeetingServiceImpl implements MeetingService {
 		return new ParticipantResponseDto(participant);
 	}
 
+	// 참가자 추가
+	@Transactional
+	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
+
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+
+		if(meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+
+		// 참가자 추가
+		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
+		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
+
+		meeting.addMeetingParticipant();
+
+		return new ParticipantResponseDto(savedParticipant);
+	}
+
 	// 참가자 감소
 	@Transactional
-	public ParticipantResponseDto removeParticipant(Long meetingId, Long userId) {
+	public ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
 		if(meeting.getCurrentParticipantsCount() <= 0) {
 			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
 		}
-
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(), userId);
 
 		// 인원 계산, 참가자 삭제
 		meeting.removeMeetingParticipant();
@@ -255,5 +299,4 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
 		}
 	}
-
 }
