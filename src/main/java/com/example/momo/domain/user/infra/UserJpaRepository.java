@@ -28,6 +28,7 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	 */
 	@Query("SELECT u.id FROM User u WHERE u.id IN :userIds AND u.isDeleted = false")
 	List<Long> findExistingUserIds(@Param("userIds") List<Long> userIds);
+
 	/**
 	 * 특정 사용자가 팔로잉하는 사용자들 조회 (Slice 사용으로 COUNT 쿼리 방지)
 	 */
@@ -46,6 +47,11 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 		"ORDER BY u.id")
 	Slice<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
 
+	@Modifying
+	@Query("DELETE FROM UserFollow uf WHERE uf.followerId = :followerId AND uf.followingId = :followingId")
+	int deleteUserFollow(@Param("followerId") Long followerId, @Param("followingId") Long followingId);
+
+	// === Auth 도메인에서 사용 ===
 	boolean existsByEmail(String email);
 
 	boolean existsByNickname(String nickname);
@@ -53,8 +59,4 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	Optional<User> findByEmailAndIsDeletedFalse(String email);
 
 	Optional<User> findByIdAndIsDeletedFalse(Long id);
-
-	@Modifying
-	@Query("DELETE FROM UserFollow uf WHERE uf.followerId = :followerId AND uf.followingId = :followingId")
-	int deleteUserFollow(@Param("followerId") Long followerId, @Param("followingId") Long followingId);
 }

@@ -50,7 +50,7 @@ public interface UserRepository {
 	 */
 	int deleteUserFollow(Long followerId, Long followingId);
 
-	// Auth 쪽에서 사용
+	// === Auth 도메인에서 사용 ===
 	boolean existsByEmail(String email);
 
 	boolean existsByNickname(String nickname);

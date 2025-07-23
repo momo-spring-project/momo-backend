@@ -51,10 +51,8 @@ public class UserController {
 		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
 	}
 
-	/**
-	 * 다중 사용자 정보 조회 (쿼리 파라미터 방식)
-	 * UserClient의 다건 조회를 위해 사용
-	 */
+
+	// 다중 사용자 정보 조회 (쿼리 파라미터 방식)
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsers(
 		@RequestParam(required = false) List<Long> ids
@@ -68,10 +66,7 @@ public class UserController {
 		return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", users));
 	}
 
-	/**
-	 * 사용자 존재 여부 확인 (ID만 반환)
-	 * UserClient의 존재 여부 확인을 위해 사용
-	 */
+	// 사용자 존재 여부 확인 (ID만 반환)
 	@GetMapping("/exists")
 	public ResponseEntity<ApiResponse<List<Long>>> checkUsersExist(
 		@RequestParam List<Long> ids

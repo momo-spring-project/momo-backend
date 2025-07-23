@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.example.momo.domain.user.domain.UserRepository;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
@@ -48,6 +49,7 @@ public class UserRepositoryImpl implements UserRepository {
 		return userJpaRepository.deleteUserFollow(followerId, followingId);
 	}
 
+	// === Auth 도메인에서 사용 ===
 	@Override
 	public boolean existsByEmail(String email) {
 		return userJpaRepository.existsByEmail(email);
