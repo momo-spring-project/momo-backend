@@ -1,10 +1,11 @@
 package com.example.momo.domain.notification.application;
 
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class NotificationEventListener {
 
-	private final NotificationProcessor notificationProcessor;
+	private final NotificationHandler notificationHandler;
 
 	/**
-	 * {@link NotificationMeetingEvent} 이벤트를 처리합니다.
+	 * {@link NotificationMeetingEventDto} 이벤트를 처리합니다.
 	 * 트랜잭션 커밋 이후(@AFTER_COMMIT)에 비동기(@Async)로 실행되며,
 	 * 필수 정보가 모두 포함된 경우에만 알림을 저장하고 WebSocket 으로 전송합니다.
 	 *
@@ -31,16 +32,16 @@ public class NotificationEventListener {
 	 */
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handleMeetingNotification(NotificationMeetingEvent event) {
+	public void handleMeetingNotification(NotificationMeetingEventDto event) {
 		if (!isValidNotificationEvent(event)) {
 			log.warn("알림 이벤트 처리 실패 - 필수 값 누락: {}", event);
 			return;
 		}
-		notificationProcessor.processMeeting(event);
+		notificationHandler.processMeeting(event);
 	}
 
 	//Meeting Event 객체 유효성 검사
-	private boolean isValidNotificationEvent(NotificationMeetingEvent event) {
+	private boolean isValidNotificationEvent(NotificationMeetingEventDto event) {
 		return event != null
 			&& event.userId() != null
 			&& event.meetingId() != null

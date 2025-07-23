@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
-import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.domain.notification.application.NotificationService;
-import com.example.momo.domain.notification.domain.dto.NotificationResponse;
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
+import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
+import com.example.momo.global.common.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +26,7 @@ public class NotificationController {
 	private final NotificationService notificationService;
 
 	@GetMapping("/notifications")
-	public ResponseEntity<ApiResponse<List<NotificationResponse>>> getNotifications(
+	public ResponseEntity<ApiResponse<List<NotificationResponseDto>>> getNotifications(
 		@AuthenticationPrincipal AuthUser authUser) {
 		return ResponseEntity.ok(
 			ApiResponse.success("알림 정보 조회.", notificationService.getNotifications(authUser.getId())));
@@ -34,15 +34,15 @@ public class NotificationController {
 
 	//외부 저장용 메서드
 	@PostMapping("/notifications")
-	public ResponseEntity<ApiResponse<Void>> saveNotification(
-		@RequestBody NotificationMeetingEvent event) {
-		notificationService.saveNotification(event);
-		return ResponseEntity.ok(ApiResponse.success("알림 정보 저장", null));
+	public ResponseEntity<ApiResponse<Void>> createNotification(
+		@RequestBody NotificationMeetingEventDto event) {
+		notificationService.createNotification(event);
+		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", null));
 	}
 
 	//외부 전송용 메서드
 	@PostMapping("/notifications/send")
-	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationMeetingEvent event) {
+	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationMeetingEventDto event) {
 		notificationService.sendNotification(event);
 		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + event.content(), null));
 	}

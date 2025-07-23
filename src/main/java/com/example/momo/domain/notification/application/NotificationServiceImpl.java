@@ -1,16 +1,18 @@
 package com.example.momo.domain.notification.application;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.global.socket.service.NotificationSender;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.notification.domain.dto.NotificationResponse;
 import com.example.momo.domain.notification.domain.NotificationRepository;
-import com.example.momo.domain.notification.domain.dto.NotificationMeetingEvent;
+import com.example.momo.domain.notification.domain.dto.NotificationMeetingEventDto;
+import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
+import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.service.WebSocketNotificationService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +25,11 @@ public class NotificationServiceImpl implements NotificationService {
 
 	private final NotificationRepository notificationRepository;
 
-	private final NotificationSender notificationSender;
+	private final WebSocketNotificationService webSocketNotificationService;
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void saveNotification(NotificationMeetingEvent event) {
+	public void createNotification(NotificationMeetingEventDto event) {
 		try {
 			notificationRepository.save(event.toEntity());
 		} catch (DataIntegrityViolationException e) {
@@ -38,16 +40,20 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
-	public List<NotificationResponse> getNotifications(Long userId) {
+	public List<NotificationResponseDto> getNotifications(Long userId) {
 
 		return notificationRepository.findAllByUserId(userId).stream()
-			.map(NotificationResponse::from)
+			.map(NotificationResponseDto::from)
 			.toList();
 	}
 
 	@Override
-	public void sendNotification(NotificationMeetingEvent event) {
+	public void sendNotification(NotificationMeetingEventDto event) {
 
-		notificationSender.send(event.toMessage());
+		webSocketNotificationService.send(new WebSocketNotificationDto(
+			event.userId(),
+			event.content(),
+			LocalDateTime.now()
+		));
 	}
 }
