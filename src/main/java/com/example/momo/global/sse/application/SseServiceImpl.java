@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.example.momo.global.socket.dto.NotificationMessage;
+import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,7 +34,7 @@ public class SseServiceImpl implements SseService {
 	}
 
 	@Override
-	public void send(NotificationMessage message) {
+	public void send(WebSocketNotificationDto message) {
 		SseEmitter emitter = emitters.get(message.userId());
 		if (emitter != null) {
 			try {
