@@ -31,8 +31,8 @@ public class UserClient {
 	 * 단일 사용자 정보 조회
 	 *
 	 * @param userId 조회할 사용자 ID
-	 * @return 사용자 정보 DTO (Optional로 감싸서 반환)
-	 * @throws UserClientException 통신 오류 시 (404는 예외가 아님)
+	 * @return 사용자 정보 DTO (존재하지 않으면 null)
+	 * @throws UserClientException 통신 오류 시
 	 */
 	public UserClientResponseDto getUser(Long userId) {
 		try {
@@ -45,7 +45,7 @@ public class UserClient {
 				.block();
 
 			if (response == null || !response.isSuccess()) {
-				return null; // 호출하는 쪽에서 null 체크로 판단
+				return null;
 			}
 
 			log.debug("사용자 정보 조회 성공: userId={}", userId);
@@ -54,9 +54,8 @@ public class UserClient {
 		} catch (WebClientResponseException e) {
 			if (e.getStatusCode().value() == 404) {
 				log.debug("사용자를 찾을 수 없습니다: userId={}", userId);
-				return null; // 404는 정상적인 응답으로 처리
+				return null;
 			}
-			// 실제 통신 오류만 예외로 처리
 			log.error("사용자 정보 조회 실패: userId={}, status={}, error={}",
 				userId, e.getStatusCode(), e.getMessage());
 			throw new UserClientException("사용자 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
@@ -70,7 +69,7 @@ public class UserClient {
 	 * 다중 사용자 정보 조회
 	 *
 	 * @param userIds 조회할 사용자 ID 목록
-	 * @return 사용자 정보 DTO 목록
+	 * @return 사용자 정보 DTO 목록 (존재하지 않는 사용자는 제외)
 	 * @throws UserClientException 통신 오류 시
 	 */
 	public List<UserClientResponseDto> getUsers(List<Long> userIds) {
@@ -79,14 +78,11 @@ public class UserClient {
 				return List.of();
 			}
 
-			// userIds를 쿼리 파라미터로 변환
-			String userIdsParam = String.join(",", userIds.stream().map(String::valueOf).toList());
-
 			ApiResponse<List<UserClientResponseDto>> response = webClient
 				.get()
 				.uri(uriBuilder -> uriBuilder
-					.path(USER_SERVICE_BASE_URL + "/batch")
-					.queryParam("userIds", userIdsParam)
+					.path(USER_SERVICE_BASE_URL)
+					.queryParam("ids", userIds.toArray())
 					.build())
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<UserClientResponseDto>>>() {})
@@ -111,42 +107,43 @@ public class UserClient {
 	}
 
 	/**
-	 * 사용자 존재 여부 확인
-	 *
-	 * @param userId 확인할 사용자 ID
-	 * @return 사용자 존재 여부
-	 */
-	public boolean existsUser(Long userId) {
-		UserClientResponseDto user = getUser(userId);
-		return user != null;
-	}
-
-	/**
-	 * 다중 사용자 존재 여부 확인
+	 * 사용자 존재 여부 확인 (다건 처리, 단건도 리스트로 감싸서 사용)
 	 *
 	 * @param userIds 확인할 사용자 ID 목록
 	 * @return 존재하는 사용자 ID 목록
+	 * @throws UserClientException 통신 오류 시
 	 */
 	public List<Long> getExistingUserIds(List<Long> userIds) {
 		try {
-			List<UserClientResponseDto> users = getUsers(userIds);
-			return users.stream()
-				.map(UserClientResponseDto::getId)
-				.toList();
-		} catch (UserClientException e) {
-			log.warn("사용자 존재 여부 확인 실패: userIds={}", userIds);
-			return List.of();
-		}
-	}
+			if (userIds == null || userIds.isEmpty()) {
+				return List.of();
+			}
 
-	/**
-	 * 사용자 닉네임만 조회 (가벼운 조회용)
-	 *
-	 * @param userId 조회할 사용자 ID
-	 * @return 사용자 닉네임
-	 */
-	public String getUserNickname(Long userId) {
-		UserClientResponseDto user = getUser(userId);
-		return user.getNickname();
+			ApiResponse<List<Long>> response = webClient
+				.get()
+				.uri(uriBuilder -> uriBuilder
+					.path(USER_SERVICE_BASE_URL + "/exists")
+					.queryParam("ids", userIds.toArray())
+					.build())
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response == null || !response.isSuccess()) {
+				throw new UserClientException("사용자 존재 여부 확인에 실패했습니다.");
+			}
+
+			log.debug("사용자 존재 여부 확인 성공: userIds={}, existingCount={}",
+				userIds, response.getData().size());
+			return response.getData();
+
+		} catch (WebClientResponseException e) {
+			log.error("사용자 존재 여부 확인 실패: userIds={}, status={}", userIds, e.getStatusCode());
+			throw new UserClientException("사용자 존재 여부 확인 중 오류가 발생했습니다: " + e.getMessage());
+		} catch (Exception e) {
+			log.error("사용자 존재 여부 확인 실패: userIds={}, error={}", userIds, e.getMessage());
+			throw new UserClientException("사용자 존재 여부 확인 중 오류가 발생했습니다: " + e.getMessage());
+		}
 	}
 }

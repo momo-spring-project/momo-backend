@@ -1,5 +1,6 @@
 package com.example.momo.domain.user.infra;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.example.momo.domain.user.domain.UserRepository;
@@ -20,6 +21,16 @@ public class UserRepositoryImpl implements UserRepository {
 	@Override
 	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
+	}
+
+	@Override
+	public List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds) {
+		return userJpaRepository.findAllByIdInAndIsDeletedFalse(userIds);
+	}
+
+	@Override
+	public List<Long> findExistingUserIds(List<Long> userIds) {
+		return userJpaRepository.findExistingUserIds(userIds);
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package com.example.momo.domain.user.domain;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,22 @@ import org.springframework.data.domain.Slice;
 public interface UserRepository {
 
 	boolean existsByNicknameAndIdNot(String nickname, Long id);
+
+	/**
+	 * 다중 사용자 조회 (삭제되지 않은 사용자만)
+	 *
+	 * @param userIds 조회할 사용자 ID 목록
+	 * @return 사용자 엔티티 목록
+	 */
+	List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds);
+
+	/**
+	 * 존재하는 사용자 ID만 조회
+	 *
+	 * @param userIds 확인할 사용자 ID 목록
+	 * @return 존재하는 사용자 ID 목록
+	 */
+	List<Long> findExistingUserIds(List<Long> userIds);
 
 	/**
 	 * 특정 사용자가 팔로잉하는 사용자들 조회 (COUNT 쿼리 없음)

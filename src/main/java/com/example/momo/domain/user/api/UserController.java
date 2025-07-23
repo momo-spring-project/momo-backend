@@ -1,5 +1,7 @@
 package com.example.momo.domain.user.api;
 
+import java.util.List;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
+import com.example.momo.domain.user.domain.dto.UserInfoListResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.domain.user.application.UserService;
 import com.example.momo.domain.user.domain.User;
@@ -46,6 +49,39 @@ public class UserController {
 	) {
 		UserInfoResponseDto response = userService.getUserById(userId);
 		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
+	}
+
+	/**
+	 * 다중 사용자 정보 조회 (쿼리 파라미터 방식)
+	 * UserClient의 다건 조회를 위해 사용
+	 */
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<UserInfoListResponseDto>>> getUsers(
+		@RequestParam(required = false) List<Long> ids
+	) {
+		// ids 파라미터가 없으면 빈 리스트 반환
+		if (ids == null || ids.isEmpty()) {
+			return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", List.of()));
+		}
+
+		List<UserInfoListResponseDto> users = userService.getUsersByIds(ids);
+		return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", users));
+	}
+
+	/**
+	 * 사용자 존재 여부 확인 (ID만 반환)
+	 * UserClient의 존재 여부 확인을 위해 사용
+	 */
+	@GetMapping("/exists")
+	public ResponseEntity<ApiResponse<List<Long>>> checkUsersExist(
+		@RequestParam List<Long> ids
+	) {
+		if (ids == null || ids.isEmpty()) {
+			return ResponseEntity.ok(ApiResponse.success("존재하는 사용자 ID 목록", List.of()));
+		}
+
+		List<Long> existingUserIds = userService.getExistingUserIds(ids);
+		return ResponseEntity.ok(ApiResponse.success("존재하는 사용자 ID 목록", existingUserIds));
 	}
 
 	// 현재 로그인안 사용자 정보 조회

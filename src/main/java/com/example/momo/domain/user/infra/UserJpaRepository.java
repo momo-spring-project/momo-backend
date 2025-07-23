@@ -1,5 +1,6 @@
 package com.example.momo.domain.user.infra;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
@@ -17,6 +18,16 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 
 	boolean existsByNicknameAndIdNot(String nickname, Long id);
 
+	/**
+	 * 다중 사용자 조회 (삭제되지 않은 사용자만)
+	 */
+	List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds);
+
+	/**
+	 * 존재하는 사용자 ID만 조회 (삭제되지 않은 사용자만)
+	 */
+	@Query("SELECT u.id FROM User u WHERE u.id IN :userIds AND u.isDeleted = false")
+	List<Long> findExistingUserIds(@Param("userIds") List<Long> userIds);
 	/**
 	 * 특정 사용자가 팔로잉하는 사용자들 조회 (Slice 사용으로 COUNT 쿼리 방지)
 	 */

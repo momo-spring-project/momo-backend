@@ -16,6 +16,7 @@ import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRe
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
+import com.example.momo.domain.user.domain.dto.UserInfoListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
@@ -46,6 +47,30 @@ public class UserServiceImpl implements UserService {
 		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 		return new UserInfoResponseDto(user);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserInfoListResponseDto> getUsersByIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
+
+		List<User> users = userRepository.findAllByIdInAndIsDeletedFalse(userIds);
+
+		return users.stream()
+			.map(UserInfoListResponseDto::new)
+			.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Long> getExistingUserIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
+
+		return userRepository.findExistingUserIds(userIds);
 	}
 
 	@Override
@@ -343,7 +368,7 @@ public class UserServiceImpl implements UserService {
 			.map(UserFollowInfoResponseDto::new)
 			.toList();
 
-		return new UserFollowListResponseDto(
+		return UserFollowListResponseDto.of(
 			followingsList,
 			totalCount,
 			pageable.getPageNumber(),
@@ -366,7 +391,8 @@ public class UserServiceImpl implements UserService {
 			.map(UserFollowInfoResponseDto::new)
 			.toList();
 
-		return new UserFollowListResponseDto(
+		// 3. 정적 팩토리 메서드 사용으로 변경
+		return UserFollowListResponseDto.of(
 			followersList,
 			totalCount,
 			pageable.getPageNumber(),

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.dto.UserInfoListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
@@ -16,6 +17,22 @@ import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 public interface UserService {
 
 	User validateAndGetUser(Long userId);
+
+	/**
+	 * 다중 사용자 정보 조회
+	 *
+	 * @param userIds 조회할 사용자 ID 목록
+	 * @return 사용자 정보 DTO 목록 (존재하지 않는 사용자는 제외)
+	 */
+	List<UserInfoListResponseDto> getUsersByIds(List<Long> userIds);
+
+	/**
+	 * 사용자 존재 여부 확인
+	 *
+	 * @param userIds 확인할 사용자 ID 목록
+	 * @return 존재하는 사용자 ID 목록
+	 */
+	List<Long> getExistingUserIds(List<Long> userIds);
 
 	UserInfoResponseDto getUserById(Long userId);
 
