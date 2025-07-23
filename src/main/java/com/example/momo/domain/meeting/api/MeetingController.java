@@ -3,6 +3,7 @@ package com.example.momo.domain.meeting.api;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -95,22 +96,33 @@ public class MeetingController {
 
 	// 모임 참가
 	@PostMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<ParticipantResponseDto>> createParticipant(
+	public ResponseEntity<ApiResponse<ParticipantCreateResponseDto>> createParticipant(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
-		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
+		ParticipantCreateResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantCreateResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
-	// 참가자 조회
+	// 참가자 정보 조회
+	@GetMapping("/{meetingId}/participants/{participantId}")
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> getParticipant(
+		@PathVariable Long meetingId,
+		@PathVariable Long participantId
+	) {
+		ParticipantResponseDto responseData = meetingService.getParticipant(participantId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// 참가자 목록 조회
 	@GetMapping("/{meetingId}/participants")
 	public ResponseEntity<ApiResponse<List<Long>>> getParticipants(
 		@PathVariable Long meetingId
 	) {
 		List<Long> responseData = meetingService.getParticipants(meetingId);
-		ApiResponse<List<Long>> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
+		ApiResponse<List<Long>> response = ApiResponse.success("참가자 목록 조회를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
@@ -121,7 +133,7 @@ public class MeetingController {
 		@PathVariable Long meetingId
 	) {
 		ParticipantResponseDto responseData = meetingService.deleteParticipant(authUser.getId(), meetingId);
-		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가 취소를 완료했습니다", responseData);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가취소/환불요청 을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
