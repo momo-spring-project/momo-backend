@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.domain.dto.NotificationDto;
-import com.example.momo.global.common.event.NotificationEvent;
+import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 import com.example.momo.global.socket.service.WebSocketNotificationService;
 

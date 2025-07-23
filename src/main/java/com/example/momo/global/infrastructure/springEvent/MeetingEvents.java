@@ -1,10 +1,10 @@
-package com.example.momo.global.common.event;
+package com.example.momo.global.infrastructure.springEvent;
 
 import java.util.List;
 
 public class MeetingEvents {
 
-	public interface MeetingEvent {
+	public sealed interface MeetingEvent permits Create, Update, Delete, Join, Cancel {
 		Long meetingId();
 	}
 
@@ -31,14 +31,14 @@ public class MeetingEvents {
 	public record Join(
 		Long meetingId,
 		Long hostUserId,
-		String joinedUserNickname
+		String participantNickname
 	) implements MeetingEvent {
 	}
 
 	public record Cancel(
 		Long meetingId,
 		Long hostUserId,
-		String canceledUserNickname
+		String participantNickname
 	) implements MeetingEvent {
 	}
 

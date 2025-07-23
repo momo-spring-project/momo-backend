@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.example.momo.global.common.event.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
 
 import lombok.RequiredArgsConstructor;
 

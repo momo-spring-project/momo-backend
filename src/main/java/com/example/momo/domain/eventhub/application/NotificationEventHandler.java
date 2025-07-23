@@ -3,8 +3,8 @@ package com.example.momo.domain.eventhub.application;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.global.common.event.MeetingEvents;
-import com.example.momo.global.common.event.NotificationEvent;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 
