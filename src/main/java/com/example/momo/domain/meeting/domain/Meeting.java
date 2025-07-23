@@ -65,7 +65,7 @@ public class Meeting extends BaseEntity {
 	private Double minEnterScore = 0.0;
 
 	@Builder.Default
-	@OneToMany(cascade = {CascadeType.PERSIST})
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
 	@JoinColumn(name = "meeting_id")
 	private List<MeetingParticipant> participants = new ArrayList<>();
 

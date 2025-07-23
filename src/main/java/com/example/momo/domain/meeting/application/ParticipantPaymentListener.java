@@ -1,6 +1,5 @@
-package com.example.momo.domain.meeting;
+package com.example.momo.domain.meeting.application;
 
-import com.example.momo.domain.meeting.application.MeetingReader;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
@@ -43,21 +42,20 @@ public class ParticipantPaymentListener {
 		}
 	}
 
+	// 모임 참가 취소 후 환불 진행
+	@EventListener
+	public void handleParticipationCancelEvent(ParticipationCanceledEvent event) {
+		Long meetingId = event.getMeetingId();
+		Long userId = event.getUserId();
+
+		// 환불 알고리즘
+	}
+
 	// 환불 성공 어떤 이벤트인지 확인해서 넣기
 	// 환불 종류 구별 필요
 	@EventListener
 	public void handleRefundSuccessEvent() {
 
-	}
-
-	// 취소한 환불 이후 처리
-	@EventListener
-	public void handleParticipationCancelRefundEvent() {
-
-		Long meetingId = 1L;
-		Long userId = 1L;
-
-		RetryUtil.retry(() -> removeParticipant(meetingId, userId), 5);
 	}
 
 	// 참가자 추가
@@ -77,24 +75,5 @@ public class ParticipantPaymentListener {
 		meeting.addMeetingParticipant();
 
 		return new ParticipantResponseDto(savedParticipant);
-	}
-
-	// 참가자 감소
-	@Transactional
-	public ParticipantResponseDto removeParticipant(Long meetingId, Long userId) {
-
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-		if(meeting.getCurrentParticipantsCount() <= 0) {
-			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
-		}
-
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(), userId);
-
-		// 인원 계산, 참가자 삭제
-		meeting.removeMeetingParticipant();
-		em.remove(participant);
-
-		return new ParticipantResponseDto(participant);
 	}
 }

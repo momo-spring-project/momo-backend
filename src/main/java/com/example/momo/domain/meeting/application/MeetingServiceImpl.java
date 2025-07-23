@@ -5,9 +5,11 @@ import java.util.List;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
-import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.utils.HaversineUtils;
+import com.example.momo.global.utils.RetryUtil;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,10 +34,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MeetingServiceImpl implements MeetingService {
 
+	private final ApplicationEventPublisher eventPublisher;
+
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
 
-	private final UserRepository userRepository;
+	private final UserClient userClient;
 
 	@Override
 	@Transactional
@@ -131,9 +135,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
-		// Todo 구조 전환시 유저 조회 예외처리 수정 또는 제거 필요함
-		User user = userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(() -> new RuntimeException("user not found"));
+		UserClientResponseDto user = userClient.getUser(userId);
 
 		// 이미 참가했으면 예외처리
 		if(meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
@@ -153,6 +155,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		//결제 알고리즘
 
+		// createParticipant 에서는 결제 요청 까지만 진행
 		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
 	}
 
@@ -179,16 +182,16 @@ public class MeetingServiceImpl implements MeetingService {
 	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
-		User user = userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(() -> new RuntimeException("user not found"));
+		UserClientResponseDto user = userClient.getUser(userId);
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
-		// 이벤트발행(테스트)
+		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, userId), 5);
 
-		// 환불 알고리즘
+		// deleteParticipant 에서는 참가 취소 시키고 환불 진행하도록 Event 발행까지만 진행
+		eventPublisher.publishEvent(new ParticipationCanceledEvent(meetingId, userId));
 
-		return new ParticipantResponseDto(participant);
+		return responseDto;
 	}
 
 	@Override
@@ -211,6 +214,25 @@ public class MeetingServiceImpl implements MeetingService {
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		participant.updateAttendanceStatus();
+
+		return new ParticipantResponseDto(participant);
+	}
+
+	// 참가자 감소
+	@Transactional
+	public ParticipantResponseDto removeParticipant(Long meetingId, Long userId) {
+
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+
+		if(meeting.getCurrentParticipantsCount() <= 0) {
+			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
+		}
+
+		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(), userId);
+
+		// 인원 계산, 참가자 삭제
+		meeting.removeMeetingParticipant();
+		meeting.getParticipants().remove(participant);
 
 		return new ParticipantResponseDto(participant);
 	}
