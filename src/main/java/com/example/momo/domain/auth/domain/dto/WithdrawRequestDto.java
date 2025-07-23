@@ -5,6 +5,6 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class WithdrawRequest {
+public class WithdrawRequestDto {
 	private String password;
 }

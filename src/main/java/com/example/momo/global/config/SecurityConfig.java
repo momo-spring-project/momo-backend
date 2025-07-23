@@ -21,8 +21,8 @@ import com.example.momo.domain.auth.application.OAuth2UserService;
 import com.example.momo.global.security.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.security.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.security.filter.JwtFilter;
+import com.example.momo.global.security.jwt.JwtTokenProvider;
 import com.example.momo.global.security.oauth2.OAuth2SuccessHandler;
-import com.example.momo.global.security.jwt.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,7 +32,7 @@ import lombok.RequiredArgsConstructor;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-	private final JwtUtil jwtUtil;
+	private final JwtTokenProvider jwtTokenProvider;
 	private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 	private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 	private final ObjectMapper objectMapper;
@@ -70,7 +70,7 @@ public class SecurityConfig {
 				.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
 					.userService(oAuth2UserService))
 				.successHandler(oAuth2SuccessHandler))
-			.addFilterAt(new JwtFilter(jwtUtil, objectMapper), UsernamePasswordAuthenticationFilter.class)
+			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper), UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/v1/categories").hasRole("ADMIN")

@@ -14,10 +14,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.momo.domain.auth.exception.AuthException;
 import com.example.momo.domain.auth.domain.dto.AuthUser;
+import com.example.momo.domain.auth.exception.AuthException;
 import com.example.momo.global.common.dto.ApiResponse;
-import com.example.momo.global.security.jwt.JwtUtil;
+import com.example.momo.global.security.jwt.JwtTokenProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.FilterChain;
@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
-	private final JwtUtil jwtUtil;
+	private final JwtTokenProvider jwtTokenProvider;
 	private final ObjectMapper objectMapper;
 
 	@Override
@@ -46,7 +46,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
 		// Authorization 해더 값이 없으면 다음 filter로 넘김
 		// accessToken의 접두사가 "Bearer " 도 아니고 "Bearer_"도 아니면 Access 토큰이 없는 것으로 간주
-		if (!StringUtils.hasText(accessToken) || !accessToken.startsWith(JwtUtil.tokenPrefix)) {
+		if (!StringUtils.hasText(accessToken) || !accessToken.startsWith(JwtTokenProvider.tokenPrefix)) {
 			log.info("토큰이 존재하지 않습니다.");
 			filterChain.doFilter(request, response);
 			return;
@@ -54,14 +54,14 @@ public class JwtFilter extends OncePerRequestFilter {
 		try {
 
 			// 앞에 Bearer 부분 제거 후 순수 토큰만 획득
-			accessToken = jwtUtil.subStringToken(accessToken);
+			accessToken = jwtTokenProvider.subStringToken(accessToken);
 
-			if (!jwtUtil.getCategory(accessToken).equals("access")) {
+			if (!jwtTokenProvider.getCategory(accessToken).equals("access")) {
 				throw new AuthException(HttpStatus.UNAUTHORIZED, "유효하지 않은 Access 토큰입니다.");
 			}
 
-			Long userId = jwtUtil.getUserId(accessToken);
-			String role = jwtUtil.getRole(accessToken);
+			Long userId = jwtTokenProvider.getUserId(accessToken);
+			String role = jwtTokenProvider.getRole(accessToken);
 
 			AuthUser authUser = new AuthUser(userId);
 
@@ -102,7 +102,7 @@ public class JwtFilter extends OncePerRequestFilter {
 				response.addCookie(deleteCookie);
 
 				//응답 헤더에 access 토큰을 추가한다.
-				accessToken = JwtUtil.tokenPrefix + jwtUtil.subStringToken(accessToken);
+				accessToken = JwtTokenProvider.tokenPrefix + jwtTokenProvider.subStringToken(accessToken);
 				response.addHeader(HttpHeaders.AUTHORIZATION, accessToken);
 			}
 		}
