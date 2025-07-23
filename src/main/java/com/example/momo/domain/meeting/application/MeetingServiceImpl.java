@@ -185,7 +185,7 @@ public class MeetingServiceImpl implements MeetingService {
 		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new RuntimeException("user not found"));
 
-		ParticipantResponseDto responseDto = RetryUtil.retry(() -> subParticipant(meeting, user), 5);
+		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meeting, user), 5);
 
 		// 환불 알고리즘
 
@@ -205,7 +205,7 @@ public class MeetingServiceImpl implements MeetingService {
 		Double destLng = meeting.getLongitude();
 
 		// 위치가 목적지 근처인지 확인
-		if(!HaversineUtils.inDistance(destLat, destLng, lat, lng)) {
+		if(!HaversineUtils.isInDistance(destLat, destLng, lat, lng)) {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
 		}
 
@@ -254,7 +254,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	// 참가자 감소
 	@Transactional
-	public ParticipantResponseDto subParticipant(Meeting meeting, User user) {
+	public ParticipantResponseDto removeParticipant(Meeting meeting, User user) {
 
 		if(meeting.getCurrentParticipantsCount() <= 0) {
 			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
@@ -263,7 +263,7 @@ public class MeetingServiceImpl implements MeetingService {
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(), user.getId());
 
 		// 인원 계산, 참가자 삭제
-		meeting.subMeetingParticipant();
+		meeting.removeMeetingParticipant();
 		em.remove(participant);
 
 		return new ParticipantResponseDto(participant);

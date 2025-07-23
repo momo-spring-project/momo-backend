@@ -103,7 +103,7 @@ public class Meeting extends BaseEntity {
 		this.currentParticipantsCount++;
 	}
 
-	public void subMeetingParticipant() {
+	public void removeMeetingParticipant() {
 		this.currentParticipantsCount--;
 	}
 }
