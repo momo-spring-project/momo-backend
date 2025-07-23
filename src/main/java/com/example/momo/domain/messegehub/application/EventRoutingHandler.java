@@ -1,9 +1,10 @@
-package com.example.momo.domain.eventhub.application;
+package com.example.momo.domain.messegehub.application;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -17,6 +18,12 @@ public class EventRoutingHandler {
 	private final ApplicationEventPublisher eventPublisher;
 
 	public void handleMeetingEvent(MeetingEvents.MeetingEvent event) {
-		eventPublisher.publishEvent(notificationEventProvider.processMeeting(event));
+		NotificationEvent notificationEvent = notificationEventProvider.processMeeting(event);
+
+		if (notificationEvent == null) {
+			return;
+		}
+
+		eventPublisher.publishEvent(notificationEvent);
 	}
 }

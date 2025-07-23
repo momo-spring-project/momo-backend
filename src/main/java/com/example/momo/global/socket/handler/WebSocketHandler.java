@@ -88,13 +88,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
 	 * @param message 전송할 알림 메시지 (userId, content, timestamp 포함)
 	 */
 	public void sendToUser(WebSocketNotificationDto message) {
-		WebSocketSession session = userSessions.get(message.userId());
+		WebSocketSession session = userSessions.get(message.getUserId());
 		if (session != null && session.isOpen()) {
 			try {
 				String json = objectMapper.writeValueAsString(message);
 				session.sendMessage(new TextMessage(json));
 			} catch (IOException e) {
-				log.warn("웹소켓 메시지 전송 실패: userId={}, error={}", message.userId(), e.getMessage());
+				log.warn("웹소켓 메시지 전송 실패: userId={}, error={}", message.getUserId(), e.getMessage());
 			}
 		}
 	}

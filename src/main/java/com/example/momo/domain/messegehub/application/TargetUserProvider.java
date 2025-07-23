@@ -1,4 +1,4 @@
-package com.example.momo.domain.eventhub.application;
+package com.example.momo.domain.messegehub.application;
 
 import java.util.List;
 
