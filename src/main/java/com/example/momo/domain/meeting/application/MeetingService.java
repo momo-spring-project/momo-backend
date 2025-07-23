@@ -12,7 +12,7 @@ import com.example.momo.domain.meeting.domain.dto.response.MeetingResponse;
 
 public interface MeetingService {
 
-	/* Meeting Core Service */
+	/** Meeting Service */
 
 	MeetingResponse createMeeting(MeetingCreateRequest request, Long userId);
 
@@ -27,13 +27,13 @@ public interface MeetingService {
 
 	void deleteMeeting(Long meetingId, Long userId);
 
-	/* Meeting Participant Service */
+	/** Meeting Participant Service */
 
-	ParticipantResponseDto registerParticipant(Long userId, Long meetingId);
+	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
 
 	List<Long> getParticipants(Long meetingId);
 
-	ParticipantResponseDto cancelParticipant(Long userId, Long meetingId);
+	ParticipantResponseDto deleteParticipant(Long userId, Long meetingId);
 
 	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
 }

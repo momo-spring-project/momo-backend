@@ -20,7 +20,7 @@ public class HaversineUtils {
 		return EARTH_RADIUS * c;
 	}
 
-	public static boolean inDistance(double lat1, double lng1, double lat2, double lng2) {
+	public static boolean isInDistance(double lat1, double lng1, double lat2, double lng2) {
 
 		double distance = haversine(lat1, lng1, lat2, lng2);
 
