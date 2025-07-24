@@ -5,7 +5,7 @@ import java.util.List;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
 
-public record UserInfoResponseDto(
+public record UserResponseDto(
 	Long id,
 	String nickname,
 	String email,
@@ -17,7 +17,7 @@ public record UserInfoResponseDto(
 	int followerCount,
 	int ratingCount
 ) {
-	public UserInfoResponseDto(User user) {
+	public UserResponseDto(User user) {
 		this(
 			user.getId(),
 			user.getNickname(),

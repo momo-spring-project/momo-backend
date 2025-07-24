@@ -11,6 +11,17 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  flyway:
+    enabled: true                    # Flyway 활성화
+    locations: classpath:db/migration
+    encoding: UTF-8
+    validate-on-migrate: true      # 마이그레이션 파일 변경 감지
+    out-of-order: false           # 순서대로 실행 강제
+    group: false                  # 트랜잭션 단위로 개별 실행
+    mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
+    clean-disabled: false
+    baseline-on-migrate: true
+
   jpa:
     hibernate:
       ddl-auto: validate
