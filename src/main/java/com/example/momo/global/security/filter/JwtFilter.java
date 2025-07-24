@@ -68,7 +68,7 @@ public class JwtFilter extends OncePerRequestFilter {
 			// 스프링 시큐리티 인증 토큰 생성
 			Authentication authToken = new UsernamePasswordAuthenticationToken(
 				authUser,
-				"",
+				accessToken,
 				List.of(new SimpleGrantedAuthority("ROLE_" + role))
 			);
 

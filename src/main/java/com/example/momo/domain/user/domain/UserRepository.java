@@ -1,5 +1,6 @@
 package com.example.momo.domain.user.domain;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
@@ -7,7 +8,37 @@ import org.springframework.data.domain.Slice;
 
 public interface UserRepository {
 
-	boolean existsByNicknameAndIdNot(String nickname, Long id);
+	boolean isDuplicateNickname(String nickname, Long id);
+
+	/**
+	 * 다중 사용자 조회 (삭제되지 않은 사용자만)
+	 *
+	 * @param userIds 조회할 사용자 ID 목록
+	 * @return 사용자 엔티티 목록
+	 */
+	List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds);
+
+	/**
+	 * 존재하는 사용자 ID만 조회
+	 *
+	 * @param userIds 확인할 사용자 ID 목록
+	 * @return 존재하는 사용자 ID 목록
+	 */
+	List<Long> findExistingUserIds(List<Long> userIds);
+
+	/**
+	 * 카테고리, 위도, 경도 기반으로 사용자를 필터링하여 조회
+	 *
+	 * @param categoryIds 관심 카테고리 ID 목록 (null이면 필터링 안함)
+	 * @param latitude 위도 (null이면 필터링 안함)
+	 * @param longitude 경도 (null이면 필터링 안함)
+	 * @return 필터링된 사용자 목록
+	 */
+	List<User> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	);
 
 	/**
 	 * 특정 사용자가 팔로잉하는 사용자들 조회 (COUNT 쿼리 없음)
@@ -33,7 +64,7 @@ public interface UserRepository {
 	 */
 	int deleteUserFollow(Long followerId, Long followingId);
 
-	// Auth 쪽에서 사용
+	// === Auth 도메인에서 사용 ===
 	boolean existsByEmail(String email);
 
 	boolean existsByNickname(String nickname);

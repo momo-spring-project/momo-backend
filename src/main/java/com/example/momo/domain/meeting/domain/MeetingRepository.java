@@ -32,4 +32,5 @@ public interface MeetingRepository {
 
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
+	Optional<MeetingParticipant> findParticipantById(Long participantId);
 }
