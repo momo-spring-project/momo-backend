@@ -34,6 +34,14 @@ public interface UserService {
 	 */
 	List<Long> getExistingUserIds(List<Long> userIds);
 
+	/**
+	 * 이메일로 사용자 정보 조회
+	 *
+	 * @param email 조회할 사용자 이메일
+	 * @return 사용자 정보 DTO (존재하지 않으면 null)
+	 */
+	UserResponseDto getUserByEmail(String email);
+
 	UserResponseDto getUserById(Long userId);
 
 	UserResponseDto getMyProfile(Long CurrentUserId);
