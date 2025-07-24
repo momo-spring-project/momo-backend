@@ -87,6 +87,18 @@ public class UserController {
 		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
 	}
 
+	// 이메일로 사용자 조회
+	@GetMapping("/by-email")
+	public ResponseEntity<ApiResponse<UserResponseDto>> getUserByEmail(
+		@RequestParam String email
+	) {
+		UserResponseDto response = userService.getUserByEmail(email);
+		if (response == null) {
+			return ResponseEntity.ok(ApiResponse.success("해당 이메일의 사용자가 존재하지 않습니다.", null));
+		}
+		return ResponseEntity.ok(ApiResponse.success("이메일로 사용자 정보를 조회했습니다.", response));
+	}
+
 	// 사용자 필터링 조회 (카테고리, 위도, 경도)
 	@GetMapping("/filter")
 	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsersByLocationAndCategory(

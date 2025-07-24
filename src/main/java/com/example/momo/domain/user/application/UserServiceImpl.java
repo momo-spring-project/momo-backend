@@ -84,6 +84,14 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public UserResponseDto getUserByEmail(String email) {
+		return userRepository.findByEmailAndIsDeletedFalse(email)
+			.map(UserResponseDto::new)
+			.orElse(null);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<UserListResponseDto> getUsersByLocationAndCategory(
 		List<Integer> categoryIds,
 		Double latitude,
@@ -377,8 +385,8 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.NOT_FOLLOWING);
 		}
 
-		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
-		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+		follower.decrementFollowingCount();
+		following.decrementFollowerCount();
 	}
 
 	@Override
