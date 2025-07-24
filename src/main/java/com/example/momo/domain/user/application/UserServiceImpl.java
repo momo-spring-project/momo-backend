@@ -9,24 +9,25 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.category.application.CategoryService;
 import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.category.exception.CategoryException;
-import com.example.momo.domain.category.application.CategoryService;
 import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
-import com.example.momo.domain.user.domain.dto.UserFollowInfoResponseDto;
+import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
+import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserResponseDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.domain.user.domain.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,16 +43,54 @@ public class UserServiceImpl implements UserService {
 	// === 사용자 정보 조회 ===
 	@Override
 	@Transactional(readOnly = true)
-	public UserInfoResponseDto getUserById(Long userId) {
+	public UserResponseDto getUserById(Long userId) {
 		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-		return new UserInfoResponseDto(user);
+		return new UserResponseDto(user);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public UserInfoResponseDto getCurrentUser(Long currentUserId) {
+	public List<UserListResponseDto> getUsersByIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
+
+		List<User> users = userRepository.findAllByIdInAndIsDeletedFalse(userIds);
+
+		return users.stream()
+			.map(UserListResponseDto::new)
+			.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Long> getExistingUserIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
+
+		return userRepository.findExistingUserIds(userIds);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserResponseDto getMyProfile(Long currentUserId) {
 		return getUserById(currentUserId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserListResponseDto> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	) {
+		List<User> users = userRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
+
+		return users.stream()
+			.map(UserListResponseDto::new)
+			.toList();
 	}
 
 	@Override
@@ -103,7 +142,7 @@ public class UserServiceImpl implements UserService {
 	public void updateNickname(Long userId, UserNicknameUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
 
-		if (userRepository.existsByNicknameAndIdNot(request.nickname(), userId)) {
+		if (userRepository.isDuplicateNickname(request.nickname(), userId)) {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
@@ -338,12 +377,12 @@ public class UserServiceImpl implements UserService {
 		// 2. 팔로잉 목록 조회 (COUNT 쿼리 없음)
 		Slice<User> followingsSlice = userRepository.findFollowingsByUserId(userId, pageable);
 
-		List<UserFollowInfoResponseDto> followingsList = followingsSlice.getContent()
+		List<UserFollowResponseDto> followingsList = followingsSlice.getContent()
 			.stream()
-			.map(UserFollowInfoResponseDto::new)
+			.map(UserFollowResponseDto::new)
 			.toList();
 
-		return new UserFollowListResponseDto(
+		return UserFollowListResponseDto.of(
 			followingsList,
 			totalCount,
 			pageable.getPageNumber(),
@@ -361,12 +400,13 @@ public class UserServiceImpl implements UserService {
 		// 2. 팔로워 목록 조회 (COUNT 쿼리 없음)
 		Slice<User> followersSlice = userRepository.findFollowersByUserId(userId, pageable);
 
-		List<UserFollowInfoResponseDto> followersList = followersSlice.getContent()
+		List<UserFollowResponseDto> followersList = followersSlice.getContent()
 			.stream()
-			.map(UserFollowInfoResponseDto::new)
+			.map(UserFollowResponseDto::new)
 			.toList();
 
-		return new UserFollowListResponseDto(
+		// 3. 정적 팩토리 메서드 사용으로 변경
+		return UserFollowListResponseDto.of(
 			followersList,
 			totalCount,
 			pageable.getPageNumber(),

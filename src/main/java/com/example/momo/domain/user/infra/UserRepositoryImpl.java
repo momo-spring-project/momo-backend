@@ -1,13 +1,14 @@
 package com.example.momo.domain.user.infra;
 
+import java.util.List;
 import java.util.Optional;
 
-import com.example.momo.domain.user.domain.UserRepository;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,10 +17,30 @@ import lombok.RequiredArgsConstructor;
 public class UserRepositoryImpl implements UserRepository {
 
 	private final UserJpaRepository userJpaRepository;
+	private final UserQueryRepository userQueryRepository;
 
 	@Override
-	public boolean existsByNicknameAndIdNot(String nickname, Long id) {
+	public boolean isDuplicateNickname(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
+	}
+
+	@Override
+	public List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds) {
+		return userJpaRepository.findAllByIdInAndIsDeletedFalse(userIds);
+	}
+
+	@Override
+	public List<Long> findExistingUserIds(List<Long> userIds) {
+		return userJpaRepository.findExistingUserIds(userIds);
+	}
+
+	@Override
+	public List<User> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	) {
+		return userQueryRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
 	}
 
 	@Override
@@ -37,6 +58,7 @@ public class UserRepositoryImpl implements UserRepository {
 		return userJpaRepository.deleteUserFollow(followerId, followingId);
 	}
 
+	// === Auth 도메인에서 사용 ===
 	@Override
 	public boolean existsByEmail(String email) {
 		return userJpaRepository.existsByEmail(email);
