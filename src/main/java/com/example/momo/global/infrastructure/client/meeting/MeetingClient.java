@@ -2,6 +2,7 @@ package com.example.momo.global.infrastructure.client.meeting;
 
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
+import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantCountClientResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -10,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -76,6 +78,34 @@ public class MeetingClient {
 			log.error("참석자 목록 조회 실패: meetingId={}, status={}, error={}",
 				meetingId, e.getStatusCode(), e.getMessage());
 			throw new MeetingClientException("참석자 목록 조회 중 오류가 발생했습니다: " + e.getMessage());
+		}
+	}
+
+	public ParticipantCountClientResponseDto getParticipantCount(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+		try {
+			ApiResponse<ParticipantCountClientResponseDto> response = webClient
+				.get()
+				.uri(uriBuilder -> uriBuilder
+					.path(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/count")
+					.queryParam("attendance", attendance)
+					.queryParam("createdAt", createdAt)
+					.build(meetingId))
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantCountClientResponseDto>>() {})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response == null || !response.isSuccess()) {
+				return null;
+			}
+
+			log.debug("참석자 집계 조회 성공: meetingId={}, attendance={}, createdAt={}", meetingId, attendance, createdAt);
+			return response.getData();
+
+		} catch (WebClientResponseException e) {
+			log.error("참석자 집계 조회 실패: meetingId={}, attendance={}, createdAt={} status={}, error={}",
+				meetingId, attendance, createdAt, e.getStatusCode(), e.getMessage());
+			throw new MeetingClientException("참석자 집계 조회 중 오류가 발생했습니다: " + e.getMessage());
 		}
 	}
 }

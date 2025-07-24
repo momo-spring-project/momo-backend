@@ -37,5 +37,5 @@ public interface MeetingService {
 
 	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
 
-	ParticipantCountResponseDto countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt);
+	ParticipantCountResponseDto getParticipantCount(Long meetingId, Boolean attendance, LocalDateTime createdAt);
 }

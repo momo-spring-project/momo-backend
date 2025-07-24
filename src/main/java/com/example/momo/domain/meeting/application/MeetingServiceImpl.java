@@ -251,7 +251,7 @@ public class MeetingServiceImpl implements MeetingService {
 	}
 
 	@Override
-	public ParticipantCountResponseDto countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+	public ParticipantCountResponseDto getParticipantCount(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
 
 		if(createdAt == null) {
 			createdAt = LocalDateTime.now().minusDays(7);
