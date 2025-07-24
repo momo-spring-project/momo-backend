@@ -14,6 +14,8 @@ public class ApiResponse<T> {
 	private T data;
 	private LocalDateTime timestamp;
 
+	private ApiResponse() {}
+
 	private ApiResponse(boolean success, String message, T data) {
 		this.success = success;
 		this.message = message;

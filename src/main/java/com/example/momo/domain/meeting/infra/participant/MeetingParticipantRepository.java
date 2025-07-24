@@ -13,4 +13,6 @@ public interface MeetingParticipantRepository {
 	List<Long> findParticipantsIdsByMeetingId(Long meetingId);
 
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
+
+	Optional<MeetingParticipant> findById(Long id);
 }

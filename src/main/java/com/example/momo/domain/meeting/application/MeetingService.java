@@ -3,6 +3,7 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequest;
@@ -30,6 +31,8 @@ public interface MeetingService {
 	/** Meeting Participant Service */
 
 	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
+
+	ParticipantResponseDto getParticipant(Long participantId);
 
 	List<Long> getParticipants(Long meetingId);
 

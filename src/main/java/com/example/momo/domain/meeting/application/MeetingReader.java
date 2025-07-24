@@ -34,4 +34,9 @@ public class MeetingReader {
 		return meetingRepository.findByMeetingIdAndUserId(meetingId, userId)
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
 	}
+
+	public MeetingParticipant getParticipantById(Long participantId) {
+		return meetingRepository.findParticipantById(participantId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
+	}
 }
