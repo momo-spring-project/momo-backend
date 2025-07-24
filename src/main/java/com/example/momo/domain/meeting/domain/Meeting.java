@@ -65,7 +65,7 @@ public class Meeting extends BaseEntity {
 	private Double minEnterScore = 0.0;
 
 	@Builder.Default
-	@OneToMany(cascade = {CascadeType.PERSIST})
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
 	@JoinColumn(name = "meeting_id")
 	private List<MeetingParticipant> participants = new ArrayList<>();
 
@@ -78,7 +78,7 @@ public class Meeting extends BaseEntity {
 	private MeetingStatus status; // 모집중, 모집완료
 
 	@Version
-	private Long version;
+	private Integer version;
 
 	public void updateMeeting(MeetingUpdateRequest request) {
 		this.title = request.getTitle();

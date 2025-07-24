@@ -32,4 +32,9 @@ public class MeetingParticipantRepositoryImpl implements MeetingParticipantRepos
 	public Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId) {
 		return meetingParticipantJpaRepository.findByMeetingIdAndUserId(meetingId, userId);
 	}
+
+	@Override
+	public Optional<MeetingParticipant> findById(Long id) {
+		return meetingParticipantJpaRepository.findById(id);
+	}
 }
