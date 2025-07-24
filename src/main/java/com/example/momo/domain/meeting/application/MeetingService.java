@@ -32,6 +32,8 @@ public interface MeetingService {
 
 	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
 
+	ParticipantResponseDto getParticipant(Long participantId);
+
 	List<Long> getParticipants(Long meetingId);
 
 	ParticipantResponseDto deleteParticipant(Long userId, Long meetingId);
