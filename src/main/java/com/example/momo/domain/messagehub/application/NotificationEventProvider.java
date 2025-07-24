@@ -1,10 +1,10 @@
-package com.example.momo.domain.messegehub.application;
+package com.example.momo.domain.messagehub.application;
 
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.messegehub.enums.NotificationEventType;
+import com.example.momo.domain.messagehub.enums.NotificationEventType;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
 import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 

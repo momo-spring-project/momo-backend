@@ -1,4 +1,4 @@
-package com.example.momo.domain.messegehub.enums;
+package com.example.momo.domain.messagehub.enums;
 
 public enum MessageKey {
 	CREATE("message.create"),

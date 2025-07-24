@@ -1,11 +1,11 @@
-package com.example.momo.domain.messegehub.application;
+package com.example.momo.domain.messagehub.application;
 
 import java.util.Locale;
 
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.messegehub.enums.MessageKey;
+import com.example.momo.domain.messagehub.enums.MessageKey;
 
 import lombok.RequiredArgsConstructor;
 

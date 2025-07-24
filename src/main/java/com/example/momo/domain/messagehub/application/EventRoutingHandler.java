@@ -1,4 +1,4 @@
-package com.example.momo.domain.messegehub.application;
+package com.example.momo.domain.messagehub.application;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
