@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.user.application.UserService;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
@@ -30,6 +32,7 @@ import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 import com.example.momo.global.common.dto.ApiResponse;
 
 import jakarta.validation.Valid;
@@ -41,6 +44,25 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
 	private final UserService userService;
+
+	// 회원가입
+	@PostMapping("/register")
+	public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
+		userService.registerUser(request);
+		return ResponseEntity.status(HttpStatus.CREATED)
+			.body(ApiResponse.success("회원가입에 성공했습니다.", null));
+	}
+
+	// 회원탈퇴
+	@DeleteMapping("/me/withdraw")
+	public ResponseEntity<ApiResponse<Void>> withdraw(
+		@RequestBody @Valid WithdrawRequestDto request,
+		@AuthenticationPrincipal AuthUser authUser
+	) {
+		userService.withdrawUser(request, authUser.getId());
+		return ResponseEntity.status(HttpStatus.NO_CONTENT)
+			.body(ApiResponse.success("회원 탈퇴에 성공했습니다.", null));
+	}
 
 	// 특정 사용자 정보 조회
 	@GetMapping("{userId}")
@@ -87,12 +109,12 @@ public class UserController {
 		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
 	}
 
-	// 이메일로 사용자 조회
-	@GetMapping("/by-email")
-	public ResponseEntity<ApiResponse<UserResponseDto>> getUserByEmail(
+	// Auth 도메인 전용 - 이메일로 사용자 조회 (비밀번호 포함)
+	@GetMapping("/internal/by-email")
+	public ResponseEntity<ApiResponse<UserAuthResponseDto>> getUserByEmailForAuth(
 		@RequestParam String email
 	) {
-		UserResponseDto response = userService.getUserByEmail(email);
+		UserAuthResponseDto response = userService.getUserByEmailForAuth(email);
 		if (response == null) {
 			return ResponseEntity.ok(ApiResponse.success("해당 이메일의 사용자가 존재하지 않습니다.", null));
 		}
