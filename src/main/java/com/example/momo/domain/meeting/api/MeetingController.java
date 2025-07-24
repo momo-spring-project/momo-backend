@@ -118,11 +118,11 @@ public class MeetingController {
 
 	// 참가자 목록 조회
 	@GetMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<List<Long>>> getParticipants(
+	public ResponseEntity<ApiResponse<List<ParticipantResponseDto>>> getParticipants(
 		@PathVariable Long meetingId
 	) {
-		List<Long> responseData = meetingService.getParticipants(meetingId);
-		ApiResponse<List<Long>> response = ApiResponse.success("참가자 목록 조회를 성공했습니다", responseData);
+		List<ParticipantResponseDto> responseData = meetingService.getParticipants(meetingId);
+		ApiResponse<List<ParticipantResponseDto>> response = ApiResponse.success("참가자 목록 조회를 성공했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 

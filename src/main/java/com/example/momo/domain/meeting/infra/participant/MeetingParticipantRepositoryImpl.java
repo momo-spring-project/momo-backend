@@ -24,8 +24,8 @@ public class MeetingParticipantRepositoryImpl implements MeetingParticipantRepos
 	}
 
 	@Override
-	public List<Long> findParticipantsIdsByMeetingId(Long meetingId) {
-		return meetingParticipantJpaRepository.findParticipantsIdByMeetingId(meetingId);
+	public List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId) {
+		return meetingParticipantJpaRepository.findAllByMeetingId(meetingId);
 	}
 
 	@Override

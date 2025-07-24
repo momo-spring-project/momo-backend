@@ -3,7 +3,7 @@ package com.example.momo.global.utils;
 public class HaversineUtils {
 
 	private static final int EARTH_RADIUS = 6371000;
-	private static final double THRESHOLD_METERS = 10.0;
+	private static final double DEFAULT_THRESHOLD_METERS = 10.0;
 
 	private HaversineUtils() {}
 
@@ -22,8 +22,13 @@ public class HaversineUtils {
 
 	public static boolean isInDistance(double lat1, double lng1, double lat2, double lng2) {
 
+		return isInDistance(lat1, lng1, lat2, lng2, DEFAULT_THRESHOLD_METERS);
+	}
+
+	public static boolean isInDistance(double lat1, double lng1, double lat2, double lng2, double threshold) {
+
 		double distance = haversine(lat1, lng1, lat2, lng2);
 
-		return distance < THRESHOLD_METERS;
+		return distance < threshold;
 	}
 }

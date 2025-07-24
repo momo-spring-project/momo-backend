@@ -10,7 +10,7 @@ public interface MeetingParticipantRepository {
 
 	MeetingParticipant save(MeetingParticipant meetingParticipant);
 
-	List<Long> findParticipantsIdsByMeetingId(Long meetingId);
+	List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId);
 
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
 

@@ -191,12 +191,16 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public List<Long> getParticipants(Long meetingId) {
+	public List<ParticipantResponseDto> getParticipants(Long meetingId) {
 		if(!meetingRepository.existsById(meetingId)) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
 		}
 
-		return meetingRepository.findParticipantsIdsByMeetingId(meetingId);
+		List<MeetingParticipant> participants = meetingRepository.findAllParticipantsByMeetingId(meetingId);
+
+		return participants.stream()
+			.map(ParticipantResponseDto::new)
+			.toList();
 	}
 
 	@Override

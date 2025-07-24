@@ -61,8 +61,8 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
-	public List<Long> findParticipantsIdsByMeetingId(Long meetingId) {
-		return meetingParticipantRepository.findParticipantsIdsByMeetingId(meetingId);
+	public List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId) {
+		return meetingParticipantRepository.findAllParticipantsByMeetingId(meetingId);
 	}
 
 	@Override
