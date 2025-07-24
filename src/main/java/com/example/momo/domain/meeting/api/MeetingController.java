@@ -3,8 +3,8 @@ package com.example.momo.domain.meeting.api;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.*;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -26,8 +26,6 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequest;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingStatusUpdateRequest;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequest;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponse;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -150,6 +148,18 @@ public class MeetingController {
 		ParticipantResponseDto responseData =
 			meetingService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("모임 출석 처리되었습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// meetingId 에 0 넣으면 전체 조회 하도록 설정
+	@GetMapping("/{meetingId}/participants/count")
+	public ResponseEntity<ApiResponse<ParticipantCountResponseDto>> countParticipants(
+		@PathVariable Long meetingId,
+		@RequestParam(required = false) Boolean attendance,
+		@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd-HH-mm-ss") LocalDateTime createdAt
+	) {
+		ParticipantCountResponseDto responseData = meetingService.countParticipants(meetingId, attendance, createdAt);
+		ApiResponse<ParticipantCountResponseDto> response = ApiResponse.success("참가자 집계가 처리되었습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 }

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payment.domain.dto.RefundRequest;
@@ -247,6 +248,18 @@ public class MeetingServiceImpl implements MeetingService {
 		participant.updateAttendanceStatus();
 
 		return new ParticipantResponseDto(participant);
+	}
+
+	@Override
+	public ParticipantCountResponseDto countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+
+		if(createdAt == null) {
+			createdAt = LocalDateTime.now().minusDays(7);
+		}
+
+		Long counts = meetingRepository.countParticipants(meetingId, attendance, createdAt);
+
+		return new ParticipantCountResponseDto(meetingId, counts, attendance, createdAt);
 	}
 
 	// 참가자 추가
