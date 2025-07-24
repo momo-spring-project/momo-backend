@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,8 @@ import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.global.infrastructure.springEvent.PaymentCompletedEvent;
+import com.example.momo.global.infrastructure.springEvent.PaymentRefundedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +43,8 @@ public class PaymentServiceImpl implements PaymentService {
 	private final UserRepository userRepository;
 	private final PaymentClient paymentClient;
 	private final TossPaymentsConfig tossConfig;
+
+	private final ApplicationEventPublisher eventPublisher;
 
 	// ==================== 결제 생성 ====================
 
@@ -136,8 +141,15 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// 결제 레코드 삭제 (재결제 가능하도록)
 		paymentRepository.delete(payment);
-		log.info("결제 환불 및 삭제 완료 - paymentId: {}, userId: {}, meetingId: {}",
-			payment.getId(), payment.getUserId(), payment.getMeetingId());
+
+		eventPublisher.publishEvent(
+			new PaymentRefundedEvent(
+				paymentId,
+				userId,
+				payment.getMeetingId(),
+				payment.getAmount(),
+				LocalDateTime.now())
+		);
 
 		return response;
 	}
@@ -280,6 +292,16 @@ public class PaymentServiceImpl implements PaymentService {
 			.build();
 
 		Payment saved = paymentRepository.save(payment);
+
+		eventPublisher.publishEvent(
+			new PaymentCompletedEvent(
+				saved.getId(),
+				user.getId(),
+				meeting.getId(),
+				amount,
+				saved.getPaidAt())
+		);
+
 		log.info("Key-in 결제 완료 - paymentId: {}, paymentKey: {}", saved.getId(), paymentKey);
 		return PaymentResponse.from(saved);
 	}
