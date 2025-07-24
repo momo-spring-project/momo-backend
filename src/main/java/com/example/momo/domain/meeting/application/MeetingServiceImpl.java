@@ -3,6 +3,7 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.category.application.CategoryService;
+import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
@@ -24,6 +27,7 @@ import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.utils.RetryUtil;
 
@@ -38,8 +42,10 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingReader meetingReader;
 
 	private final EntityManager em;
-
 	private final UserRepository userRepository;
+
+	private final ApplicationEventPublisher eventPublisher;
+	private final CategoryService categoryService;
 
 	@Override
 	@Transactional
@@ -47,6 +53,18 @@ public class MeetingServiceImpl implements MeetingService {
 
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
+
+		// TODO CategoryId를 통한 category name 조회 (http client 요청)로 변경
+		CategoryResponseDto category = categoryService.getCategory(request.getCategoryId());
+
+		eventPublisher.publishEvent(new MeetingEvents.Create(
+			meeting.getId(),
+			request.getCategoryId(),
+			category.getCategoryName(),
+			meeting.getLatitude(),
+			meeting.getLongitude()
+		));
+
 		return new MeetingResponseDto(savedMeeting);
 	}
 
@@ -63,12 +81,18 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.updateMeeting(request);
 
+		eventPublisher.publishEvent(new MeetingEvents.Update(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+		));
+
 		return new MeetingResponseDto(meeting);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public MeetingResponseDto searchMeeting(Long meetingId) {
+	public MeetingResponseDto getMeeting(Long meetingId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
 			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
@@ -98,7 +122,7 @@ public class MeetingServiceImpl implements MeetingService {
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.findMeetings(title, meetingDate, status, pageable);
+		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, pageable);
 		List<MeetingResponseDto> meetingResponses = meetingPage.stream()
 			.map(MeetingResponseDto::new)
 			.toList();
@@ -123,6 +147,12 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.delete();
+
+		eventPublisher.publishEvent(new MeetingEvents.Delete(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+		));
 	}
 
 	/**

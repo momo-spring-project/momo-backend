@@ -18,7 +18,7 @@ public interface MeetingService {
 
 	MeetingResponseDto updateMeeting(MeetingUpdateRequestDto request, Long meetingId, Long userId);
 
-	MeetingResponseDto searchMeeting(Long meetingId);
+	MeetingResponseDto getMeeting(Long meetingId);
 
 	MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
