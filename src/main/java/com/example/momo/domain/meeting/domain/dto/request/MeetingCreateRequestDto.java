@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class MeetingCreateRequest {
+public class MeetingCreateRequestDto {
 
 	@NotBlank
 	private String title;

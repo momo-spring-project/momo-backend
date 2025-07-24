@@ -4,15 +4,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.infra.participant.MeetingParticipantRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.infra.participant.MeetingParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -37,7 +37,7 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
-	public Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+	public Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
 		Pageable pageable) {
 
 		return meetingQueryRepository.findMeetings(title, meetingDate, status, pageable);

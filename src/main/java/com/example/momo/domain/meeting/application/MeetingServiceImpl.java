@@ -3,35 +3,39 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.utils.HaversineUtils;
-import com.example.momo.global.utils.RetryUtil;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.category.application.CategoryService;
+import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequest;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequest;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponse;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingResponse;
+import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
+import com.example.momo.domain.payment.domain.dto.RefundRequest;
+import com.example.momo.domain.user.domain.User;
+import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.utils.HaversineUtils;
+import com.example.momo.global.utils.RetryUtil;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -41,21 +45,35 @@ public class MeetingServiceImpl implements MeetingService {
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
+	private final EntityManager em;
 	private final UserClient userClient;
 	private final PaymentService paymentService;
+	private final CategoryService categoryService;
 
 	@Override
 	@Transactional
-	public MeetingResponse createMeeting(MeetingCreateRequest request, Long userId) {
+	public MeetingResponseDto createMeeting(MeetingCreateRequestDto request, Long userId) {
 
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
-		return new MeetingResponse(savedMeeting);
+
+		// TODO CategoryId를 통한 category name 조회 (http client 요청)로 변경
+		CategoryResponseDto category = categoryService.getCategory(request.getCategoryId());
+
+		eventPublisher.publishEvent(new MeetingEvents.Create(
+			meeting.getId(),
+			request.getCategoryId(),
+			category.getCategoryName(),
+			meeting.getLatitude(),
+			meeting.getLongitude()
+		));
+
+		return new MeetingResponseDto(savedMeeting);
 	}
 
 	@Override
 	@Transactional
-	public MeetingResponse updateMeeting(MeetingUpdateRequest request, Long meetingId, Long userId) {
+	public MeetingResponseDto updateMeeting(MeetingUpdateRequestDto request, Long meetingId, Long userId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
 			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
@@ -66,21 +84,27 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.updateMeeting(request);
 
-		return new MeetingResponse(meeting);
+		eventPublisher.publishEvent(new MeetingEvents.Update(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+		));
+
+		return new MeetingResponseDto(meeting);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public MeetingResponse searchMeeting(Long meetingId) {
+	public MeetingResponseDto getMeeting(Long meetingId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
 			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
-		return new MeetingResponse(meeting);
+		return new MeetingResponseDto(meeting);
 	}
 
 	@Override
 	@Transactional
-	public MeetingResponse updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId) {
+	public MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
 			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
@@ -90,23 +114,23 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.updateStatus(status);
-		return new MeetingResponse(meeting);
+		return new MeetingResponseDto(meeting);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public MeetingPagingResponse<MeetingResponse> getMeetings(String title, MeetingStatus status,
+	public MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
 		LocalDateTime meetingDate, int page, int size) {
 
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.findMeetings(title, meetingDate, status, pageable);
-		List<MeetingResponse> meetingResponses = meetingPage.stream()
-			.map(MeetingResponse::new)
+		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, pageable);
+		List<MeetingResponseDto> meetingResponses = meetingPage.stream()
+			.map(MeetingResponseDto::new)
 			.toList();
 
-		return new MeetingPagingResponse<>(
+		return new MeetingPagingResponseDto<>(
 			meetingResponses,
 			meetingPage.getTotalElements(),
 			meetingPage.getTotalPages(),
@@ -126,6 +150,12 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.delete();
+
+		eventPublisher.publishEvent(new MeetingEvents.Delete(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+		));
 	}
 
 	/**
@@ -141,7 +171,7 @@ public class MeetingServiceImpl implements MeetingService {
 		UserClientResponseDto user = userClient.getUser(userId);
 
 		// 이미 참가했으면 예외처리
-		if(meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+		if (meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
 
@@ -149,7 +179,7 @@ public class MeetingServiceImpl implements MeetingService {
 		isMeetingOpen(meeting);
 
 		// 유저 자격 확인
-		if(user.getScore() < meeting.getMinEnterScore()) {
+		if (user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
@@ -192,7 +222,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<Long> getParticipants(Long meetingId) {
-		if(!meetingRepository.existsById(meetingId)) {
+		if (!meetingRepository.existsById(meetingId)) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
 		}
 
@@ -234,7 +264,7 @@ public class MeetingServiceImpl implements MeetingService {
 		Double destLng = meeting.getLongitude();
 
 		// 위치가 목적지 근처인지 확인
-		if(!HaversineUtils.isInDistance(destLat, destLng, lat, lng)) {
+		if (!HaversineUtils.isInDistance(destLat, destLng, lat, lng)) {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
 		}
 
@@ -251,7 +281,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
-		if(meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
@@ -270,7 +300,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
-		if(meeting.getCurrentParticipantsCount() <= 0) {
+		if (meeting.getCurrentParticipantsCount() <= 0) {
 			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
 		}
 
@@ -285,18 +315,53 @@ public class MeetingServiceImpl implements MeetingService {
 	private void isMeetingOpen(Meeting meeting) {
 
 		// 시작 시간 넘김
-		if(LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
+		if (LocalDateTime.now().isAfter(meeting.getMeetingDate())) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_STARTED_MEETING);
 		}
 
 		// 모임 상태 FINISHED
-		if(meeting.getStatus() == MeetingStatus.FINISHED) {
+		if (meeting.getStatus() == MeetingStatus.FINISHED) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_FINISHED_MEETING);
 		}
 
 		// 삭제된 모임
-		if(meeting.getIsDeleted()) {
+		if (meeting.getIsDeleted()) {
 			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
 		}
+	}
+
+	// 참가자 추가
+	@Transactional
+	public ParticipantResponseDto addParticipant(Meeting meeting, User user) {
+
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+
+		// 참가자 추가
+		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), user.getId());
+		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
+
+		meeting.addMeetingParticipant();
+
+		return new ParticipantResponseDto(savedParticipant);
+	}
+
+	// 참가자 감소
+	@Transactional
+	public ParticipantResponseDto removeParticipant(Meeting meeting, User user) {
+
+		if (meeting.getCurrentParticipantsCount() <= 0) {
+			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
+		}
+
+		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meeting.getId(),
+			user.getId());
+
+		// 인원 계산, 참가자 삭제
+		meeting.removeMeetingParticipant();
+		em.remove(participant);
+
+		return new ParticipantResponseDto(participant);
 	}
 }

@@ -4,11 +4,22 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.momo.global.common.entity.BaseEntity;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequest;
+import com.example.momo.global.common.entity.BaseEntity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -80,7 +91,7 @@ public class Meeting extends BaseEntity {
 	@Version
 	private Integer version;
 
-	public void updateMeeting(MeetingUpdateRequest request) {
+	public void updateMeeting(MeetingUpdateRequestDto request) {
 		this.title = request.getTitle();
 		this.description = request.getDescription();
 		this.categoryId = request.getCategoryId();
