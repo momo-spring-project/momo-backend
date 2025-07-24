@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class MeetingUpdateRequest {
+public class MeetingUpdateRequestDto {
 
 	@NotBlank
 	private String title;
