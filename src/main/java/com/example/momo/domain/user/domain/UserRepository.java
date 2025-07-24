@@ -27,6 +27,20 @@ public interface UserRepository {
 	List<Long> findExistingUserIds(List<Long> userIds);
 
 	/**
+	 * 카테고리, 위도, 경도 기반으로 사용자를 필터링하여 조회
+	 *
+	 * @param categoryIds 관심 카테고리 ID 목록 (null이면 필터링 안함)
+	 * @param latitude 위도 (null이면 필터링 안함)
+	 * @param longitude 경도 (null이면 필터링 안함)
+	 * @return 필터링된 사용자 목록
+	 */
+	List<User> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	);
+
+	/**
 	 * 특정 사용자가 팔로잉하는 사용자들 조회 (COUNT 쿼리 없음)
 	 * @param userId 조회할 사용자 ID
 	 * @param pageable 페이징 정보

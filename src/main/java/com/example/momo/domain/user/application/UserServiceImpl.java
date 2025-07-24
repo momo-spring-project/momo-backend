@@ -9,25 +9,25 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.category.application.CategoryService;
 import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.category.exception.CategoryException;
-import com.example.momo.domain.category.application.CategoryService;
 import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
-import com.example.momo.domain.user.domain.dto.UserListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
+import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
+import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserResponseDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.domain.user.domain.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -77,6 +77,20 @@ public class UserServiceImpl implements UserService {
 	@Transactional(readOnly = true)
 	public UserResponseDto getMyProfile(Long currentUserId) {
 		return getUserById(currentUserId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserListResponseDto> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	) {
+		List<User> users = userRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
+
+		return users.stream()
+			.map(UserListResponseDto::new)
+			.toList();
 	}
 
 	@Override

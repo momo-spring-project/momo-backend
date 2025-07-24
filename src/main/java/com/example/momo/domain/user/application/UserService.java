@@ -38,6 +38,20 @@ public interface UserService {
 
 	UserResponseDto getMyProfile(Long CurrentUserId);
 
+	/**
+	 * 카테고리, 위도, 경도 기반으로 사용자를 필터링하여 조회
+	 *
+	 * @param categoryIds 관심 카테고리 ID 목록 (null이면 필터링 안함)
+	 * @param latitude 위도 (null이면 필터링 안함)
+	 * @param longitude 경도 (null이면 필터링 안함)
+	 * @return 필터링된 사용자 목록
+	 */
+	List<UserListResponseDto> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	);
+
 	User updateUserCategories(Long userId, List<Integer> categoryIds);
 
 	void updatePassword(Long userId, UserPasswordUpdateRequestDto request);

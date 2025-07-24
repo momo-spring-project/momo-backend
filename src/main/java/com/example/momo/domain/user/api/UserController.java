@@ -36,7 +36,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v2/users")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -85,6 +85,17 @@ public class UserController {
 	) {
 		UserResponseDto response = userService.getMyProfile(authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
+	}
+
+	// 사용자 필터링 조회 (카테고리, 위도, 경도)
+	@GetMapping("/filter")
+	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsersByLocationAndCategory(
+		@RequestParam(required = false) List<Integer> categoryIds,
+		@RequestParam(required = false) Double latitude,
+		@RequestParam(required = false) Double longitude
+	) {
+		List<UserListResponseDto> users = userService.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
+		return ResponseEntity.ok(ApiResponse.success("사용자 필터링 조회 완료", users));
 	}
 
 	// 내 관심 카테고리 수정

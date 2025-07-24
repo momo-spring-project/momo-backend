@@ -6,10 +6,10 @@ import java.util.List;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,15 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 public class UserClient {
 
 	private final WebClient webClient;
-	private static final String USER_SERVICE_BASE_URL = "/api/v1/users";
+	private static final String USER_SERVICE_BASE_URL = "/api/v2/users";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
 	/**
 	 * 단일 사용자 정보 조회
-	 *
-	 * @param userId 조회할 사용자 ID
-	 * @return 사용자 정보 DTO (존재하지 않으면 null)
-	 * @throws UserClientException 통신 오류 시
 	 */
 	public UserClientResponseDto getUser(Long userId) {
 		try {
@@ -40,44 +36,27 @@ public class UserClient {
 				.get()
 				.uri(USER_SERVICE_BASE_URL + "/{userId}", userId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<UserClientResponseDto>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<UserClientResponseDto>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
-			if (response == null || !response.isSuccess()) {
-				return null;
-			}
-
-			log.debug("사용자 정보 조회 성공: userId={}", userId);
-			return response.getData();
-
-		} catch (WebClientResponseException e) {
-			if (e.getStatusCode().value() == 404) {
-				log.debug("사용자를 찾을 수 없습니다: userId={}", userId);
-				return null;
-			}
-			log.error("사용자 정보 조회 실패: userId={}, status={}, error={}",
-				userId, e.getStatusCode(), e.getMessage());
-			throw new UserClientException("사용자 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
+			return (response != null && response.isSuccess()) ? response.getData() : null;
 		} catch (Exception e) {
-			log.error("사용자 정보 조회 실패: userId={}, error={}", userId, e.getMessage());
-			throw new UserClientException("사용자 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
+			log.error("사용자 조회 실패: userId={}, error={}", userId, e.getMessage());
+			return null;
 		}
 	}
 
 	/**
 	 * 다중 사용자 정보 조회
-	 *
-	 * @param userIds 조회할 사용자 ID 목록
-	 * @return 사용자 정보 DTO 목록 (존재하지 않는 사용자는 제외)
-	 * @throws UserClientException 통신 오류 시
 	 */
 	public List<UserClientResponseDto> getUsers(List<Long> userIds) {
-		try {
-			if (userIds == null || userIds.isEmpty()) {
-				return List.of();
-			}
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
 
+		try {
 			ApiResponse<List<UserClientResponseDto>> response = webClient
 				.get()
 				.uri(uriBuilder -> uriBuilder
@@ -85,40 +64,27 @@ public class UserClient {
 					.queryParam("ids", userIds.toArray())
 					.build())
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<UserClientResponseDto>>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<UserClientResponseDto>>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
-			if (response == null || !response.isSuccess()) {
-				throw new UserClientException("사용자 목록 정보를 가져오는데 실패했습니다.");
-			}
-
-			log.debug("사용자 목록 조회 성공: userIds={}, count={}", userIds, response.getData().size());
-			return response.getData();
-
-		} catch (WebClientResponseException e) {
-			log.error("사용자 목록 조회 실패: userIds={}, status={}, error={}",
-				userIds, e.getStatusCode(), e.getMessage());
-			throw new UserClientException("사용자 목록 조회 중 오류가 발생했습니다: " + e.getMessage());
+			return (response != null && response.isSuccess()) ? response.getData() : List.of();
 		} catch (Exception e) {
 			log.error("사용자 목록 조회 실패: userIds={}, error={}", userIds, e.getMessage());
-			throw new UserClientException("사용자 목록 조회 중 오류가 발생했습니다: " + e.getMessage());
+			return List.of();
 		}
 	}
 
 	/**
-	 * 사용자 존재 여부 확인 (다건 처리, 단건도 리스트로 감싸서 사용)
-	 *
-	 * @param userIds 확인할 사용자 ID 목록
-	 * @return 존재하는 사용자 ID 목록
-	 * @throws UserClientException 통신 오류 시
+	 * 사용자 존재 여부 확인
 	 */
 	public List<Long> getExistingUserIds(List<Long> userIds) {
-		try {
-			if (userIds == null || userIds.isEmpty()) {
-				return List.of();
-			}
+		if (userIds == null || userIds.isEmpty()) {
+			return List.of();
+		}
 
+		try {
 			ApiResponse<List<Long>> response = webClient
 				.get()
 				.uri(uriBuilder -> uriBuilder
@@ -126,24 +92,54 @@ public class UserClient {
 					.queryParam("ids", userIds.toArray())
 					.build())
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
-			if (response == null || !response.isSuccess()) {
-				throw new UserClientException("사용자 존재 여부 확인에 실패했습니다.");
-			}
-
-			log.debug("사용자 존재 여부 확인 성공: userIds={}, existingCount={}",
-				userIds, response.getData().size());
-			return response.getData();
-
-		} catch (WebClientResponseException e) {
-			log.error("사용자 존재 여부 확인 실패: userIds={}, status={}", userIds, e.getStatusCode());
-			throw new UserClientException("사용자 존재 여부 확인 중 오류가 발생했습니다: " + e.getMessage());
+			return (response != null && response.isSuccess()) ? response.getData() : List.of();
 		} catch (Exception e) {
 			log.error("사용자 존재 여부 확인 실패: userIds={}, error={}", userIds, e.getMessage());
-			throw new UserClientException("사용자 존재 여부 확인 중 오류가 발생했습니다: " + e.getMessage());
+			return List.of();
+		}
+	}
+
+	/**
+	 * 카테고리와 위치 조건으로 사용자 검색
+	 */
+	public List<UserClientResponseDto> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	) {
+		try {
+			UriComponentsBuilder uriBuilder = UriComponentsBuilder
+				.fromPath(USER_SERVICE_BASE_URL + "/filter");
+
+			if (categoryIds != null && !categoryIds.isEmpty()) {
+				uriBuilder.queryParam("categoryIds", categoryIds.toArray());
+			}
+			if (latitude != null) {
+				uriBuilder.queryParam("latitude", latitude);
+			}
+			if (longitude != null) {
+				uriBuilder.queryParam("longitude", longitude);
+			}
+
+			ApiResponse<List<UserClientResponseDto>> response = webClient
+				.get()
+				.uri(uriBuilder.build().toUri())
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<UserClientResponseDto>>>() {
+				})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			return (response != null && response.isSuccess()) ? response.getData() : List.of();
+		} catch (Exception e) {
+			log.error("사용자 검색 실패: categoryIds={}, latitude={}, longitude={}, error={}",
+				categoryIds, latitude, longitude, e.getMessage());
+			return List.of();
 		}
 	}
 }
