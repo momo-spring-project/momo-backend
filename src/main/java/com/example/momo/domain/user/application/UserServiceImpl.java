@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -33,6 +34,7 @@ import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.user.UserWithdrawalEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -45,6 +47,7 @@ public class UserServiceImpl implements UserService {
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
 	private final MeetingParticipantJpaRepository meetingParticipantRepository;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	@Transactional
@@ -80,6 +83,15 @@ public class UserServiceImpl implements UserService {
 		if (user.getPassword() != null && !passwordEncoder.matches(request.password(), user.getPassword())) {
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
+
+		// 탈퇴 이벤트 발행 (소프트 삭제 전에 발행)
+		UserWithdrawalEvent event = new UserWithdrawalEvent(
+			user.getId(),
+			user.getEmail(),
+			user.getNickname(),
+			LocalDateTime.now()
+		);
+		eventPublisher.publishEvent(event);
 
 		// 소프트 삭제
 		user.delete();
