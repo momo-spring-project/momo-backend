@@ -105,6 +105,41 @@ public class UserClient {
 	}
 
 	/**
+	 * 이메일로 사용자 정보 조회
+	 */
+	public UserClientResponseDto getUserByEmail(String email) {
+		if (email == null || email.trim().isEmpty()) {
+			log.warn("이메일이 비어있습니다.");
+			return null;
+		}
+
+		try {
+			ApiResponse<UserClientResponseDto> response = webClient
+				.get()
+				.uri(uriBuilder -> uriBuilder
+					.path(USER_SERVICE_BASE_URL + "/by-email")
+					.queryParam("email", email)
+					.build())
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<UserClientResponseDto>>() {
+				})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response != null && response.isSuccess() && response.getData() != null) {
+				log.debug("이메일로 사용자 조회 성공: email={}", email);
+				return response.getData();
+			} else {
+				log.debug("해당 이메일의 사용자가 존재하지 않습니다: email={}", email);
+				return null;
+			}
+		} catch (Exception e) {
+			log.error("이메일로 사용자 조회 실패: email={}, error={}", email, e.getMessage());
+			return null;
+		}
+	}
+
+	/**
 	 * 카테고리와 위치 조건으로 사용자 검색
 	 */
 	public List<UserClientResponseDto> getUsersByLocationAndCategory(
