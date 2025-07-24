@@ -49,9 +49,9 @@ public class MeetingController {
 	}
 
 	@GetMapping("/{meetingId}")
-	public ResponseEntity<ApiResponse<MeetingResponseDto>> searchMeeting(@PathVariable Long meetingId) {
+	public ResponseEntity<ApiResponse<MeetingResponseDto>> getMeeting(@PathVariable Long meetingId) {
 
-		MeetingResponseDto response = meetingService.searchMeeting(meetingId);
+		MeetingResponseDto response = meetingService.getMeeting(meetingId);
 		return ResponseEntity.ok(ApiResponse.success("모임 조회가 성공적으로 완료되었습니다.", response));
 	}
 
@@ -73,7 +73,7 @@ public class MeetingController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> searchMeetings(
+	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> getMeetings(
 		@RequestParam(defaultValue = "") String title,
 		@RequestParam(required = false) MeetingStatus status,
 		@RequestParam(required = false) LocalDateTime meetingDate,
