@@ -22,6 +22,7 @@ import com.example.momo.global.security.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.security.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.security.filter.JwtFilter;
 import com.example.momo.global.security.jwt.JwtTokenProvider;
+import com.example.momo.global.security.oauth2.OAuth2FailureHandler;
 import com.example.momo.global.security.oauth2.OAuth2SuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,6 +39,7 @@ public class SecurityConfig {
 	private final ObjectMapper objectMapper;
 	private final OAuth2UserService oAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
+	private final OAuth2FailureHandler oAuth2FailureHandler;
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -69,7 +71,8 @@ public class SecurityConfig {
 			.oauth2Login(oauth2 -> oauth2
 				.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
 					.userService(oAuth2UserService))
-				.successHandler(oAuth2SuccessHandler))
+				.successHandler(oAuth2SuccessHandler)
+				.failureHandler(oAuth2FailureHandler))
 			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper), UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				// 인증이 필요없는 공개 엔드포인트

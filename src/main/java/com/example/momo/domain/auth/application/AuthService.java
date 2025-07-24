@@ -75,7 +75,7 @@ public class AuthService {
 		user.delete();
 
 		// 유저 소셜은 hard delete -> 연동이 끊기는 개념
-		List<UserSocial> allUserSocial = userSocialRepository.findAllByUser(user);
+		List<UserSocial> allUserSocial = userSocialRepository.findAllByUserId(user.getId());
 		userSocialRepository.deleteAll(allUserSocial);
 		user.delete();
 	}

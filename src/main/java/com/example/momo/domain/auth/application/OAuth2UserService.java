@@ -2,9 +2,11 @@ package com.example.momo.domain.auth.application;
 
 import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -15,8 +17,8 @@ import com.example.momo.domain.auth.domain.dto.NaverOAuth2Dto;
 import com.example.momo.domain.auth.domain.dto.OAuth2Response;
 import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
-import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OAuth2UserService extends DefaultOAuth2UserService {
 	private final UserSocialRepository userSocialRepository;
-	private final UserRepository userRepository;
-
+	private final UserClient userClient;
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
@@ -47,36 +48,24 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 			return null;
 
 		UserSocial userSocial = userSocialRepository.findByProviderId(oAuth2Response.getProviderId());
-		Optional<User> optionalUser = userRepository.findByEmailAndIsDeletedFalse(oAuth2Response.getEmail());
-		User user = null;
+		UserClientResponseDto userDto = userClient.getUserByEmail(oAuth2Response.getEmail());
 
 		// 연동된 계정도 없고 해당 이메일로 회원가입된 계정도 없다면 새로 생성
-		if (userSocial == null && optionalUser.isEmpty()) {
-			user = new User(
-				oAuth2Response.getNickname(),
-				oAuth2Response.getEmail(),
-				null,
-				null,
-				0.0,
-				0.0
-			);
-			userRepository.save(user);
-			userSocialRepository.save(
-				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
-			log.info("계정({})을 생성하고 {} 계정을 연동합니다.", user.getEmail(), registrationId);
+		if (userSocial == null && userDto == null) {
+			log.info("계정({})은 가입되어 있지 않은 SNS ID 입니다.", oAuth2Response.getEmail());
+			throw new OAuth2AuthenticationException(new OAuth2Error("INVALID_SNS", "가입되어 있지 않은 SNS ID 입니다.", null));
 
 			// 연동된 계정은 없지만 해당 이메일로 회원가입 되어있을 때 자동 연동
-		} else if (userSocial == null && !optionalUser.isEmpty()) {
-			user = optionalUser.get();
+		} else if (userSocial == null) {
+
 			userSocialRepository.save(
-				UserSocial.of(user, oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
-			log.info("계정({})에 {} 계정을 연동합니다.", user.getEmail(), registrationId);
+				UserSocial.of(userDto.getId(), oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
+			log.info("계정({})에 {} 계정을 연동합니다.", userDto.getEmail(), registrationId);
 			// 연동된 계정이 있을 때
 		} else {
-			user = userSocial.getUser();
-			log.info("계정({})에 {} 계정으로 로그인합니다.", user.getEmail(), registrationId);
+			log.info("계정({})에 {} 계정으로 로그인합니다.", userDto.getEmail(), registrationId);
 		}
 
-		return new CustomOAuth2User(user.getId(), oAuth2Response);
+		return new CustomOAuth2User(userDto.getId(), oAuth2Response);
 	}
 }

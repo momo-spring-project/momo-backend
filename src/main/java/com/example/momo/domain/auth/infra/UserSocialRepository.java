@@ -9,8 +9,7 @@ import com.example.momo.domain.auth.domain.UserSocial;
 import com.example.momo.domain.user.domain.User;
 
 public interface UserSocialRepository extends JpaRepository<UserSocial, Long> {
-	@EntityGraph(attributePaths = "user")
 	UserSocial findByProviderId(String providerId);
 
-	List<UserSocial> findAllByUser(User user);
+	List<UserSocial> findAllByUserId(Long userId);
 }
