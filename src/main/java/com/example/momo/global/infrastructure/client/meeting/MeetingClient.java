@@ -16,14 +16,8 @@ import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantCoun
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Slf4j
 @Component
