@@ -9,7 +9,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.StringUtils;
 
-import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
+import com.example.momo.global.infrastructure.springEvent.notification.NotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
