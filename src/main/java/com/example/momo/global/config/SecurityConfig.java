@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,7 @@ import com.example.momo.global.security.filter.JwtAccessDeniedHandler;
 import com.example.momo.global.security.filter.JwtAuthenticationEntryPoint;
 import com.example.momo.global.security.filter.JwtFilter;
 import com.example.momo.global.security.jwt.JwtTokenProvider;
+import com.example.momo.global.security.oauth2.OAuth2FailureHandler;
 import com.example.momo.global.security.oauth2.OAuth2SuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,6 +40,10 @@ public class SecurityConfig {
 	private final ObjectMapper objectMapper;
 	private final OAuth2UserService oAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
+	private final OAuth2FailureHandler oAuth2FailureHandler;
+	private final BCryptPasswordEncoder passwordEncoder;
+	@Value("${webclient.internal.secret-key}")
+	private String webSecretKey;
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -69,8 +75,10 @@ public class SecurityConfig {
 			.oauth2Login(oauth2 -> oauth2
 				.userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
 					.userService(oAuth2UserService))
-				.successHandler(oAuth2SuccessHandler))
-			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper), UsernamePasswordAuthenticationFilter.class)
+				.successHandler(oAuth2SuccessHandler)
+				.failureHandler(oAuth2FailureHandler))
+			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper, passwordEncoder, webSecretKey),
+				UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/v2/categories").hasRole("ADMIN")
@@ -78,8 +86,8 @@ public class SecurityConfig {
 				.requestMatchers("/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**").permitAll()
 				.requestMatchers(
 					"/api/v2/users/register",
-					"/api/v1/auth/login",
-					"/api/v1/auth/reissue",
+					"/api/v2/auth/login",
+					"/api/v2/auth/reissue",
 					"/api/v2/categories/**"
 				).permitAll()
 				.requestMatchers(
@@ -93,10 +101,5 @@ public class SecurityConfig {
 				.accessDeniedHandler(jwtAccessDeniedHandler)
 			)
 			.build();
-	}
-
-	@Bean
-	public BCryptPasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
 	}
 }
