@@ -23,7 +23,7 @@ public interface MeetingService {
 	MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
 	MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
-		LocalDateTime meetingDate,
+		LocalDateTime meetingDate, Integer categoryId,
 		int page, int size);
 
 	void deleteMeeting(Long meetingId, Long userId);

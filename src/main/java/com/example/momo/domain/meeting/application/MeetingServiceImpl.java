@@ -120,12 +120,12 @@ public class MeetingServiceImpl implements MeetingService {
 	@Override
 	@Transactional(readOnly = true)
 	public MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
-		LocalDateTime meetingDate, int page, int size) {
+		LocalDateTime meetingDate, Integer categoryId, int page, int size) {
 
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, pageable);
+		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
 		List<MeetingResponseDto> meetingResponses = meetingPage.stream()
 			.map(MeetingResponseDto::new)
 			.toList();
