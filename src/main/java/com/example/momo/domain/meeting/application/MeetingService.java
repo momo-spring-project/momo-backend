@@ -31,7 +31,7 @@ public interface MeetingService {
 
 	/** Meeting Participant Service */
 
-	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
+	ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId);
 
 	ParticipantResponseDto getParticipant(Long participantId);
 
@@ -42,4 +42,6 @@ public interface MeetingService {
 	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
 
 	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
+
+	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
 }

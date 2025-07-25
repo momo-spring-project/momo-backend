@@ -1,7 +1,11 @@
 package com.example.momo.domain.meeting.application;
 
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
+import com.example.momo.domain.meeting.exception.MeetingException;
+import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.global.infrastructure.client.user.UserClient;
@@ -33,43 +37,42 @@ public class ParticipantPaymentListener {
 
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingReader meetingReader;
-	private final MeetingRepository meetingRepository;
+	private final MeetingService meetingService;
 	private final PaymentService paymentService;
 
-	// 클라이언트 이용한 동기처리로 진행 예정
-	// addParticipant는 MeetingServiceImpl에 있음
-	// 결제 성공 어떤 이벤트인지 확인해서 넣기
-	// @EventListener
-	// public void handlePaymentSuccessEvent() {
-	//
-	// 	Long meetingId = 1L; // event.meetingId (예상)
-	// 	Long userId = 1L; // event.userId (예상)
-	//
-	// 	Meeting meeting = meetingReader.getMeetingById(meetingId);
-	// 	UserClientResponseDto user = userClient.getUser(userId);
-	//
-	// 	// 참가자 추가 중 예외 발생 시 환불
-	// 	try {
-	// 		RetryUtil.retry(() -> addParticipant(meetingId, userId), 5);
-	// 		eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
-	// 	} catch (OptimisticLockingFailureException e) {
-	// 		paymentService.refundPayment(
-	// 			1L, // event.paymentId (예상)
-	// 			userId,
-	// 			new RefundRequest("Join Meeting Fail")
-	// 		);
-	// 		throw e;
-	// 	}
-	// }
+	// 결제 성공 어떤 이벤트인지 확인해서 넣기(이벤트 안넣으면 오류 떠서 임시로 넣어둠)
+	@Async
+	@EventListener
+	public void handlePaymentSuccessEvent(MeetingEvents.Join event) {
+
+		Long meetingId = 1L; // event.meetingId (예상)
+		Long userId = 1L; // event.userId (예상)
+
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		UserClientResponseDto user = userClient.getUser(userId);
+
+		// 참가자 추가 중 예외 발생 시 환불
+		try {
+			RetryUtil.retry(() -> meetingService.addParticipant(meetingId, userId), 5);
+			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
+		} catch (OptimisticLockingFailureException e) {
+			paymentService.refundPayment(
+				1L, // event.paymentId (예상)
+				userId,
+				new RefundRequest("Join Meeting Fail")
+			);
+			throw e;
+		}
+	}
 
 	// 비동기 참가 취소 환불
-	// @Async
-	// @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	// public void handleMeetingCancelEvent(MeetingEvents.Cancel event) {
-	// 	paymentService.refundPayment(
-	// 		1L, // event.getPaymentId
-	// 		1L, // event.getUserId
-	// 		new RefundRequest("Meeting Participation Cancel")
-	// 	);
-	// }
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handleMeetingCancelEvent(MeetingEvents.Cancel event) {
+		paymentService.refundPayment(
+			1L, // event.getPaymentId
+			1L, // event.getUserId
+			new RefundRequest("Meeting Participation Cancel")
+		);
+	}
 }

@@ -99,12 +99,12 @@ public class MeetingController {
 
 	// 모임 참가
 	@PostMapping("/{meetingId}/participants")
-	public ResponseEntity<ApiResponse<ParticipantResponseDto>> createParticipant(
+	public ResponseEntity<ApiResponse<ParticipantCreateResponseDto>> createParticipant(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId
 	) {
-		ParticipantResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
-		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
+		ParticipantCreateResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
+		ApiResponse<ParticipantCreateResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
@@ -159,12 +159,12 @@ public class MeetingController {
 	// meetingId 에 0 넣으면 전체 조회 하도록 설정
 	@GetMapping("/{meetingId}/participants/count")
 	public ResponseEntity<ApiResponse<ParticipantCountResponseDto>> getParticipantCount(
-		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId,
+		@RequestParam Long userId,
 		@RequestParam(required = false) Boolean attendance,
 		@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd-HH-mm-ss") LocalDateTime createdAt
 	) {
-		ParticipantCountResponseDto responseData = meetingService.getParticipantCount(authUser.getId(), meetingId, attendance, createdAt);
+		ParticipantCountResponseDto responseData = meetingService.getParticipantCount(userId, meetingId, attendance, createdAt);
 		ApiResponse<ParticipantCountResponseDto> response = ApiResponse.success("참가자 집계가 처리되었습니다", responseData);
 		return ResponseEntity.ok(response);
 	}

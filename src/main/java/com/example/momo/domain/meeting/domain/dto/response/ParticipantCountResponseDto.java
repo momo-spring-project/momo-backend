@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ParticipantCountResponseDto {
+	private Long userId;
 	private Long meetingId;
 	private Long counts;
 	private Boolean attendanceStatus;

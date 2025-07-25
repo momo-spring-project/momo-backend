@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.*;
 import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payment.domain.dto.RefundRequest;
@@ -19,7 +19,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,8 +28,6 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
@@ -164,11 +161,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional
-	public ParticipantResponseDto createParticipant(Long userId, Long meetingId) {
-
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-		UserClientResponseDto user = userClient.getUser(userId);
+	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
 
 		// 이미 참가했으면 예외처리
 		if (meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
@@ -176,39 +169,19 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		// 모임 활성화 확인
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		isMeetingOpen(meeting);
 
 		// 유저 자격 확인
+		UserClientResponseDto user = userClient.getUser(userId);
 		if (user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		// 현재 비동기, webClient 로 처리하면 paymentClient.결제(동기 처리) 대기
-		paymentService.createTestKeyInPayment(
-			new CardPaymentTestRequest(
-				meetingId,
-				"4242424242424242",
-				"12/25",
-				"242",
-				"881212"
-			), userId
-		);
+		eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 
-		try {
-			ParticipantResponseDto responseDto = RetryUtil.retry(() -> addParticipant(meetingId, userId), 5);
-			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
-			return responseDto;
-		} catch (OptimisticLockingFailureException e) {
-			paymentService.refundPayment(
-				1L, // event.paymentId (예상)
-				userId,
-				new RefundRequest("Join Meeting Fail")
-			);
-			throw e;
-		}
-
-		// createParticipant 에서는 결제 요청 까지만 진행 (이벤트 기반 비동기 처리시 사용)
-		// return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
+		// createParticipant 에서는 결제 요청 까지만 진행
+		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
 	}
 
 	@Override
@@ -244,12 +217,6 @@ public class MeetingServiceImpl implements MeetingService {
 
 		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
 
-		paymentService.refundPayment(
-			1L,
-			userId,
-			new RefundRequest("Cancel")
-		);
-
 		eventPublisher.publishEvent(new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), user.getNickname()));
 
 		return responseDto;
@@ -284,15 +251,16 @@ public class MeetingServiceImpl implements MeetingService {
 	public ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
 
 		if(createdAt == null) {
-			createdAt = LocalDateTime.now().minusDays(7);
+			createdAt = LocalDateTime.now().minusYears(1);
 		}
 
 		Long counts = meetingRepository.countParticipants(userId, meetingId, attendance, createdAt);
 
-		return new ParticipantCountResponseDto(meetingId, counts, attendance, createdAt);
+		return new ParticipantCountResponseDto(userId, meetingId, counts, attendance, createdAt);
 	}
 
 	// 참가자 추가
+	@Override
 	@Transactional
 	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
 
@@ -304,9 +272,9 @@ public class MeetingServiceImpl implements MeetingService {
 
 		// 참가자 추가
 		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
-		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
 
 		meeting.addMeetingParticipant();
+		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
 
 		return new ParticipantResponseDto(savedParticipant);
 	}
@@ -322,8 +290,8 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		// 인원 계산, 참가자 삭제
-		meeting.removeMeetingParticipant();
 		meeting.getParticipants().remove(participant);
+		meeting.removeMeetingParticipant();
 
 		return new ParticipantResponseDto(participant);
 	}

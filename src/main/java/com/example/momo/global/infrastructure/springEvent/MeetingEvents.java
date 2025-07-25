@@ -4,7 +4,7 @@ import java.util.List;
 
 public class MeetingEvents {
 
-	public sealed interface MeetingEvent permits Create, Update, Delete, Join, Cancel {
+	public sealed interface MeetingEvent permits Create, Update, Delete, Register, Join, Cancel {
 		Long meetingId();
 	}
 
@@ -28,6 +28,12 @@ public class MeetingEvents {
 		Long meetingId,
 		String meetingName,
 		List<Long> userIdList
+	) implements MeetingEvent {
+	}
+
+	public record Register(
+		Long meetingId,
+		Long userId
 	) implements MeetingEvent {
 	}
 
