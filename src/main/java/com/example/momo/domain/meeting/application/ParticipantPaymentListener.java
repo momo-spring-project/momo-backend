@@ -1,11 +1,6 @@
 package com.example.momo.domain.meeting.application;
 
 import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.MeetingRepository;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
-import com.example.momo.domain.meeting.exception.MeetingException;
-import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.global.infrastructure.client.user.UserClient;
@@ -18,16 +13,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
-
-/**
- ********************
- *	보험용, 사용중 x  *
- ********************
- */
-
 
 @Component
 @RequiredArgsConstructor
