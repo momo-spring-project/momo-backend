@@ -45,6 +45,9 @@ public class WebClientConfig {
 
 	private ExchangeFilterFunction authorizationHeaderFilter() {
 		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+			if (clientRequest.headers().containsKey(HttpHeaders.AUTHORIZATION)) {
+				return Mono.just(clientRequest);
+			}
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
 			if(authentication != null && authentication.isAuthenticated()) {

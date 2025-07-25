@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -108,19 +109,21 @@ public class UserClient {
 	/**
 	 * Auth 도메인 전용 - 이메일로 사용자 정보 조회 (비밀번호 포함)
 	 */
-	public UserAuthResponseDto getUserByEmailForAuth(String email) {
+	public UserAuthResponseDto getUserByEmailForAuth(String email, String internalToken) {
 		if (email == null || email.trim().isEmpty()) {
 			log.warn("이메일이 비어있습니다.");
 			return null;
 		}
 
 		try {
+			internalToken = "Bearer " + internalToken;
 			ApiResponse<UserAuthResponseDto> response = webClient
 				.get()
 				.uri(uriBuilder -> uriBuilder
 					.path(USER_SERVICE_BASE_URL + "/internal/by-email")
 					.queryParam("email", email)
 					.build())
+				.header(HttpHeaders.AUTHORIZATION, internalToken)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<ApiResponse<UserAuthResponseDto>>() {
 				})

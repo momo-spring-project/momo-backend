@@ -5,6 +5,7 @@ import com.example.momo.domain.category.infra.CategoryRepository;
 import com.example.momo.domain.category.application.CategoryService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 // 카테고리 초기 생성
 // 개발 단계에서만 사용
@@ -12,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CategoryInitializer {
 
-	private final CategoryService categoryService;
 	private final CategoryRepository categoryRepository;
 
 	@PostConstruct

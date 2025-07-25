@@ -22,8 +22,9 @@ public class AuthService {
 	private final BCryptPasswordEncoder passwordEncoder;
 
 	// 로그인만 Auth 도메인에서 담당
-	public LoginResponseDto loginUser(LoginRequestDto request) {
-		UserAuthResponseDto user = userClient.getUserByEmailForAuth(request.getEmail());
+	public LoginResponseDto loginUser(LoginRequestDto request, String internalToken) {
+
+		UserAuthResponseDto user = userClient.getUserByEmailForAuth(request.getEmail(), internalToken);
 
 		if (user == null) {
 			throw new UserException(UserErrorCode.USER_NOT_FOUND);

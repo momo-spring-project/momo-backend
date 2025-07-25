@@ -77,7 +77,7 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.PATCH, "/api/v2/categories/**").hasRole("ADMIN")
 				.requestMatchers("/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**").permitAll()
 				.requestMatchers(
-					"/api/v1/auth/register",
+					"/api/v2/users/register",
 					"/api/v1/auth/login",
 					"/api/v1/auth/reissue",
 					"/api/v2/categories/**"
