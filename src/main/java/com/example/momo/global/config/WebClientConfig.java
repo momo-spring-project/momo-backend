@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,9 +46,9 @@ public class WebClientConfig {
 		return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
 			Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-			if(authentication != null && authentication.isAuthenticated()) {
+			if (authentication != null && authentication.isAuthenticated()) {
 				Object credentials = authentication.getCredentials();
-				if(credentials instanceof String token) {
+				if (credentials instanceof String token) {
 					ClientRequest newRequest = ClientRequest.from(clientRequest)
 						.headers(headers -> headers.setBearerAuth(token))
 						.build();
