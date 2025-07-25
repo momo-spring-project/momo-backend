@@ -44,8 +44,8 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingReader meetingReader;
 	private final EntityManager em;
 	private final UserClient userClient;
-	private final PaymentService paymentService;
 	private final CategoryService categoryService;
+	private final ParticipantService participantService;
 
 	@Override
 	@Transactional
@@ -177,7 +177,6 @@ public class MeetingServiceImpl implements MeetingService {
 		if (user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
-		System.out.println("UserId = " + userId);
 
 		eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 
@@ -262,39 +261,14 @@ public class MeetingServiceImpl implements MeetingService {
 
 	// 참가자 추가
 	@Override
-	@Transactional
 	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
-
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
-		}
-
-		// 참가자 추가
-		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
-
-		meeting.addMeetingParticipant();
-		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
-
-		return new ParticipantResponseDto(savedParticipant);
+		return participantService.addParticipant(meetingId, userId);
 	}
 
 	// 참가자 감소
-	@Transactional
+	@Override
 	public ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant) {
-
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-		if (meeting.getCurrentParticipantsCount() <= 0) {
-			throw new MeetingException(MeetingExceptionCode.INVALID_PARTICIPANT_COUNT);
-		}
-
-		// 인원 계산, 참가자 삭제
-		meeting.getParticipants().remove(participant);
-		meeting.removeMeetingParticipant();
-
-		return new ParticipantResponseDto(participant);
+		return participantService.removeParticipant(meetingId, participant);
 	}
 
 	// 모임이 활성화 되어있는 상태인지 확인

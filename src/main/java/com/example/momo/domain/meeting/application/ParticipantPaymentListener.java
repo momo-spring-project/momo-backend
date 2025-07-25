@@ -37,9 +37,8 @@ public class ParticipantPaymentListener {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		UserClientResponseDto user = userClient.getUser(userId);
-		System.out.println("UserId = " + userId);
 
-		// 참가자 추가 중 예외 발생 시 환불
+		// 참가자 추가 중 예외 발생 시 환불(가능하면 결제 취소) 또는 이벤트만 발행
 		try {
 			RetryUtil.retry(() -> meetingService.addParticipant(meetingId, userId), 5);
 			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));

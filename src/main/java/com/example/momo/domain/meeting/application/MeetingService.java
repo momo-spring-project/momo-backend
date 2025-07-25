@@ -3,6 +3,7 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
@@ -44,4 +45,6 @@ public interface MeetingService {
 	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
 
 	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
+
+	ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant);
 }
