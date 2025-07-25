@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
@@ -13,8 +15,19 @@ import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 
 public interface UserService {
+
+	/**
+	 * 회원가입
+	 */
+	void registerUser(RegisterRequestDto request);
+
+	/**
+	 * 회원탈퇴
+	 */
+	void withdrawUser(WithdrawRequestDto request, Long userId);
 
 	User validateAndGetUser(Long userId);
 
@@ -40,7 +53,7 @@ public interface UserService {
 	 * @param email 조회할 사용자 이메일
 	 * @return 사용자 정보 DTO (존재하지 않으면 null)
 	 */
-	UserResponseDto getUserByEmail(String email);
+	UserAuthResponseDto getUserByEmailForAuth(String email);
 
 	UserResponseDto getUserById(Long userId);
 
