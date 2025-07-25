@@ -20,12 +20,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
-import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.domain.meeting.application.MeetingService;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingStatusUpdateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequest;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingStatusUpdateRequest;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequest;
+import com.example.momo.global.common.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -40,38 +43,39 @@ public class MeetingController {
 	private final MeetingService meetingService;
 
 	@PostMapping
-	public ResponseEntity<ApiResponse<MeetingResponse>> createMeeting(
-		@RequestBody @Valid MeetingCreateRequest request, @AuthenticationPrincipal AuthUser authUser) {
+	public ResponseEntity<ApiResponse<MeetingResponseDto>> createMeeting(
+		@RequestBody @Valid MeetingCreateRequestDto request, @AuthenticationPrincipal AuthUser authUser) {
 
-		MeetingResponse response = meetingService.createMeeting(request, authUser.getId());
+		MeetingResponseDto response = meetingService.createMeeting(request, authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 생성이 성공적으로 완료되었습니다.", response));
 	}
 
 	@GetMapping("/{meetingId}")
-	public ResponseEntity<ApiResponse<MeetingResponse>> searchMeeting(@PathVariable Long meetingId) {
+	public ResponseEntity<ApiResponse<MeetingResponseDto>> getMeeting(@PathVariable Long meetingId) {
 
-		MeetingResponse response = meetingService.searchMeeting(meetingId);
+		MeetingResponseDto response = meetingService.getMeeting(meetingId);
 		return ResponseEntity.ok(ApiResponse.success("모임 조회가 성공적으로 완료되었습니다.", response));
 	}
 
 	@PutMapping("/{meetingId}")
-	public ResponseEntity<ApiResponse<MeetingResponse>> updateMeeting(@PathVariable Long meetingId,
-		@RequestBody @Valid MeetingUpdateRequest request, @AuthenticationPrincipal AuthUser authUser) {
+	public ResponseEntity<ApiResponse<MeetingResponseDto>> updateMeeting(@PathVariable Long meetingId,
+		@RequestBody @Valid MeetingUpdateRequestDto request, @AuthenticationPrincipal AuthUser authUser) {
 
-		MeetingResponse response = meetingService.updateMeeting(request, meetingId, authUser.getId());
+		MeetingResponseDto response = meetingService.updateMeeting(request, meetingId, authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 수정이 성공적으로 완료되었습니다.", response));
 	}
 
 	@PatchMapping("/{meetingId}")
-	public ResponseEntity<ApiResponse<MeetingResponse>> updateMeetingStatus(@PathVariable Long meetingId,
-		@RequestBody MeetingStatusUpdateRequest request, @AuthenticationPrincipal AuthUser authUser) {
+	public ResponseEntity<ApiResponse<MeetingResponseDto>> updateMeetingStatus(@PathVariable Long meetingId,
+		@RequestBody MeetingStatusUpdateRequestDto request, @AuthenticationPrincipal AuthUser authUser) {
 
-		MeetingResponse response = meetingService.updateMeetingStatus(meetingId, request.getStatus(), authUser.getId());
+		MeetingResponseDto response = meetingService.updateMeetingStatus(meetingId, request.getStatus(),
+			authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 상태 변경이 성공적으로 완료되었습니다.", response));
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<MeetingPagingResponse<MeetingResponse>>> searchMeetings(
+	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> getMeetings(
 		@RequestParam(defaultValue = "") String title,
 		@RequestParam(required = false) MeetingStatus status,
 		@RequestParam(required = false) LocalDateTime meetingDate,
@@ -79,7 +83,8 @@ public class MeetingController {
 		@RequestParam(defaultValue = "10") @Min(5) int size
 	) {
 
-		MeetingPagingResponse<MeetingResponse> response = meetingService.getMeetings(title, status, meetingDate, page,
+		MeetingPagingResponseDto<MeetingResponseDto> response = meetingService.getMeetings(title, status, meetingDate,
+			page,
 			size);
 		return ResponseEntity.ok(ApiResponse.success("모임 목록 조회가 성공적으로 완료되었습니다.", response));
 	}

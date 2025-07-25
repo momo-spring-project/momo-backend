@@ -1,5 +1,7 @@
 package com.example.momo.domain.user.api;
 
+import java.util.List;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -16,45 +18,118 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
-import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.domain.user.application.UserService;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserCategoryUpdateResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserInfoResponseDto;
+import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
+import com.example.momo.global.common.dto.ApiResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/v2/users")
 @RequiredArgsConstructor
 public class UserController {
 
 	private final UserService userService;
 
+	// 회원가입
+	@PostMapping("/register")
+	public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
+		userService.registerUser(request);
+		return ResponseEntity.status(HttpStatus.CREATED)
+			.body(ApiResponse.success("회원가입에 성공했습니다.", null));
+	}
+
+	// 회원탈퇴
+	@DeleteMapping("/me/withdraw")
+	public ResponseEntity<ApiResponse<Void>> withdraw(
+		@RequestBody @Valid WithdrawRequestDto request,
+		@AuthenticationPrincipal AuthUser authUser
+	) {
+		userService.withdrawUser(request, authUser.getId());
+		return ResponseEntity.status(HttpStatus.NO_CONTENT)
+			.body(ApiResponse.success("회원 탈퇴에 성공했습니다.", null));
+	}
+
 	// 특정 사용자 정보 조회
 	@GetMapping("{userId}")
-	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getUserInfo(
+	public ResponseEntity<ApiResponse<UserResponseDto>> getUser(
 		@PathVariable Long userId
 	) {
-		UserInfoResponseDto response = userService.getUserById(userId);
+		UserResponseDto response = userService.getUserById(userId);
 		return ResponseEntity.ok(ApiResponse.success("사용자 정보를 조회했습니다.", response));
+	}
+
+	// 다중 사용자 정보 조회 (쿼리 파라미터 방식)
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsers(
+		@RequestParam(required = false) List<Long> ids
+	) {
+		// ids 파라미터가 없으면 빈 리스트 반환
+		if (ids == null || ids.isEmpty()) {
+			return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", List.of()));
+		}
+
+		List<UserListResponseDto> users = userService.getUsersByIds(ids);
+		return ResponseEntity.ok(ApiResponse.success("사용자 목록 조회 완료", users));
+	}
+
+	// 사용자 존재 여부 확인 (ID만 반환)
+	@GetMapping("/exists")
+	public ResponseEntity<ApiResponse<List<Long>>> checkUsersExist(
+		@RequestParam List<Long> ids
+	) {
+		if (ids == null || ids.isEmpty()) {
+			return ResponseEntity.ok(ApiResponse.success("존재하는 사용자 ID 목록", List.of()));
+		}
+
+		List<Long> existingUserIds = userService.getExistingUserIds(ids);
+		return ResponseEntity.ok(ApiResponse.success("존재하는 사용자 ID 목록", existingUserIds));
 	}
 
 	// 현재 로그인안 사용자 정보 조회
 	@GetMapping("/me")
-	public ResponseEntity<ApiResponse<UserInfoResponseDto>> getCurrentUser(
+	public ResponseEntity<ApiResponse<UserResponseDto>> getMyProfile(
 		@AuthenticationPrincipal AuthUser authUser
 	) {
-		UserInfoResponseDto response = userService.getCurrentUser(authUser.getId());
+		UserResponseDto response = userService.getMyProfile(authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("내 정보를 조회했습니다.", response));
+	}
+
+	// Auth 도메인 전용 - 이메일로 사용자 조회 (비밀번호 포함)
+	@GetMapping("/internal/by-email")
+	public ResponseEntity<ApiResponse<UserAuthResponseDto>> getUserByEmailForAuth(
+		@RequestParam String email
+	) {
+		UserAuthResponseDto response = userService.getUserByEmailForAuth(email);
+		if (response == null) {
+			return ResponseEntity.ok(ApiResponse.success("해당 이메일의 사용자가 존재하지 않습니다.", null));
+		}
+		return ResponseEntity.ok(ApiResponse.success("이메일로 사용자 정보를 조회했습니다.", response));
+	}
+
+	// 사용자 필터링 조회 (카테고리, 위도, 경도)
+	@GetMapping("/filter")
+	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsersByLocationAndCategory(
+		@RequestParam(required = false) List<Integer> categoryIds,
+		@RequestParam(required = false) Double latitude,
+		@RequestParam(required = false) Double longitude
+	) {
+		List<UserListResponseDto> users = userService.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
+		return ResponseEntity.ok(ApiResponse.success("사용자 필터링 조회 완료", users));
 	}
 
 	// 내 관심 카테고리 수정

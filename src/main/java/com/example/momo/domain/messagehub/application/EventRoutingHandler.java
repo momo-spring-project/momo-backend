@@ -1,4 +1,4 @@
-package com.example.momo.domain.eventhub.application;
+package com.example.momo.domain.messagehub.application;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
@@ -11,14 +11,18 @@ import lombok.RequiredArgsConstructor;
 //이벤트 받아서 흐름 제어
 @Component
 @RequiredArgsConstructor
-public class NotificationEventHandler {
+public class EventRoutingHandler {
 
-	private final NotificationProvider notificationProvider;
+	private final NotificationEventProvider notificationEventProvider;
 
 	private final ApplicationEventPublisher eventPublisher;
 
 	public void handleMeetingEvent(MeetingEvents.MeetingEvent event) {
-		NotificationEvent notificationEvent = notificationProvider.provider(event);
+		NotificationEvent notificationEvent = notificationEventProvider.processMeeting(event);
+
+		if (notificationEvent == null) {
+			return;
+		}
 
 		eventPublisher.publishEvent(notificationEvent);
 	}

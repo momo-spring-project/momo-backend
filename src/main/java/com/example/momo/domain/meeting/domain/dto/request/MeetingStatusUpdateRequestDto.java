@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 
 @Getter
-public class MeetingStatusUpdateRequest {
+public class MeetingStatusUpdateRequestDto {
 
 	@NotBlank
 	private MeetingStatus status;

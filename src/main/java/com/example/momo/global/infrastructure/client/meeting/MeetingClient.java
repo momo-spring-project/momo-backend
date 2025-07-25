@@ -1,8 +1,19 @@
 package com.example.momo.global.infrastructure.client.meeting;
 
+import java.time.Duration;
+import java.util.List;
+
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.infrastructure.client.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantCountClientResponseDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -19,9 +30,43 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MeetingClient {
 
-	private final WebClient webClient;
 	private final static String MEETING_SERVICE_BASE_URI = "/api/v2/meetings";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+	private final WebClient webClient;
+
+	/**
+	 * 단일 모임 정보 조회
+	 *
+	 * @param meetingId 조회 모임 ID
+	 * @return 모임 정보 DTO
+	 */
+	public MeetingClientResponseDto getMeeting(Long meetingId) {
+
+		try {
+			ApiResponse<MeetingClientResponseDto> response = webClient
+				.get()
+				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}", meetingId)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<MeetingClientResponseDto>>() {
+				})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response == null || !response.isSuccess()) {
+				return null;
+			}
+			return response.getData();
+		} catch (WebClientResponseException e) {
+
+			if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+				return null;
+			}
+
+			throw new MeetingClientException("모임 단건 조회 중 오류가 발생했습니다. " + e.getMessage());
+		} catch (Exception e) {
+			throw new MeetingClientException("모임 단건 조회 중 오류가 발생했습니다. " + e.getMessage());
+		}
+	}
 
 	public ParticipantClientResponseDto getParticipant(Long meetingId, Long participantId) {
 		try {
@@ -29,7 +74,8 @@ public class MeetingClient {
 				.get()
 				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/{participantId}", meetingId, participantId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantClientResponseDto>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantClientResponseDto>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
@@ -58,7 +104,8 @@ public class MeetingClient {
 				.get()
 				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}", meetingId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<ParticipantClientResponseDto>>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<ParticipantClientResponseDto>>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 

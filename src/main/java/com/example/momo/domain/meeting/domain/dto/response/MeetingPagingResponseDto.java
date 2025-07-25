@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class MeetingPagingResponse<T> {
+public class MeetingPagingResponseDto<T> {
 
 	private List<T> data;
 	private Long total;
