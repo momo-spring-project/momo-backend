@@ -177,6 +177,7 @@ public class MeetingServiceImpl implements MeetingService {
 		if (user.getScore() < meeting.getMinEnterScore()) {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
+		System.out.println("UserId = " + userId);
 
 		eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 
@@ -235,7 +236,7 @@ public class MeetingServiceImpl implements MeetingService {
 		Double destLng = meeting.getLongitude();
 
 		// 위치가 목적지 근처인지 확인
-		if (!HaversineUtils.isInDistance(destLat, destLng, lat, lng)) {
+		if (!HaversineUtils.isInDistance(destLat, destLng, lat, lng, 10000000)) {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
 		}
 

@@ -31,18 +31,12 @@ public class JwtTokenProvider {
 	public static final long REFRESH_TOKEN_EXPIRE_TIME_MS = 24 * 60 * 60 * 1000L; //24시간
 	public static final long REFRESH_TOKEN_EXPIRE_TIME_S = 24 * 60 * 60;
 
-	public static final long INTERNAL_TOKEN_EXPIRE_TIME_MS = 60 * 1000L; //1분
-
 	@Value("${jwt.secret.key}")
 	private String secret;
 	private SecretKey secretKey;
 	private final String signatureAlgorithm = Jwts.SIG.HS256.key().build().getAlgorithm();
 	public static final String tokenPrefix = "Bearer ";
 	public static final String cookieTokenPrefix = "Bearer_";
-
-	@Value("${jwt.secret.admin-key}")
-	private String adminSecret;
-	private SecretKey adminSecretKey;
 
 	@PostConstruct
 	public void init() {
@@ -52,13 +46,11 @@ public class JwtTokenProvider {
 			}
 
 			byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
-			byte[] adminBytes = adminSecret.getBytes(StandardCharsets.UTF_8);
 			if (bytes.length < 32) {
 				throw new IllegalArgumentException("JWT 시크릿 키는 최소 32바이트 이상이어야 합니다.");
 			}
 
 			secretKey = new SecretKeySpec(bytes, signatureAlgorithm);
-			adminSecretKey = new SecretKeySpec(adminBytes, signatureAlgorithm);
 		} catch (IllegalArgumentException e) {
 			throw new AuthException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
 		}
@@ -73,18 +65,6 @@ public class JwtTokenProvider {
 			.issuedAt(new Date(System.currentTimeMillis()))
 			.expiration(new Date(System.currentTimeMillis() + expireMs))
 			.signWith(secretKey)
-			.compact();
-	}
-
-	public String createInternalToken(Long userId, String role, Long expireMs) {
-
-		return Jwts.builder()
-			.subject(String.valueOf(userId))
-			.claim("category", "access")
-			.claim("role", role)
-			.issuedAt(new Date(System.currentTimeMillis()))
-			.expiration(new Date(System.currentTimeMillis() + expireMs))
-			.signWith(adminSecretKey)
 			.compact();
 	}
 

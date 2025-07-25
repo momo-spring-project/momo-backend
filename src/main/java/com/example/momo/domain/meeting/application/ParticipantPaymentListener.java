@@ -30,13 +30,14 @@ public class ParticipantPaymentListener {
 	// 결제 성공 어떤 이벤트인지 확인해서 넣기(이벤트 안넣으면 오류 떠서 임시로 넣어둠)
 	@Async
 	@EventListener
-	public void handlePaymentSuccessEvent(MeetingEvents.Join event) {
+	public void handlePaymentSuccessEvent(MeetingEvents.Register event) {
 
 		Long meetingId = 1L; // event.meetingId (예상)
-		Long userId = 1L; // event.userId (예상)
+		Long userId = 2L; // event.userId (예상)
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		UserClientResponseDto user = userClient.getUser(userId);
+		System.out.println("UserId = " + userId);
 
 		// 참가자 추가 중 예외 발생 시 환불
 		try {

@@ -32,9 +32,7 @@ public class AuthController {
 	public ResponseEntity<ApiResponse<LoginResponseDto>> login(
 		@Valid @RequestBody LoginRequestDto request
 	) {
-		String internal = jwtTokenProvider.createInternalToken(1L, "ADMIN", JwtTokenProvider.INTERNAL_TOKEN_EXPIRE_TIME_MS);
-
-		LoginResponseDto response = authService.loginUser(request, internal);
+		LoginResponseDto response = authService.loginUser(request);
 		// Access 토큰과 Refresh 토큰 발행
 		String access = jwtTokenProvider.createToken("access", response.getId(), "ADMIN",
 			JwtTokenProvider.ACCESS_TOKEN_EXPIRE_TIME_MS);
