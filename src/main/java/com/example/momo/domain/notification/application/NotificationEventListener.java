@@ -1,9 +1,13 @@
 package com.example.momo.domain.notification.application;
 
+import java.util.List;
+import java.util.Objects;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.util.StringUtils;
 
 import com.example.momo.global.infrastructure.springEvent.NotificationEvent;
 
@@ -43,8 +47,14 @@ public class NotificationEventListener {
 	//Meeting Event 객체 유효성 검사
 	private boolean isValidNotificationEvent(NotificationEvent event) {
 		return event != null
-			&& event.userId() != null
+			&& isValidUserIdList(event.userIdList())
 			&& event.meetingId() != null
-			&& event.content() != null;
+			&& StringUtils.hasText(event.content());
+	}
+
+	private boolean isValidUserIdList(List<Long> userIdList) {
+		return userIdList != null
+			&& !userIdList.isEmpty()
+			&& userIdList.stream().noneMatch(Objects::isNull);
 	}
 }

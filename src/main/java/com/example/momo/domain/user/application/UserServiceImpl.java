@@ -1,22 +1,23 @@
 package com.example.momo.domain.user.application;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.category.application.CategoryService;
-import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
-import com.example.momo.domain.category.exception.CategoryException;
 import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
 import com.example.momo.domain.user.domain.dto.UserListResponseDto;
@@ -26,8 +27,14 @@ import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
+import com.example.momo.global.infrastructure.client.category.CategoryClient;
+import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
+import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
+import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.user.UserWithdrawalEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,9 +43,59 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
 
 	private final UserRepository userRepository;
-	private final CategoryService categoryService;
+	private final CategoryClient categoryClient;
 	private final BCryptPasswordEncoder passwordEncoder;
+	private final MeetingClient meetingClient;
 	private final MeetingParticipantJpaRepository meetingParticipantRepository;
+	private final ApplicationEventPublisher eventPublisher;
+
+	@Override
+	@Transactional
+	public void registerUser(RegisterRequestDto request) {
+		// 닉네임 중복 확인
+		if (userRepository.existsByNickname(request.nickname())) {
+			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
+		}
+
+		// 이메일 중복 확인
+		if (userRepository.existsByEmail(request.email())) {
+			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
+		}
+
+		User user = User.builder()
+			.nickname(request.nickname())
+			.email(request.email())
+			.password(passwordEncoder.encode(request.password()))
+			.latitude(request.latitude())
+			.longitude(request.longitude())
+			.build();
+
+		userRepository.save(user);
+	}
+
+	@Override
+	@Transactional
+	public void withdrawUser(WithdrawRequestDto request, Long userId) {
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+		// 비밀번호가 있는 경우에만 검증 (소셜 로그인 사용자는 비밀번호가 null일 수 있음)
+		if (user.getPassword() != null && !passwordEncoder.matches(request.password(), user.getPassword())) {
+			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
+		}
+
+		// 탈퇴 이벤트 발행 (소프트 삭제 전에 발행)
+		UserWithdrawalEvent event = new UserWithdrawalEvent(
+			user.getId(),
+			user.getEmail(),
+			user.getNickname(),
+			LocalDateTime.now()
+		);
+		eventPublisher.publishEvent(event);
+
+		// 소프트 삭제
+		user.delete();
+	}
 
 	// === 사용자 정보 조회 ===
 	@Override
@@ -81,6 +138,20 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public UserAuthResponseDto getUserByEmailForAuth(String email) {
+		User user = userRepository.findByEmailAndIsDeletedFalse(email)
+			.orElse(null);
+
+		if (user == null) {
+			return null;
+		}
+
+		// Auth 전용 DTO로 변환 (비밀번호 포함)
+		return new UserAuthResponseDto(user);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<UserListResponseDto> getUsersByLocationAndCategory(
 		List<Integer> categoryIds,
 		Double latitude,
@@ -106,19 +177,24 @@ public class UserServiceImpl implements UserService {
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
 		User user = validateAndGetUser(userId);
 
-		try {
-			List<CategoryResponseDto> categories = categoryService.getCategories(categoryIds);
+		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
 
-			if (categories.size() != categoryIds.size()) {
-				throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
-			}
-
-			user.updateCategories(categoryIds);
-			return user;
-
-		} catch (CategoryException e) {
+		if (allCategories == null || allCategories.isEmpty()) {
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
+
+		List<Integer> validCategoryIds = allCategories.stream()
+			.map(CategoryClientResponseDto::getId)
+			.toList();
+
+		boolean allValid = new HashSet<>(validCategoryIds).containsAll(categoryIds);
+
+		if (!allValid) {
+			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
+		}
+
+		user.updateCategories(categoryIds);
+		return user;
 	}
 
 	@Override
@@ -168,15 +244,14 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 2. 평가자 존재 확인
-		User reviewer = validateAndGetUser(reviewerId);
+		validateAndGetUser(reviewerId);
 
 		// 3. 평가 대상자 존재 확인
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
 			.orElseThrow(() -> new UserException(UserErrorCode.TARGET_USER_NOT_FOUND));
 
 		// 4. 모임 존재 확인
-		meetingParticipantRepository.findById(request.meetingId())
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 모임입니다."));
+		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
 		// 5. 같은 모임 참가 여부 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
@@ -206,11 +281,18 @@ public class UserServiceImpl implements UserService {
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
-		// 평가자가 해당 모임에 참가했는지 확인
-		boolean reviewerParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, reviewerId);
+		List<ParticipantClientResponseDto> participants = meetingClient.getParticipants(meetingId);
 
-		// 평가 대상자가 해당 모임에 참가했는지 확인
-		boolean targetParticipated = meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, targetUserId);
+		if (participants == null || participants.isEmpty()) {
+			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
+		}
+
+		List<Long> participantUserIds = participants.stream()
+			.map(ParticipantClientResponseDto::getUserId)
+			.toList();
+
+		boolean reviewerParticipated = participantUserIds.contains(reviewerId);
+		boolean targetParticipated = participantUserIds.contains(targetUserId);
 
 		if (!reviewerParticipated || !targetParticipated) {
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
@@ -363,8 +445,8 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.NOT_FOLLOWING);
 		}
 
-		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
-		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+		follower.decrementFollowingCount();
+		following.decrementFollowerCount();
 	}
 
 	@Override

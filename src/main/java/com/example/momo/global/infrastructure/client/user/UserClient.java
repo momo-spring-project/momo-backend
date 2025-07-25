@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 
@@ -101,6 +102,41 @@ public class UserClient {
 		} catch (Exception e) {
 			log.error("사용자 존재 여부 확인 실패: userIds={}, error={}", userIds, e.getMessage());
 			return List.of();
+		}
+	}
+
+	/**
+	 * Auth 도메인 전용 - 이메일로 사용자 정보 조회 (비밀번호 포함)
+	 */
+	public UserAuthResponseDto getUserByEmailForAuth(String email) {
+		if (email == null || email.trim().isEmpty()) {
+			log.warn("이메일이 비어있습니다.");
+			return null;
+		}
+
+		try {
+			ApiResponse<UserAuthResponseDto> response = webClient
+				.get()
+				.uri(uriBuilder -> uriBuilder
+					.path(USER_SERVICE_BASE_URL + "/internal/by-email")
+					.queryParam("email", email)
+					.build())
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<UserAuthResponseDto>>() {
+				})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response != null && response.isSuccess() && response.getData() != null) {
+				log.debug("Auth용 이메일로 사용자 조회 성공: email={}", email);
+				return response.getData(); // 그대로 반환
+			} else {
+				log.debug("해당 이메일의 사용자가 존재하지 않습니다: email={}", email);
+				return null;
+			}
+		} catch (Exception e) {
+			log.error("Auth용 이메일로 사용자 조회 실패: email={}, error={}", email, e.getMessage());
+			return null;
 		}
 	}
 

@@ -35,19 +35,19 @@ public class SseServiceImpl implements SseService {
 
 	@Override
 	public void send(WebSocketNotificationDto message) {
-		SseEmitter emitter = emitters.get(message.userId());
+		SseEmitter emitter = emitters.get(message.getUserId());
 		if (emitter != null) {
 			try {
 
 				emitter.send(SseEmitter.event()
 					.name("notification")
 					.data(message));
-				log.debug("SSE 메세지 전송 성공: userId={}, content={}", message.userId(), message.content());
+				log.debug("SSE 메세지 전송 성공: userId={}, content={}", message.getUserId(), message.getContent());
 			} catch (IOException e) {
 				// 전송 실패 시 emitter 제거
-				log.warn("SSE 메세지 전송 실패: userId={}, content={}, error={}", message.userId(), message.content(),
+				log.warn("SSE 메세지 전송 실패: userId={}, content={}, error={}", message.getUserId(), message.getContent(),
 					e.toString());
-				emitters.remove(message.userId());
+				emitters.remove(message.getUserId());
 			}
 		}
 	}
