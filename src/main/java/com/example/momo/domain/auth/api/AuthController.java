@@ -3,19 +3,14 @@ package com.example.momo.domain.auth.api;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.application.AuthService;
-import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.auth.domain.dto.LoginRequestDto;
 import com.example.momo.domain.auth.domain.dto.LoginResponseDto;
-import com.example.momo.domain.auth.domain.dto.RegisterRequestDto;
-import com.example.momo.domain.auth.domain.dto.WithdrawRequestDto;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.security.jwt.JwtTokenProvider;
 
@@ -29,14 +24,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v2/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
 	private final AuthService authService;
 	private final JwtTokenProvider jwtTokenProvider;
-
-	@PostMapping("/register")
-	public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
-		authService.registerUser(request);
-		return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("회원가입에 성공했습니다.", null));
-	}
 
 	@PostMapping("/login")
 	public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
@@ -52,15 +42,6 @@ public class AuthController {
 			.header(HttpHeaders.SET_COOKIE,
 				jwtTokenProvider.createRefreshTokenCookie(refresh).toString()) // Refresh 토큰 쿠키 설정
 			.body(ApiResponse.success("로그인에 성공했습니다.", response));
-	}
-
-	@DeleteMapping("/withdraw")
-	public ResponseEntity<ApiResponse<Void>> withdraw(
-		@RequestBody @Valid WithdrawRequestDto request,
-		@AuthenticationPrincipal AuthUser authUser
-	) {
-		authService.withdrawUser(request, authUser);
-		return ResponseEntity.status(HttpStatus.NO_CONTENT).body(ApiResponse.success("회원 탈퇴에 성공했습니다.", null));
 	}
 
 	@PostMapping("reissue")

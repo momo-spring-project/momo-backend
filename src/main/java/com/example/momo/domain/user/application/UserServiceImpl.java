@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -15,6 +16,8 @@ import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
 import com.example.momo.domain.user.domain.dto.UserListResponseDto;
@@ -24,12 +27,14 @@ import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserResponseDto;
+import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.user.UserWithdrawalEvent;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,6 +47,55 @@ public class UserServiceImpl implements UserService {
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
 	private final MeetingParticipantJpaRepository meetingParticipantRepository;
+	private final ApplicationEventPublisher eventPublisher;
+
+	@Override
+	@Transactional
+	public void registerUser(RegisterRequestDto request) {
+		// 닉네임 중복 확인
+		if (userRepository.existsByNickname(request.nickname())) {
+			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
+		}
+
+		// 이메일 중복 확인
+		if (userRepository.existsByEmail(request.email())) {
+			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
+		}
+
+		User user = User.builder()
+			.nickname(request.nickname())
+			.email(request.email())
+			.password(passwordEncoder.encode(request.password()))
+			.latitude(request.latitude())
+			.longitude(request.longitude())
+			.build();
+
+		userRepository.save(user);
+	}
+
+	@Override
+	@Transactional
+	public void withdrawUser(WithdrawRequestDto request, Long userId) {
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+		// 비밀번호가 있는 경우에만 검증 (소셜 로그인 사용자는 비밀번호가 null일 수 있음)
+		if (user.getPassword() != null && !passwordEncoder.matches(request.password(), user.getPassword())) {
+			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
+		}
+
+		// 탈퇴 이벤트 발행 (소프트 삭제 전에 발행)
+		UserWithdrawalEvent event = new UserWithdrawalEvent(
+			user.getId(),
+			user.getEmail(),
+			user.getNickname(),
+			LocalDateTime.now()
+		);
+		eventPublisher.publishEvent(event);
+
+		// 소프트 삭제
+		user.delete();
+	}
 
 	// === 사용자 정보 조회 ===
 	@Override
@@ -84,10 +138,16 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public UserResponseDto getUserByEmail(String email) {
-		return userRepository.findByEmailAndIsDeletedFalse(email)
-			.map(UserResponseDto::new)
+	public UserAuthResponseDto getUserByEmailForAuth(String email) {
+		User user = userRepository.findByEmailAndIsDeletedFalse(email)
 			.orElse(null);
+
+		if (user == null) {
+			return null;
+		}
+
+		// Auth 전용 DTO로 변환 (비밀번호 포함)
+		return new UserAuthResponseDto(user);
 	}
 
 	@Override

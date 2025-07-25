@@ -17,6 +17,7 @@ import com.example.momo.domain.auth.domain.dto.NaverOAuth2Dto;
 import com.example.momo.domain.auth.domain.dto.OAuth2Response;
 import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 
@@ -48,7 +49,7 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 			return null;
 
 		UserSocial userSocial = userSocialRepository.findByProviderId(oAuth2Response.getProviderId());
-		UserClientResponseDto userDto = userClient.getUserByEmail(oAuth2Response.getEmail());
+		UserAuthResponseDto userDto = userClient.getUserByEmailForAuth(oAuth2Response.getEmail());
 
 		// 연동된 계정도 없고 해당 이메일로 회원가입된 계정도 없다면 새로 생성
 		if (userSocial == null && userDto == null) {
@@ -59,13 +60,13 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
 		} else if (userSocial == null) {
 
 			userSocialRepository.save(
-				UserSocial.of(userDto.getId(), oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
-			log.info("계정({})에 {} 계정을 연동합니다.", userDto.getEmail(), registrationId);
+				UserSocial.of(userDto.id(), oAuth2Response.getProviderId(), OAuth2Type.fromName(registrationId)));
+			log.info("계정({})에 {} 계정을 연동합니다.", userDto.email(), registrationId);
 			// 연동된 계정이 있을 때
 		} else {
-			log.info("계정({})에 {} 계정으로 로그인합니다.", userDto.getEmail(), registrationId);
+			log.info("계정({})에 {} 계정으로 로그인합니다.", userDto.email(), registrationId);
 		}
 
-		return new CustomOAuth2User(userDto.getId(), oAuth2Response);
+		return new CustomOAuth2User(userDto.id(), oAuth2Response);
 	}
 }

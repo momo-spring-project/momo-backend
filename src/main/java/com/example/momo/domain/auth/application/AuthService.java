@@ -6,17 +6,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.domain.UserSocial;
-import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.auth.domain.dto.LoginRequestDto;
 import com.example.momo.domain.auth.domain.dto.LoginResponseDto;
-import com.example.momo.domain.auth.domain.dto.RegisterRequestDto;
-import com.example.momo.domain.auth.domain.dto.WithdrawRequestDto;
-import com.example.momo.domain.auth.infra.UserSocialRepository;
-import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserRepository;
+import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
+import com.example.momo.global.infrastructure.client.user.UserClient;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,60 +19,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AuthService {
-	private final UserRepository userRepository;
+
+	private final UserClient userClient;
 	private final BCryptPasswordEncoder passwordEncoder;
-	private final UserSocialRepository userSocialRepository;
 
-	@Transactional
-	public void registerUser(RegisterRequestDto request) {
+	// 로그인만 Auth 도메인에서 담당
+	public LoginResponseDto loginUser(LoginRequestDto request) {
+		UserAuthResponseDto user = userClient.getUserByEmailForAuth(request.getEmail());
 
-		if (userRepository.existsByNickname(request.getNickname())) {
+		if (user == null) {
 			throw new UserException(UserErrorCode.USER_NOT_FOUND);
 		}
 
-		if (userRepository.existsByEmail(request.getEmail())) {
-			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
-		}
-		User user = new User(
-			request.getNickname(),
-			request.getEmail(),
-			passwordEncoder.encode(request.getPassword()),
-			null,
-			request.getLatitude(),
-			request.getLongitude()
-		);
-		userRepository.save(user);
-	}
-
-	public LoginResponseDto loginUser(LoginRequestDto request) {
-		User user = userRepository.findByEmailAndIsDeletedFalse(request.getEmail())
-			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-
-		//  비밀번호 검증
-		if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
-			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
-
-		return new LoginResponseDto(user.getId(), user.getEmail(), user.getNickname());
-	}
-
-	@Transactional
-	public void withdrawUser(WithdrawRequestDto request, AuthUser authUser) {
-
-		User user = userRepository.findByIdAndIsDeletedFalse(authUser.getId())
-			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-
-		//  비밀번호 검증
-		if (user.getPassword() != null && !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+		// 비밀번호 검증 (소셜 로그인 사용자는 password가 null일 수 있음)
+		if (user.password() != null && !passwordEncoder.matches(request.getPassword(), user.password())) {
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
-		// 유저는 soft delete
-		user.delete();
-
-		// 유저 소셜은 hard delete -> 연동이 끊기는 개념
-		List<UserSocial> allUserSocial = userSocialRepository.findAllByUserId(user.getId());
-		userSocialRepository.deleteAll(allUserSocial);
-		user.delete();
+		return new LoginResponseDto(user.id(), user.email(), user.nickname());
 	}
-
 }
