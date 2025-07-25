@@ -3,6 +3,7 @@ package com.example.momo.domain.auth.domain;
 import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.user.domain.User;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -26,23 +27,21 @@ public class UserSocial {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id")
-	private User user;
+	private Long userId;
 
 	private String providerId;
 
 	@Enumerated(EnumType.STRING)
 	private OAuth2Type type;
 
-	protected UserSocial(User user, String providerId, OAuth2Type type) {
-		this.user = user;
+	protected UserSocial(Long userId, String providerId, OAuth2Type type) {
+		this.userId = userId;
 		this.providerId = providerId;
 		this.type = type;
 	}
 
-	public static UserSocial of(User user, String providerId, OAuth2Type type) {
-		return new UserSocial(user, providerId, type);
+	public static UserSocial of(Long userId, String providerId, OAuth2Type type) {
+		return new UserSocial(userId, providerId, type);
 	}
 
 }
