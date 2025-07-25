@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -40,6 +41,9 @@ public class SecurityConfig {
 	private final OAuth2UserService oAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
 	private final OAuth2FailureHandler oAuth2FailureHandler;
+	private final BCryptPasswordEncoder passwordEncoder;
+	@Value("${webclient.internal.secret-key}")
+	private String webSecretKey;
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
@@ -73,7 +77,8 @@ public class SecurityConfig {
 					.userService(oAuth2UserService))
 				.successHandler(oAuth2SuccessHandler)
 				.failureHandler(oAuth2FailureHandler))
-			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper), UsernamePasswordAuthenticationFilter.class)
+			.addFilterAt(new JwtFilter(jwtTokenProvider, objectMapper, passwordEncoder, webSecretKey),
+				UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/v2/categories").hasRole("ADMIN")
@@ -96,10 +101,5 @@ public class SecurityConfig {
 				.accessDeniedHandler(jwtAccessDeniedHandler)
 			)
 			.build();
-	}
-
-	@Bean
-	public BCryptPasswordEncoder passwordEncoder() {
-		return new BCryptPasswordEncoder();
 	}
 }

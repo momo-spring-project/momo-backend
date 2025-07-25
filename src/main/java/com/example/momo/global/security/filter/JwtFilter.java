@@ -11,6 +11,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -34,6 +35,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
 	private final JwtTokenProvider jwtTokenProvider;
 	private final ObjectMapper objectMapper;
+	private final BCryptPasswordEncoder passwordEncoder;
+	private final String webSecretKey;
 
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -44,6 +47,21 @@ public class JwtFilter extends OncePerRequestFilter {
 
 		accessToken = accessToken == null ? request.getHeader(HttpHeaders.AUTHORIZATION) : accessToken;
 
+		// test
+		String testKey = request.getHeader("WebclientInternal");
+		if (passwordEncoder.matches(webSecretKey, testKey)) {
+			log.info("내부 webClient 호출 성공");
+			// webClient 용 내부 인증 객체 생성
+			Authentication webclientAuth = new UsernamePasswordAuthenticationToken(
+				"webclient-internal",
+				null,
+				List.of(new SimpleGrantedAuthority("ROLE_WEBCLIENT"))
+			);
+			SecurityContextHolder.getContext().setAuthentication(webclientAuth);
+
+			filterChain.doFilter(request, response);
+			return;
+		}
 		// Authorization 해더 값이 없으면 다음 filter로 넘김
 		// accessToken의 접두사가 "Bearer " 도 아니고 "Bearer_"도 아니면 Access 토큰이 없는 것으로 간주
 		if (!StringUtils.hasText(accessToken) || !accessToken.startsWith(JwtTokenProvider.tokenPrefix)) {
