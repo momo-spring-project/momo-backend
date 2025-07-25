@@ -76,6 +76,7 @@ flyway {
     user = project.findProperty("flyway.user")
     password = project.findProperty("flyway.password")
     locations = ["filesystem:src/main/resources/db/migration"]
+    cleanDisabled = false
 }
 
 tasks.named('test') {
