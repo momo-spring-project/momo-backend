@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v2")
 public class NotificationController {
 
 	private final NotificationService notificationService;
@@ -44,6 +44,6 @@ public class NotificationController {
 	@PostMapping("/notifications/send")
 	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationDto dto) {
 		notificationService.sendNotification(dto);
-		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + dto.content(), null));
+		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + dto.getContent(), null));
 	}
 }

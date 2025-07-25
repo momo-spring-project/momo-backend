@@ -32,6 +32,8 @@ public class NotificationServiceImpl implements NotificationService {
 	public void createNotification(NotificationDto dto) {
 		try {
 			notificationRepository.save(dto.toEntity());
+			log.debug("알림 저장 완료: userId={}, meetingId={}, type={}, content={}",
+				dto.getUserId(), dto.getMeetingId(), dto.getType(), dto.getContent());
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
@@ -41,19 +43,26 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	public List<NotificationResponseDto> getNotifications(Long userId) {
-
-		return notificationRepository.findAllByUserId(userId).stream()
+		List<NotificationResponseDto> notifications = notificationRepository.findAllByUserId(userId).stream()
 			.map(NotificationResponseDto::from)
 			.toList();
+
+		log.debug("알림 목록 조회 완료: userId={}, count={}", userId, notifications.size());
+
+		return notifications;
 	}
 
 	@Override
 	public void sendNotification(NotificationDto dto) {
 
-		webSocketNotificationService.send(new WebSocketNotificationDto(
-			dto.userId(),
-			dto.content(),
-			LocalDateTime.now()
-		));
+		webSocketNotificationService.send(
+			WebSocketNotificationDto.builder()
+				.userId(dto.getUserId())
+				.meetingId(dto.getMeetingId())
+				.type(dto.getType())
+				.content(dto.getContent())
+				.createdAt(LocalDateTime.now())
+				.build()
+		);
 	}
 }

@@ -1,11 +1,27 @@
 package com.example.momo.domain.notification.domain.dto;
 
 import com.example.momo.domain.notification.domain.Notification;
+import com.example.momo.domain.notification.enums.NotificationType;
 
-public record NotificationDto(Long userId, Long meetingId, String content) {
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+
+@Getter
+@Builder
+@AllArgsConstructor
+public class NotificationDto {
+	private Long userId;
+	private Long meetingId;
+	private NotificationType type;
+	private String content;
 
 	public Notification toEntity() {
-		return new Notification(this.userId, this.meetingId, this.content);
+		return Notification.builder()
+			.userId(this.userId)
+			.meetingId(this.meetingId)
+			.type(this.type)
+			.content(this.content)
+			.build();
 	}
-
 }
