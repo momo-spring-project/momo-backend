@@ -17,5 +17,5 @@ public interface MeetingParticipantRepository {
 
 	Optional<MeetingParticipant> findById(Long id);
 
-	Long countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt);
+	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
 }

@@ -3,6 +3,7 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.payment.application.PaymentService;
@@ -251,13 +252,14 @@ public class MeetingServiceImpl implements MeetingService {
 	}
 
 	@Override
-	public ParticipantCountResponseDto getParticipantCount(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+	@Transactional(readOnly = true)
+	public ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
 
 		if(createdAt == null) {
 			createdAt = LocalDateTime.now().minusDays(7);
 		}
 
-		Long counts = meetingRepository.countParticipants(meetingId, attendance, createdAt);
+		Long counts = meetingRepository.countParticipants(userId, meetingId, attendance, createdAt);
 
 		return new ParticipantCountResponseDto(meetingId, counts, attendance, createdAt);
 	}

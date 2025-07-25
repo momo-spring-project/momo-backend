@@ -15,7 +15,7 @@ public class MeetingParticipantQueryRepositoryImpl implements MeetingParticipant
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Long countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
 
 		QMeetingParticipant participant = QMeetingParticipant.meetingParticipant;
 
@@ -30,6 +30,7 @@ public class MeetingParticipantQueryRepositoryImpl implements MeetingParticipant
 			builder.and(participant.attendanceStatus.eq(attendance));
 		}
 
+		builder.and(participant.userId.eq(userId));
 		builder.and(participant.createdAt.after(createdAt));
 
 		return queryFactory

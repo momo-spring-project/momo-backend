@@ -12,8 +12,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  ********************
@@ -57,5 +60,16 @@ public class ParticipantPaymentListener {
 	// 		);
 	// 		throw e;
 	// 	}
+	// }
+
+	// 비동기 참가 취소 환불
+	// @Async
+	// @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	// public void handleMeetingCancelEvent(MeetingEvents.Cancel event) {
+	// 	paymentService.refundPayment(
+	// 		1L, // event.getPaymentId
+	// 		1L, // event.getUserId
+	// 		new RefundRequest("Meeting Participation Cancel")
+	// 	);
 	// }
 }

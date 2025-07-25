@@ -76,7 +76,7 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
-	public Long countParticipants(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
-		return meetingParticipantRepository.countParticipants(meetingId, attendance, createdAt);
+	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+		return meetingParticipantRepository.countParticipants(userId, meetingId, attendance, createdAt);
 	}
 }
