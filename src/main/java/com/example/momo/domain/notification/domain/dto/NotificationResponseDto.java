@@ -14,7 +14,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class NotificationResponseDto {
 	private Long id;
-	private Long meetingId;
+	private Long targetId;
 	private NotificationType type;
 	private String content;
 	private LocalDateTime createdAt;
@@ -22,7 +22,7 @@ public class NotificationResponseDto {
 	public static NotificationResponseDto from(Notification notification) {
 		return NotificationResponseDto.builder()
 			.id(notification.getId())
-			.meetingId(notification.getMeetingId())
+			.targetId(notification.getTargetId())
 			.type(notification.getType())
 			.content(notification.getContent())
 			.createdAt(notification.getCreatedAt())

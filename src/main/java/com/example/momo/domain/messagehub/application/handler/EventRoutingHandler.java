@@ -32,8 +32,7 @@ public class EventRoutingHandler {
 		if (notificationEvent == null) {
 			return;
 		}
-
-		eventPublisher.publishEvent(notificationEvent);
+		publishNotificationEvent(notificationEvent);
 	}
 
 	public void handleFollowEvent(FollowEvents.FollowEvent event) {
@@ -43,7 +42,7 @@ public class EventRoutingHandler {
 			return;
 		}
 
-		eventPublisher.publishEvent(notificationEvent);
+		publishNotificationEvent(notificationEvent);
 	}
 
 	public void handlePaymentEvent(PaymentEvents.PaymentEvent event) {
@@ -53,6 +52,12 @@ public class EventRoutingHandler {
 			return;
 		}
 
+		publishNotificationEvent(notificationEvent);
+	}
+
+	private void publishNotificationEvent(NotificationEvent notificationEvent) {
+
 		eventPublisher.publishEvent(notificationEvent);
+
 	}
 }

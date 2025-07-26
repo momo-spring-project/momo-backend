@@ -3,10 +3,8 @@ package com.example.momo.domain.notification.application;
 import java.util.List;
 import java.util.Objects;
 
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.util.StringUtils;
 
 import com.example.momo.global.infrastructure.springEvent.notification.NotificationEvent;
@@ -34,8 +32,7 @@ public class NotificationEventListener {
 	 *
 	 * @param event 알림 전송에 필요한 이벤트 데이터
 	 */
-	@Async
-	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	@EventListener
 	public void handleMeetingNotification(NotificationEvent event) {
 		if (!isValidNotificationEvent(event)) {
 			log.warn("알림 이벤트 처리 실패 - 필수 값 누락: {}", event);
@@ -48,7 +45,7 @@ public class NotificationEventListener {
 	private boolean isValidNotificationEvent(NotificationEvent event) {
 		return event != null
 			&& isValidUserIdList(event.userIdList())
-			&& event.meetingId() != null
+			&& event.targetId() != null
 			&& StringUtils.hasText(event.content());
 	}
 

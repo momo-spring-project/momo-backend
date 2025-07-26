@@ -41,14 +41,14 @@ public class NotificationHandler {
 			return;
 		}
 
-		Long meetingId = event.meetingId();
+		Long targetId = event.targetId();
 		String content = event.content();
 
 		for (Long userId : event.userIdList()) {
 			//DB 저장
 			notificationService.createNotification(NotificationDto.builder()
 				.userId(userId)
-				.meetingId(meetingId)
+				.targetId(targetId)
 				.type(type)
 				.content(content)
 				.build());
@@ -57,7 +57,7 @@ public class NotificationHandler {
 			webSocketNotificationService.send(
 				WebSocketNotificationDto.builder()
 					.userId(userId)
-					.meetingId(meetingId)
+					.meetingId(targetId)
 					.type(type)
 					.content(content)
 					.createdAt(LocalDateTime.now())
