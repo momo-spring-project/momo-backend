@@ -39,3 +39,7 @@ toss:
     secret-key: ${TOSS_SECRET_KEY}
     client-key: ${TOSS_CLIENT_KEY}
     base-url: ${TOSS_BASE_URL}
+
+webclient:
+  internal:
+    secret-key: ${WEBCLIENT_SECRET_KEY}
