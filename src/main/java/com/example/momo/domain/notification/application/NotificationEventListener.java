@@ -7,7 +7,8 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import com.example.momo.global.infrastructure.springEvent.notification.NotificationEvent;
+import com.example.momo.global.common.aop.EventLoggable;
+import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +27,15 @@ public class NotificationEventListener {
 	private final NotificationHandler notificationHandler;
 
 	/**
-	 * {@link NotificationEvent} 이벤트를 처리합니다.
+	 * {@link MessageEvents} 이벤트를 처리합니다.
 	 * 트랜잭션 커밋 이후(@AFTER_COMMIT)에 비동기(@Async)로 실행되며,
 	 * 필수 정보가 모두 포함된 경우에만 알림을 저장하고 WebSocket 으로 전송합니다.
 	 *
 	 * @param event 알림 전송에 필요한 이벤트 데이터
 	 */
+	@EventLoggable
 	@EventListener
-	public void handleMeetingNotification(NotificationEvent event) {
+	public void handleMeetingNotification(MessageEvents event) {
 		if (!isValidNotificationEvent(event)) {
 			log.warn("알림 이벤트 처리 실패 - 필수 값 누락: {}", event);
 			return;
@@ -42,7 +44,7 @@ public class NotificationEventListener {
 	}
 
 	//Meeting Event 객체 유효성 검사
-	private boolean isValidNotificationEvent(NotificationEvent event) {
+	private boolean isValidNotificationEvent(MessageEvents event) {
 		return event != null
 			&& isValidUserIdList(event.userIdList())
 			&& event.targetId() != null

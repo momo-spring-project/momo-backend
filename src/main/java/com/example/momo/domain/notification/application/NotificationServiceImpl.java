@@ -37,7 +37,7 @@ public class NotificationServiceImpl implements NotificationService {
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
-			log.error("알림 저장 실패: {}", e.getMessage(), e);
+			log.warn("알림 저장 실패: {}", e.getMessage(), e);
 		}
 	}
 

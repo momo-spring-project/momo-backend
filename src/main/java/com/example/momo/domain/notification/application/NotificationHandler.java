@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.domain.dto.NotificationDto;
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.infrastructure.springEvent.notification.NotificationEvent;
+import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
 import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 import com.example.momo.global.socket.service.WebSocketNotificationService;
 
@@ -35,7 +35,7 @@ public class NotificationHandler {
 	 * @param event 처리할 알림 이벤트 정보
 	 */
 	@Transactional
-	public void processMeeting(NotificationEvent event) {
+	public void processMeeting(MessageEvents event) {
 		NotificationType type;
 		if ((type = resolveNotificationType(event.typeName())) == null) {
 			return;

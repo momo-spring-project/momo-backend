@@ -1,9 +1,9 @@
-package com.example.momo.global.infrastructure.springEvent.message;
+package com.example.momo.global.infrastructure.springEvent.follow;
 
 /**
- * 팔로우 도메인에서 발생하는 이벤트를 정의합니다.
+ * 팔로우 도메인에서 발생하는 메세지 이벤트를 정의합니다.
  */
-public class FollowEvents {
+public class FollowMessageEvents {
 
 	/**
 	 * 팔로우 이벤트 마커 인터페이스입니다.

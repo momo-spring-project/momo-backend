@@ -1,9 +1,9 @@
-package com.example.momo.global.infrastructure.springEvent.message;
+package com.example.momo.global.infrastructure.springEvent.payment;
 
 /**
- * 결제 도메인에서 발생하는 이벤트를 정의합니다.
+ * 결제 도메인에서 발생하는 메세지 이벤트를 정의합니다.
  */
-public class PaymentEvents {
+public class PaymentMessageEvents {
 
 	/**
 	 * 결제 이벤트 마커 인터페이스입니다.
