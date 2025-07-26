@@ -28,7 +28,7 @@ public class EventRoutingHandler {
 
 	private final ApplicationEventPublisher eventPublisher;
 
-	public void handleMeetingEvent(MeetingEvents.MeetingEvent event) {
+	public void handleMeetingMessage(MeetingEvents.MeetingEvent event) {
 		MessageEvents messageEvents = notificationEventProvider.processMeetingMessage(event);
 
 		if (!hasMessageEvent(messageEvents)) {
@@ -38,7 +38,7 @@ public class EventRoutingHandler {
 		publishMessageEvent(messageEvents);
 	}
 
-	public void handleFollowEvent(FollowMessageEvents.FollowEvent event) {
+	public void handleFollowMessage(FollowMessageEvents.FollowEvent event) {
 		MessageEvents messageEvents = notificationEventProvider.processFollowMessage(event);
 
 		if (!hasMessageEvent(messageEvents)) {
@@ -48,7 +48,7 @@ public class EventRoutingHandler {
 		publishMessageEvent(messageEvents);
 	}
 
-	public void handlePaymentEvent(PaymentMessageEvents.PaymentEvent event) {
+	public void handlePaymentMessage(PaymentMessageEvents.PaymentEvent event) {
 		MessageEvents messageEvents = notificationEventProvider.processPaymentMessage(event);
 
 		if (!hasMessageEvent(messageEvents)) {

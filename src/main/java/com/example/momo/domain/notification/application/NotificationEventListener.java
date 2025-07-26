@@ -35,12 +35,12 @@ public class NotificationEventListener {
 	 */
 	@EventLoggable
 	@EventListener
-	public void handleMeetingNotification(MessageEvents event) {
+	public void handleMessageEvent(MessageEvents event) {
 		if (!isValidNotificationEvent(event)) {
 			log.warn("알림 이벤트 처리 실패 - 필수 값 누락: {}", event);
 			return;
 		}
-		notificationHandler.processMeeting(event);
+		notificationHandler.processNotification(event);
 	}
 
 	//Meeting Event 객체 유효성 검사

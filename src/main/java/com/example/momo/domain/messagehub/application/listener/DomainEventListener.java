@@ -30,20 +30,20 @@ public class DomainEventListener {
 
 	@EventLoggable
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(MeetingEvents.MeetingEvent event) {
-		eventRoutingHandler.handleMeetingEvent(event);
+	public void handleMeetingMessageEvent(MeetingEvents.MeetingEvent event) {
+		eventRoutingHandler.handleMeetingMessage(event);
 	}
 
 	@EventLoggable
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(FollowMessageEvents.FollowEvent event) {
+	public void handleFollowMessageEvent(FollowMessageEvents.FollowEvent event) {
 
-		eventRoutingHandler.handleFollowEvent(event);
+		eventRoutingHandler.handleFollowMessage(event);
 	}
 
 	@EventLoggable
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handle(PaymentMessageEvents.PaymentEvent event) {
-		eventRoutingHandler.handlePaymentEvent(event);
+	public void handlePaymentMessageEvent(PaymentMessageEvents.PaymentEvent event) {
+		eventRoutingHandler.handlePaymentMessage(event);
 	}
 }

@@ -35,7 +35,7 @@ public class NotificationHandler {
 	 * @param event 처리할 알림 이벤트 정보
 	 */
 	@Transactional
-	public void processMeeting(MessageEvents event) {
+	public void processNotification(MessageEvents event) {
 		NotificationType type;
 		if ((type = resolveNotificationType(event.typeName())) == null) {
 			return;
