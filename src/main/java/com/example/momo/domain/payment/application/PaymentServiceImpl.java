@@ -17,9 +17,9 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
-import com.example.momo.domain.payment.domain.dto.PaymentResponse;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
+import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.domain.dto.PaymentResponseDto;
+import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
@@ -52,7 +52,7 @@ public class PaymentServiceImpl implements PaymentService {
 	 * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
 	 */
 	@Override
-	public PaymentResponse createTestKeyInPayment(CardPaymentTestRequest request, Long userId) {
+	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
 		// 1. 테스트 환경 검증
 		validateTestKey();
 
@@ -112,7 +112,7 @@ public class PaymentServiceImpl implements PaymentService {
 	 * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
 	 */
 	@Override
-	public PaymentResponse refundPayment(Long paymentId, Long userId, RefundRequest request) {
+	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request) {
 		Payment payment = paymentRepository.findById(paymentId)
 			.orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
@@ -137,7 +137,7 @@ public class PaymentServiceImpl implements PaymentService {
 		payment.refund();
 
 		// 환불 응답 생성 (삭제 전에 생성)
-		PaymentResponse response = PaymentResponse.from(payment);
+		PaymentResponseDto response = PaymentResponseDto.from(payment);
 
 		// 결제 레코드 삭제 (재결제 가능하도록)
 		paymentRepository.delete(payment);
@@ -161,13 +161,13 @@ public class PaymentServiceImpl implements PaymentService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public Page<PaymentResponse> searchPayments(Long meetingId,
+	public Page<PaymentResponseDto> searchPayments(Long meetingId,
 		Long userId,
 		PaymentStatus status,
 		Pageable pageable) {
 
 		Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
-		return page.map(PaymentResponse::from);
+		return page.map(PaymentResponseDto::from);
 	}
 
 	/**
@@ -175,7 +175,7 @@ public class PaymentServiceImpl implements PaymentService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public List<PaymentResponse> getPaymentsByMeetingId(Long meetingId) {
+	public List<PaymentResponseDto> getPaymentsByMeetingId(Long meetingId) {
 		// 모임 존재 여부 확인
 		if (!meetingRepository.existsById(meetingId)) {
 			throw new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND);
@@ -183,7 +183,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 		return paymentRepository.findByMeetingId(meetingId)
 			.stream()
-			.map(PaymentResponse::from)
+			.map(PaymentResponseDto::from)
 			.collect(Collectors.toList());
 	}
 
@@ -192,14 +192,14 @@ public class PaymentServiceImpl implements PaymentService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public List<PaymentResponse> getPaymentsByUserId(Long userId) {
+	public List<PaymentResponseDto> getPaymentsByUserId(Long userId) {
 		//    // 사용자 존재 여부 확인
 		//    if (!userRepository.existsByIdAndIsDeletedFalse(userId)) {
 		//      throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
 		//    }
 		return paymentRepository.findByUserId(userId)
 			.stream()
-			.map(PaymentResponse::from)
+			.map(PaymentResponseDto::from)
 			.collect(Collectors.toList());
 	}
 
@@ -208,7 +208,7 @@ public class PaymentServiceImpl implements PaymentService {
 	 */
 	@Override
 	@Transactional(readOnly = true)
-	public boolean hasUserPaidForMeeting(Long userId, Long meetingId) {
+	public boolean validateUserPayment(Long userId, Long meetingId) {
 		return paymentRepository.existsByMeetingIdAndUserIdAndStatus(
 			meetingId, userId, PaymentStatus.COMPLETED);
 	}
@@ -243,17 +243,17 @@ public class PaymentServiceImpl implements PaymentService {
 	/**
 	 * 무료 결제 생성
 	 */
-	private PaymentResponse createFreePayment(User user, Meeting meeting) {
+	private PaymentResponseDto createFreePayment(User user, Meeting meeting) {
 		Payment payment = Payment.createFree(user.getId(), meeting.getId());
 		Payment saved = paymentRepository.save(payment);
 		log.info("무료 결제 완료 - paymentId: {}", saved.getId());
-		return PaymentResponse.from(saved);
+		return PaymentResponseDto.from(saved);
 	}
 
 	/**
 	 * Key-in API 요청 페이로드 생성
 	 */
-	private Map<String, Object> buildKeyInPayload(CardPaymentTestRequest req,
+	private Map<String, Object> buildKeyInPayload(CardPaymentTestRequestDto req,
 		Meeting meeting,
 		int amount, String orderId) {
 
@@ -278,7 +278,7 @@ public class PaymentServiceImpl implements PaymentService {
 	/**
 	 * 유료 결제 정보 저장
 	 */
-	private PaymentResponse savePaidPayment(User user, Meeting meeting, int amount,
+	private PaymentResponseDto savePaidPayment(User user, Meeting meeting, int amount,
 		String paymentKey, String orderId) {
 		Payment payment = Payment.builder()
 			.userId(user.getId())
@@ -303,6 +303,6 @@ public class PaymentServiceImpl implements PaymentService {
 		);
 
 		log.info("Key-in 결제 완료 - paymentId: {}, paymentKey: {}", saved.getId(), paymentKey);
-		return PaymentResponse.from(saved);
+		return PaymentResponseDto.from(saved);
 	}
 }

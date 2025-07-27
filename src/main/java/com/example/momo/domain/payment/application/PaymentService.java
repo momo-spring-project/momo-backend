@@ -5,27 +5,27 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
-import com.example.momo.domain.payment.domain.dto.PaymentResponse;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
+import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.domain.dto.PaymentResponseDto;
+import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 
 public interface PaymentService {
 
 	//테스트 key-in 결제
-	PaymentResponse createTestKeyInPayment(CardPaymentTestRequest dto, Long userId);
+	PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto dto, Long userId);
 
 	//환불 처리
-	PaymentResponse refundPayment(Long paymentId, Long userId, RefundRequest request);
+	PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request);
 
 	//조회 메서드들
-	List<PaymentResponse> getPaymentsByMeetingId(Long meetingId);
+	List<PaymentResponseDto> getPaymentsByMeetingId(Long meetingId);
 
-	List<PaymentResponse> getPaymentsByUserId(Long userId);
+	List<PaymentResponseDto> getPaymentsByUserId(Long userId);
 
-	boolean hasUserPaidForMeeting(Long userId, Long meetingId);
+	boolean validateUserPayment(Long userId, Long meetingId);
 
-	Page<PaymentResponse> searchPayments(Long meetingId,
+	Page<PaymentResponseDto> searchPayments(Long meetingId,
 		Long userId,
 		PaymentStatus status,
 		Pageable pageable);
