@@ -1,26 +1,19 @@
 package com.example.momo.domain.meeting.application;
 
-import com.example.momo.domain.meeting.domain.Meeting;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.utils.RetryUtil;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.EventListener;
-import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  ********************
  *	보험용, 사용중 x  *
  ********************
  */
-
 
 @Component
 @RequiredArgsConstructor

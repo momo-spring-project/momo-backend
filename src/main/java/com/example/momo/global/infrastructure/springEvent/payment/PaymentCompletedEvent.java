@@ -1,4 +1,4 @@
-package com.example.momo.global.infrastructure.springEvent;
+package com.example.momo.global.infrastructure.springEvent.payment;
 
 import java.time.LocalDateTime;
 

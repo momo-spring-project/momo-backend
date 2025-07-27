@@ -26,8 +26,8 @@ import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.global.infrastructure.springEvent.PaymentCompletedEvent;
-import com.example.momo.global.infrastructure.springEvent.PaymentRefundedEvent;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
