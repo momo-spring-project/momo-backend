@@ -12,8 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.category.application.CategoryService;
-import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
@@ -29,6 +27,8 @@ import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
 import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.global.infrastructure.client.category.CategoryClient;
+import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
@@ -48,7 +48,7 @@ public class MeetingServiceImpl implements MeetingService {
 	private final EntityManager em;
 	private final UserClient userClient;
 	private final PaymentService paymentService;
-	private final CategoryService categoryService;
+	private final CategoryClient categoryClient;
 
 	@Override
 	@Transactional
@@ -57,13 +57,12 @@ public class MeetingServiceImpl implements MeetingService {
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
-		// TODO CategoryId를 통한 category name 조회 (http client 요청)로 변경
-		CategoryResponseDto category = categoryService.getCategory(request.getCategoryId());
+		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
 
 		eventPublisher.publishEvent(new MeetingEvents.Create(
 			meeting.getId(),
 			request.getCategoryId(),
-			category.getCategoryName(),
+			category.getName(),
 			meeting.getLatitude(),
 			meeting.getLongitude()
 		));
