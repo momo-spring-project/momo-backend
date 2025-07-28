@@ -1,6 +1,7 @@
 package com.example.momo.domain.meeting.infra.meeting;
 
 import static com.example.momo.domain.meeting.domain.QMeeting.*;
+import static com.example.momo.domain.meeting.domain.QMeetingParticipant.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -68,5 +69,15 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 			.fetchOne()).orElse(0L);
 
 		return new PageImpl<>(meetingContent, pageable, total);
+	}
+
+	@Override
+	public List<Meeting> findMeetingsByUserId(Long userId) {
+
+		return queryFactory
+			.selectFrom(meeting)
+			.join(meeting.participants, meetingParticipant)
+			.where(meetingParticipant.userId.eq(userId), meeting.isDeleted.isFalse())
+			.fetch();
 	}
 }
