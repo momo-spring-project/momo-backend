@@ -193,10 +193,10 @@ public class PaymentServiceImpl implements PaymentService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<PaymentResponseDto> getPaymentsByUserId(Long userId) {
-		//    // 사용자 존재 여부 확인
-		//    if (!userRepository.existsByIdAndIsDeletedFalse(userId)) {
-		//      throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
-		//    }
+		// 사용자 존재 여부 확인
+		if (userRepository.findByIdAndIsDeletedFalse(userId).isEmpty()) {
+			throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
+		}
 		return paymentRepository.findByUserId(userId)
 			.stream()
 			.map(PaymentResponseDto::from)
