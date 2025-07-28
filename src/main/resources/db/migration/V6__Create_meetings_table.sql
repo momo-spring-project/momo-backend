@@ -9,7 +9,7 @@ CREATE TABLE meetings
     max_participants_count     int                             NOT NULL,
     min_enter_score            double                          NOT NULL,
     participation_fee          int                             NOT NULL,
-    version                    bigint      DEFAULT NULL,
+    version                    int      DEFAULT NULL,
     created_at                 datetime DEFAULT NULL,
     deleted_at                 datetime DEFAULT NULL,
     host_user_id               bigint                          NOT NULL,
@@ -19,5 +19,7 @@ CREATE TABLE meetings
     description                varchar(255)                    NOT NULL,
     location_name              varchar(255)                    NOT NULL,
     title                      varchar(255)                    NOT NULL,
-    status                     enum ('FINISHED','IN_PROGRESS') NOT NULL
+    status                     enum ('FINISHED','IN_PROGRESS') NOT NULL,
+
+    INDEX idx_meeting_deleted_category_status_date (is_deleted, category_id, status, meeting_date)
 );

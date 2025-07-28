@@ -37,10 +37,10 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
-	public Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+	public Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable) {
 
-		return meetingQueryRepository.findMeetings(title, meetingDate, status, pageable);
+		return meetingQueryRepository.findMeetings(title, meetingDate, status, categoryId, pageable);
 	}
 
 	@Override

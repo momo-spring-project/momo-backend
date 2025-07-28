@@ -17,7 +17,7 @@ public interface MeetingRepository {
 
 	Meeting save(Meeting meeting);
 
-	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable);
 
 	boolean existsById(Long id);
