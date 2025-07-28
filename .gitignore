@@ -39,3 +39,5 @@ out/
 ### Environment Variables ###
 .env
 gradle.properties
+.gitignore
+.docker-compose.yml

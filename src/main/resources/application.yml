@@ -43,3 +43,30 @@ toss:
 webclient:
   internal:
     secret-key: ${WEBCLIENT_SECRET_KEY}
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    logging:
+      enabled: false
+
+otel:
+  service:
+    name: test-service
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+      protocol: grpc
+  traces:
+    exporter: otlp
+    sampler: always_on
+
+logging:
+  level:
+    io.opentelemetry.exporter: DEBUG
