@@ -20,6 +20,8 @@ public interface MeetingRepository {
 	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable);
 
+	List<Meeting> findMeetingsByUserId(Long userId);
+
 	boolean existsById(Long id);
 
 	/* Meeting Participant Repository */
@@ -33,4 +35,5 @@ public interface MeetingRepository {
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
 	Optional<MeetingParticipant> findParticipantById(Long participantId);
+
 }

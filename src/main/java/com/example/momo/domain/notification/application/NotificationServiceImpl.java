@@ -33,11 +33,11 @@ public class NotificationServiceImpl implements NotificationService {
 		try {
 			notificationRepository.save(dto.toEntity());
 			log.debug("알림 저장 완료: userId={}, meetingId={}, type={}, content={}",
-				dto.getUserId(), dto.getMeetingId(), dto.getType(), dto.getContent());
+				dto.getUserId(), dto.getTargetId(), dto.getType(), dto.getContent());
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
-			log.error("알림 저장 실패: {}", e.getMessage(), e);
+			log.warn("알림 저장 실패: {}", e.getMessage(), e);
 		}
 	}
 
@@ -58,7 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
 		webSocketNotificationService.send(
 			WebSocketNotificationDto.builder()
 				.userId(dto.getUserId())
-				.meetingId(dto.getMeetingId())
+				.meetingId(dto.getTargetId())
 				.type(dto.getType())
 				.content(dto.getContent())
 				.createdAt(LocalDateTime.now())
