@@ -2,6 +2,7 @@ package com.example.momo.global.infrastructure.client.meeting;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
@@ -90,27 +91,48 @@ public class MeetingClient {
 	}
 
 	public List<ParticipantClientResponseDto> getParticipants(Long meetingId) {
+		// 1. 참가자 ID 목록 조회
+		List<Long> participantIds = getParticipantIds(meetingId);
+
+		if (participantIds.isEmpty()) {
+			return List.of();
+		}
+
+		// 2. 각 참가자의 상세 정보를 개별 조회
+		// 주의: 이 방법은 N+1 쿼리 문제가 있으므로, 실제로는 Meeting API에서
+		// 참가자 상세 정보를 한 번에 반환하는 API를 추가하는 것이 좋습니다.
+		return participantIds.stream()
+			.map(participantId -> getParticipant(meetingId, participantId))
+			.filter(Objects::nonNull)
+			.toList();
+	}
+
+	/**
+	 * 참가자 ID 목록 조회 (기존 API 그대로 사용)
+	 * 현재 Meeting API는 List<Long> 참가자 ID만 반환함
+	 */
+	public List<Long> getParticipantIds(Long meetingId) {
 		try {
-			ApiResponse<List<ParticipantClientResponseDto>> response = webClient
+			ApiResponse<List<Long>> response = webClient
 				.get()
-				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}", meetingId)
+				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants", meetingId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<ParticipantClientResponseDto>>>() {
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {
 				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
 			if (response == null || !response.isSuccess()) {
-				return null;
+				return List.of();
 			}
 
-			log.debug("참석자 목록 조회 성공: meetingId={}", meetingId);
+			log.debug("참석자 ID 목록 조회 성공: meetingId={}, count={}", meetingId, response.getData().size());
 			return response.getData();
 
 		} catch (WebClientResponseException e) {
 			if (e.getStatusCode().value() == 404) {
 				log.debug("참석자 목록을 찾을 수 없습니다: meetingId={}", meetingId);
-				return null;
+				return List.of();
 			}
 
 			log.error("참석자 목록 조회 실패: meetingId={}, status={}, error={}",
@@ -147,4 +169,3 @@ public class MeetingClient {
 		}
 	}
 }
-
