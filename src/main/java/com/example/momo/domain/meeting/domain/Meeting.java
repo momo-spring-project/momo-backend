@@ -16,6 +16,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
@@ -26,7 +27,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Table(name = "meetings")
+@Table(name = "meetings", indexes = {
+	@Index(name = "idx_meeting_deleted_category_status_date", columnList = "is_deleted, category_id, status, meeting_date")
+})
 @Getter
 @Entity
 @Builder

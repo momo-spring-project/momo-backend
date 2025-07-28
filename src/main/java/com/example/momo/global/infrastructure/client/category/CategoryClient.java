@@ -1,33 +1,36 @@
 package com.example.momo.global.infrastructure.client.category;
 
-import com.example.momo.global.common.dto.ApiResponse;
-import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+import java.util.List;
+
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-import java.time.Duration;
-import java.util.List;
+import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class CategoryClient {
 
-	private final WebClient webClient;
 	private final static String CATEGORY_SERVICE_BASE_URI = "/api/v2/categories";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
+	private final WebClient webClient;
 
-	public CategoryClientResponseDto getCategory(Long categoryId) {
+	public CategoryClientResponseDto getCategory(Integer categoryId) {
 		try {
 			ApiResponse<CategoryClientResponseDto> response = webClient
 				.get()
 				.uri(CATEGORY_SERVICE_BASE_URI + "/{categoryId}", categoryId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<CategoryClientResponseDto>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<CategoryClientResponseDto>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
@@ -56,7 +59,8 @@ public class CategoryClient {
 				.get()
 				.uri(CATEGORY_SERVICE_BASE_URI)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<CategoryClientResponseDto>>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<CategoryClientResponseDto>>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 

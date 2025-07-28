@@ -9,6 +9,7 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 
 public interface MeetingQueryRepository {
-	
-	Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Pageable pageable);
+
+	Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
+		Pageable pageable);
 }
