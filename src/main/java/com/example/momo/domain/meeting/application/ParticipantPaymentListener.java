@@ -2,7 +2,7 @@ package com.example.momo.domain.meeting.application;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
+import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
@@ -46,7 +46,7 @@ public class ParticipantPaymentListener {
 			paymentService.refundPayment(
 				1L, // event.paymentId (예상)
 				userId,
-				new RefundRequest("Join Meeting Fail")
+				new RefundRequestDto("Join Meeting Fail")
 			);
 			throw e;
 		}
@@ -59,7 +59,7 @@ public class ParticipantPaymentListener {
 		paymentService.refundPayment(
 			1L, // event.getPaymentId
 			1L, // event.getUserId
-			new RefundRequest("Meeting Participation Cancel")
+			new RefundRequestDto("Meeting Participation Cancel")
 		);
 	}
 }
