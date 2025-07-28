@@ -62,13 +62,13 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 
-		User user = User.builder()
-			.nickname(request.nickname())
-			.email(request.email())
-			.password(passwordEncoder.encode(request.password()))
-			.latitude(request.latitude())
-			.longitude(request.longitude())
-			.build();
+		User user = User.createUser(
+			request.nickname(),
+			request.email(),
+			passwordEncoder.encode(request.password()),
+			request.latitude(),
+			request.longitude()
+		);
 
 		userRepository.save(user);
 	}

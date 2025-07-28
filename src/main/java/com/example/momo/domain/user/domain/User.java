@@ -16,7 +16,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -54,17 +53,6 @@ public class User extends BaseEntity {
 	@Column(name = "longitude")
 	private Double longitude;
 
-	@Builder
-	public User(String nickname, String email, String password,
-		Double score, Double latitude, Double longitude) {
-		this.nickname = nickname;
-		this.email = email;
-		this.password = password;
-		this.score = score != null ? score : 50.0;
-		this.latitude = latitude;
-		this.longitude = longitude;
-	}
-
 	// === 연관관계 (OneToMany 단방향) ===
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
@@ -79,6 +67,29 @@ public class User extends BaseEntity {
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
+
+	// === 정적 팩토리 메서드 ===
+
+	/**
+	 * 일반 회원가입용 사용자 생성
+	 */
+	public static User createUser(String nickname, String email, String encodedPassword,
+		Double latitude, Double longitude) {
+		User user = new User();
+		user.nickname = nickname;
+		user.email = email;
+		user.password = encodedPassword;
+		user.score = 50.0; // 기본 점수
+		user.followingCount = 0;
+		user.followerCount = 0;
+		user.latitude = latitude;
+		user.longitude = longitude;
+		user.categories = new ArrayList<>();
+		user.followings = new ArrayList<>();
+		user.ratings = new ArrayList<>();
+
+		return user;
+	}
 
 	// === 업데이트 메서드들 ===
 	public void updateNickname(String nickname) {
