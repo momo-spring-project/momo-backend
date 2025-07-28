@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
@@ -34,7 +35,7 @@ import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.user.UserWithdrawalEvent;
+import com.example.momo.global.infrastructure.springEvent.user.UserEvents;
 
 import lombok.RequiredArgsConstructor;
 
@@ -71,6 +72,16 @@ public class UserServiceImpl implements UserService {
 		);
 
 		userRepository.save(user);
+
+		// 회원가입 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserRegistered(
+			user.getId(),
+			user.getNickname(),
+			user.getEmail(),
+			user.getLatitude(),
+			user.getLongitude(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -84,14 +95,13 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
-		// 탈퇴 이벤트 발행 (소프트 삭제 전에 발행)
-		UserWithdrawalEvent event = new UserWithdrawalEvent(
+		// 탈퇴 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserWithdrawn(
 			user.getId(),
 			user.getEmail(),
 			user.getNickname(),
 			LocalDateTime.now()
-		);
-		eventPublisher.publishEvent(event);
+		));
 
 		// 소프트 삭제
 		user.delete();
@@ -177,8 +187,12 @@ public class UserServiceImpl implements UserService {
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
 		User user = validateAndGetUser(userId);
 
-		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
+		// 기존 카테고리 백업
+		List<Integer> oldCategoryIds = user.getCategories().stream()
+			.map(UserCategory::getCategoryId)
+			.toList();
 
+		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
 		if (allCategories == null || allCategories.isEmpty()) {
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
@@ -188,12 +202,21 @@ public class UserServiceImpl implements UserService {
 			.toList();
 
 		boolean allValid = new HashSet<>(validCategoryIds).containsAll(categoryIds);
-
 		if (!allValid) {
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 
 		user.updateCategories(categoryIds);
+
+		// 카테고리 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.CategoriesChanged(
+			userId,
+			user.getNickname(),
+			oldCategoryIds,
+			categoryIds,
+			LocalDateTime.now()
+		));
+
 		return user;
 	}
 
@@ -211,17 +234,33 @@ public class UserServiceImpl implements UserService {
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
+
+		// 비밀번호 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.PasswordChanged(
+			userId,
+			user.getEmail(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
 	@Transactional
 	public void updateNickname(Long userId, UserNicknameUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
+		String oldNickname = user.getNickname();
 
 		if (userRepository.isDuplicateNickname(request.nickname(), userId)) {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
+
+		// 닉네임 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.NicknameChanged(
+			userId,
+			oldNickname,
+			request.nickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -229,7 +268,21 @@ public class UserServiceImpl implements UserService {
 	public UserLocationResponseDto updateUserLocation(Long userId, UserLocationUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
 
+		Double oldLatitude = user.getLatitude();
+		Double oldLongitude = user.getLongitude();
+
 		user.updateLocation(request.latitude(), request.longitude());
+
+		// 위치 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.LocationChanged(
+			userId,
+			user.getNickname(),
+			oldLatitude,
+			oldLongitude,
+			request.latitude(),
+			request.longitude(),
+			LocalDateTime.now()
+		));
 
 		return new UserLocationResponseDto(user);
 	}
@@ -238,25 +291,22 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
-		// 1. 자기 자신 평가 방지
+		// 자기 자신 평가 방지
 		if (reviewerId.equals(targetUserId)) {
 			throw new UserException(UserErrorCode.CANNOT_RATE_SELF);
 		}
 
-		// 2. 평가자 존재 확인
-		validateAndGetUser(reviewerId);
+		// 평가자 존재 확인
+		User reviewer = validateAndGetUser(reviewerId);
 
-		// 3. 평가 대상자 존재 확인
+		// 평가 대상자 존재 확인
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
 			.orElseThrow(() -> new UserException(UserErrorCode.TARGET_USER_NOT_FOUND));
 
-		// 4. 모임 존재 확인
+		// 모임 존재 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
-		// 5. 같은 모임 참가 여부 확인
-		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
-
-		// 6. 중복 평가 확인 - targetUser의 ratings 에서 확인
+		// 중복 평가 확인 - targetUser의 ratings 에서 확인
 		boolean alreadyRated = targetUser.getRatings().stream()
 			.anyMatch(rating ->
 				rating.getReviewerId().equals(reviewerId) &&
@@ -267,7 +317,7 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_RATING);
 		}
 
-		// 7. 평가 생성 및 targetUser의 ratings에 추가
+		// 평가 생성 및 targetUser의 ratings에 추가
 		UserRating userRating = new UserRating(
 			reviewerId,
 			targetUserId,
@@ -277,6 +327,18 @@ public class UserServiceImpl implements UserService {
 
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
+
+		// 평가 생성 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserRated(
+			reviewerId,
+			targetUserId,
+			request.meetingId(),
+			request.ratingScore(),
+			reviewer.getNickname(),
+			targetUser.getNickname(),
+			LocalDateTime.now()
+		));
+
 		recalculateUserScore(targetUserId);
 	}
 
@@ -303,6 +365,7 @@ public class UserServiceImpl implements UserService {
 	@Transactional
 	public void recalculateUserScore(Long userId) {
 		User user = validateAndGetUser(userId);
+		Double oldScore = user.getScore();
 
 		// 1. 평점 점수 계산 (60%)
 		double ratingScore = calculateRatingScore(user);
@@ -318,6 +381,16 @@ public class UserServiceImpl implements UserService {
 
 		// 5. 점수 업데이트
 		user.updateScore(totalScore);
+
+		// 점수 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.ScoreChanged(
+			userId,
+			user.getNickname(),
+			oldScore,
+			totalScore,
+			"평가 반영",
+			LocalDateTime.now()
+		));
 	}
 
 	/**
@@ -421,6 +494,15 @@ public class UserServiceImpl implements UserService {
 
 		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
 		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+
+		// 팔로우 생성 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserFollowed(
+			followerId,
+			followingId,
+			follower.getNickname(),
+			following.getNickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -447,6 +529,15 @@ public class UserServiceImpl implements UserService {
 
 		follower.decrementFollowingCount();
 		following.decrementFollowerCount();
+
+		// 언팔로우 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserUnfollowed(
+			followerId,
+			followingId,
+			follower.getNickname(),
+			following.getNickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
