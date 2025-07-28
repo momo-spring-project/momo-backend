@@ -1,7 +1,6 @@
 jwt:
   secret:
     key: ${SECRET_KEY}
-    admin-key: ${ADMIN_SECRET_KEY}
 
 
 # 네이버 인증 서버 정보
