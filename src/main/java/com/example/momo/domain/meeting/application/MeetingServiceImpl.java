@@ -157,6 +157,13 @@ public class MeetingServiceImpl implements MeetingService {
 		));
 	}
 
+	@Override
+	public List<MeetingResponseDto> getMeetingsByUserId(Long userId) {
+		List<Meeting> meetings = meetingRepository.findMeetingsByUserId(userId);
+		
+		return meetings.stream().map(MeetingResponseDto::new).toList();
+	}
+
 	/**
 	 * Meeting Participant Service
 	 */

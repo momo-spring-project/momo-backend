@@ -28,6 +28,8 @@ public interface MeetingService {
 
 	void deleteMeeting(Long meetingId, Long userId);
 
+	List<MeetingResponseDto> getMeetingsByUserId(Long userId);
+
 	/** Meeting Participant Service */
 
 	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
