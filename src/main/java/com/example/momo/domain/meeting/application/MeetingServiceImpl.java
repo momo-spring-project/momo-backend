@@ -24,8 +24,8 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
+import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
@@ -184,7 +184,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		// 현재 비동기, webClient 로 처리하면 paymentClient.결제(동기 처리) 대기
 		paymentService.createTestKeyInPayment(
-			new CardPaymentTestRequest(
+			new CardPaymentTestRequestDto(
 				meetingId,
 				"4242424242424242",
 				"12/25",
@@ -201,7 +201,7 @@ public class MeetingServiceImpl implements MeetingService {
 			paymentService.refundPayment(
 				1L, // event.paymentId (예상)
 				userId,
-				new RefundRequest("Join Meeting Fail")
+				new RefundRequestDto("Join Meeting Fail")
 			);
 			throw e;
 		}
@@ -242,7 +242,7 @@ public class MeetingServiceImpl implements MeetingService {
 		paymentService.refundPayment(
 			1L,
 			userId,
-			new RefundRequest("Cancel")
+			new RefundRequestDto("Cancel")
 		);
 
 		eventPublisher.publishEvent(new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), user.getNickname()));
