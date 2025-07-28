@@ -28,7 +28,6 @@ public class NotificationEventListener {
 
 	/**
 	 * {@link MessageEvents} 이벤트를 처리합니다.
-	 * 트랜잭션 커밋 이후(@AFTER_COMMIT)에 비동기(@Async)로 실행되며,
 	 * 필수 정보가 모두 포함된 경우에만 알림을 저장하고 WebSocket 으로 전송합니다.
 	 *
 	 * @param event 알림 전송에 필요한 이벤트 데이터
