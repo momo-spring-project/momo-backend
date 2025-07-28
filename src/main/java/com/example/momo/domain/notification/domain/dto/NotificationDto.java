@@ -12,14 +12,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public class NotificationDto {
 	private Long userId;
-	private Long meetingId;
+	private Long targetId;
 	private NotificationType type;
 	private String content;
 
 	public Notification toEntity() {
 		return Notification.builder()
 			.userId(this.userId)
-			.meetingId(this.meetingId)
+			.targetId(this.targetId)
 			.type(this.type)
 			.content(this.content)
 			.build();

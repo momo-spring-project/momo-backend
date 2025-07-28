@@ -1,15 +1,18 @@
 package com.example.momo.global.init;
 
+import org.springframework.stereotype.Component;
+
+import com.example.momo.domain.category.application.CategoryService;
 import com.example.momo.domain.category.domain.Category;
 import com.example.momo.domain.category.infra.CategoryRepository;
-import com.example.momo.domain.category.application.CategoryService;
+
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 // 카테고리 초기 생성
 // 개발 단계에서만 사용
-// @Component
+@Component
 @RequiredArgsConstructor
 public class CategoryInitializer {
 

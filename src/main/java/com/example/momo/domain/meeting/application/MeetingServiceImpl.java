@@ -5,25 +5,18 @@ import java.util.List;
 
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.response.*;
-import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequest;
-import com.example.momo.domain.payment.domain.dto.RefundRequest;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.utils.RetryUtil;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.example.momo.domain.category.application.CategoryService;
-import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
@@ -31,8 +24,8 @@ import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDt
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-
-import jakarta.persistence.EntityManager;
+import com.example.momo.global.infrastructure.client.category.CategoryClient;
+import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -42,10 +35,9 @@ public class MeetingServiceImpl implements MeetingService {
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
-	private final EntityManager em;
 	private final UserClient userClient;
-	private final CategoryService categoryService;
 	private final ParticipantService participantService;
+	private final CategoryClient categoryClient;
 
 	@Override
 	@Transactional
@@ -54,13 +46,12 @@ public class MeetingServiceImpl implements MeetingService {
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
-		// TODO CategoryId를 통한 category name 조회 (http client 요청)로 변경
-		CategoryResponseDto category = categoryService.getCategory(request.getCategoryId());
+		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
 
 		eventPublisher.publishEvent(new MeetingEvents.Create(
 			meeting.getId(),
 			request.getCategoryId(),
-			category.getCategoryName(),
+			category.getName(),
 			meeting.getLatitude(),
 			meeting.getLongitude()
 		));
@@ -117,12 +108,12 @@ public class MeetingServiceImpl implements MeetingService {
 	@Override
 	@Transactional(readOnly = true)
 	public MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
-		LocalDateTime meetingDate, int page, int size) {
+		LocalDateTime meetingDate, Integer categoryId, int page, int size) {
 
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, pageable);
+		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
 		List<MeetingResponseDto> meetingResponses = meetingPage.stream()
 			.map(MeetingResponseDto::new)
 			.toList();
@@ -153,6 +144,13 @@ public class MeetingServiceImpl implements MeetingService {
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
 		));
+	}
+
+	@Override
+	public List<MeetingResponseDto> getMeetingsByUserId(Long userId) {
+		List<Meeting> meetings = meetingRepository.findMeetingsByUserId(userId);
+
+		return meetings.stream().map(MeetingResponseDto::new).toList();
 	}
 
 	/**

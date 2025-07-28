@@ -17,8 +17,10 @@ public interface MeetingRepository {
 
 	Meeting save(Meeting meeting);
 
-	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable);
+
+	List<Meeting> findMeetingsByUserId(Long userId);
 
 	boolean existsById(Long id);
 
@@ -35,4 +37,5 @@ public interface MeetingRepository {
 	Optional<MeetingParticipant> findParticipantById(Long participantId);
 
 	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
+
 }

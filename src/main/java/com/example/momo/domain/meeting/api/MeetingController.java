@@ -3,8 +3,8 @@ package com.example.momo.domain.meeting.api;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.dto.response.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import com.example.momo.domain.meeting.domain.dto.response.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -78,12 +78,14 @@ public class MeetingController {
 	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> getMeetings(
 		@RequestParam(defaultValue = "") String title,
 		@RequestParam(required = false) MeetingStatus status,
-		@RequestParam(required = false) LocalDateTime meetingDate,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime meetingDate,
+		@RequestParam(required = false) Integer categoryId,
 		@RequestParam(defaultValue = "1") @Min(1) int page,
 		@RequestParam(defaultValue = "10") @Min(5) int size
 	) {
 
 		MeetingPagingResponseDto<MeetingResponseDto> response = meetingService.getMeetings(title, status, meetingDate,
+			categoryId,
 			page,
 			size);
 		return ResponseEntity.ok(ApiResponse.success("모임 목록 조회가 성공적으로 완료되었습니다.", response));
@@ -95,6 +97,13 @@ public class MeetingController {
 
 		meetingService.deleteMeeting(meetingId, authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 삭제가 성공적으로 완료되었습니다.", null));
+	}
+
+	@GetMapping("/user/{userId}")
+	public ResponseEntity<ApiResponse<List<MeetingResponseDto>>> getMeetingsByUserId(@PathVariable Long userId) {
+
+		List<MeetingResponseDto> response = meetingService.getMeetingsByUserId(userId);
+		return ResponseEntity.ok(ApiResponse.success("유저 식별자를 통한 모임 목록 조회가 성공적으로 완료되었습니다.", response));
 	}
 
 	// 모임 참가

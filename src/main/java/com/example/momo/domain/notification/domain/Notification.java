@@ -36,8 +36,8 @@ public class Notification extends BaseCreateEntity {
 	@Column(nullable = false, name = "user_id")
 	private Long userId;
 
-	@Column(nullable = false, name = "meeting_id")
-	private Long meetingId;
+	@Column(nullable = false, name = "target_id")
+	private Long targetId;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, name = "notification_type")

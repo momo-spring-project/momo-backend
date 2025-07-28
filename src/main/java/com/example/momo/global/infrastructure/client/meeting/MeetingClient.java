@@ -149,4 +149,33 @@ public class MeetingClient {
 			throw new MeetingClientException("참석자 집계 조회 중 오류가 발생했습니다: " + e.getMessage());
 		}
 	}
+
+	public List<MeetingClientResponseDto> getMeetingsByUserId(Long userId) {
+
+		try {
+			ApiResponse<List<MeetingClientResponseDto>> response = webClient
+				.get()
+				.uri(MEETING_SERVICE_BASE_URI + "/user/{userId}", userId)
+				.retrieve()
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<MeetingClientResponseDto>>>() {
+				})
+				.timeout(REQUEST_TIMEOUT)
+				.block();
+
+			if (response == null || !response.isSuccess()) {
+				return null;
+			}
+			return response.getData();
+		} catch (WebClientResponseException e) {
+
+			if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+				return null;
+			}
+
+			throw new MeetingClientException("모임 목록 조회 중 오류가 발생했습니다. " + e.getMessage());
+		} catch (Exception e) {
+			throw new MeetingClientException("모임 목록 조회 중 오류가 발생했습니다. " + e.getMessage());
+		}
+	}
+}
 }

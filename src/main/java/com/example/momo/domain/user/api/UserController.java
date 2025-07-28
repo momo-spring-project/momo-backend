@@ -47,7 +47,8 @@ public class UserController {
 
 	// 회원가입
 	@PostMapping("/register")
-	public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequestDto request) {
+	public ResponseEntity<ApiResponse<Void>> register(
+		@Valid @RequestBody RegisterRequestDto request) {
 		userService.registerUser(request);
 		return ResponseEntity.status(HttpStatus.CREATED)
 			.body(ApiResponse.success("회원가입에 성공했습니다.", null));

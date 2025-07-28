@@ -1,6 +1,7 @@
 package com.example.momo.domain.meeting.infra.meeting;
 
 import static com.example.momo.domain.meeting.domain.QMeeting.*;
+import static com.example.momo.domain.meeting.domain.QMeetingParticipant.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,7 +27,7 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 	private final JPAQueryFactory queryFactory;
 
 	@Override
-	public Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+	public Page<Meeting> findMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable) {
 
 		BooleanBuilder builder = new BooleanBuilder();
@@ -47,6 +48,10 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 			builder.and(meeting.status.eq(status));
 		}
 
+		if (categoryId != null) {
+			builder.and(meeting.categoryId.eq(categoryId));
+		}
+
 		builder.and(meeting.isDeleted.eq(false));
 
 		List<Meeting> meetingContent = queryFactory
@@ -64,5 +69,15 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 			.fetchOne()).orElse(0L);
 
 		return new PageImpl<>(meetingContent, pageable, total);
+	}
+
+	@Override
+	public List<Meeting> findMeetingsByUserId(Long userId) {
+
+		return queryFactory
+			.selectFrom(meeting)
+			.join(meeting.participants, meetingParticipant)
+			.where(meetingParticipant.userId.eq(userId), meeting.isDeleted.isFalse())
+			.fetch();
 	}
 }
