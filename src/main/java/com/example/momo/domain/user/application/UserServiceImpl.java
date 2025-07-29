@@ -11,7 +11,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
@@ -24,6 +23,7 @@ import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
 import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserMeetingStatsDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
@@ -34,11 +34,14 @@ import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
+import com.example.momo.global.infrastructure.client.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
 import com.example.momo.global.infrastructure.springEvent.user.UserEvents;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -47,7 +50,6 @@ public class UserServiceImpl implements UserService {
 	private final CategoryClient categoryClient;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
-	private final MeetingParticipantJpaRepository meetingParticipantRepository;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
@@ -343,18 +345,15 @@ public class UserServiceImpl implements UserService {
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
-		List<ParticipantClientResponseDto> participants = meetingClient.getParticipants(meetingId);
+		// 참가자 ID 목록만 조회 (현재 Meeting API가 제공하는 방식)
+		List<Long> participantIds = meetingClient.getParticipantIds(meetingId);
 
-		if (participants == null || participants.isEmpty()) {
+		if (participantIds == null || participantIds.isEmpty()) {
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
 
-		List<Long> participantUserIds = participants.stream()
-			.map(ParticipantClientResponseDto::getUserId)
-			.toList();
-
-		boolean reviewerParticipated = participantUserIds.contains(reviewerId);
-		boolean targetParticipated = participantUserIds.contains(targetUserId);
+		boolean reviewerParticipated = participantIds.contains(reviewerId);
+		boolean targetParticipated = participantIds.contains(targetUserId);
 
 		if (!reviewerParticipated || !targetParticipated) {
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
@@ -370,16 +369,19 @@ public class UserServiceImpl implements UserService {
 		// 1. 평점 점수 계산 (60%)
 		double ratingScore = calculateRatingScore(user);
 
-		// 2. 참석률 점수 계산 (30%)
-		double attendanceScore = calculateAttendanceScore(userId);
+		// 2. MeetingClient를 통한 통계 조회
+		UserMeetingStatsDto meetingStats = getUserMeetingStats(userId);
 
-		// 3. 활동도 점수 계산 (10%)
-		double activityScore = calculateActivityScore(userId);
+		// 3. 참석률 점수 계산 (30%)
+		double attendanceScore = calculateAttendanceScore(meetingStats);
 
-		// 4. 총 점수 계산
+		// 4. 활동도 점수 계산 (10%)
+		double activityScore = calculateActivityScore(meetingStats);
+
+		// 5. 총 점수 계산
 		double totalScore = ratingScore + attendanceScore + activityScore;
 
-		// 5. 점수 업데이트
+		// 6. 점수 업데이트
 		user.updateScore(totalScore);
 
 		// 점수 변경 이벤트 발행
@@ -391,6 +393,49 @@ public class UserServiceImpl implements UserService {
 			"평가 반영",
 			LocalDateTime.now()
 		));
+	}
+
+	/**
+	 * MeetingClient를 통해 사용자의 모임 참가 통계 조회
+	 */
+	private UserMeetingStatsDto getUserMeetingStats(Long userId) {
+		// MeetingClient를 통해 사용자가 참가한 모임 목록 조회
+		List<MeetingClientResponseDto> userMeetings = meetingClient.getMeetingsByUserId(userId);
+
+		if (userMeetings == null || userMeetings.isEmpty()) {
+			// 참가한 모임이 없는 경우 모든 값을 0으로 반환
+			return new UserMeetingStatsDto(0L, 0L, 0L);
+		}
+
+		// 총 참가 모임 수
+		long totalParticipation = userMeetings.size();
+
+		// 최근 3개월 기준 날짜
+		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+
+		// 각 모임별로 출석 여부와 최근 참가 여부 확인
+		long attendedMeetings = 0L;
+		long recentParticipation = 0L;
+
+		for (MeetingClientResponseDto meeting : userMeetings) {
+			// 각 모임의 참가자 중에서 해당 사용자의 출석 정보 확인
+			// 현재는 참가자 상세 정보를 개별 조회해야 함 (N+1 문제)
+			ParticipantClientResponseDto userParticipant = meetingClient.getParticipant(meeting.getId(), userId);
+
+			if (userParticipant != null) {
+				// 출석 여부 확인
+				if (userParticipant.isAttendanceStatus()) {
+					attendedMeetings++;
+				}
+			}
+
+			// 최근 3개월 참가 여부 확인 (모임 생성일 기준)
+			if (meeting.getMeetingDate().isAfter(threeMonthsAgo)) {
+				recentParticipation++;
+			}
+		}
+
+		return new UserMeetingStatsDto(totalParticipation, attendedMeetings, recentParticipation);
 	}
 
 	/**
@@ -417,45 +462,24 @@ public class UserServiceImpl implements UserService {
 	/**
 	 * 참석률 기반 점수 계산 (30%)
 	 * 신청한 모임 대비 실제 참석한 모임의 비율
-	 * 주의: 이 메서드는 평가를 받을 수 있는 사용자(= 최소 1개 모임 참가)에 대해서만 호출됨
 	 */
-	private double calculateAttendanceScore(Long userId) {
-		// 사용자가 참가 신청한 총 모임 수
-		long totalParticipation = meetingParticipantRepository.countByUserId(userId);
-
-		// 평가받을 수 있다는 것은 최소 1개 모임은 참가했다는 의미
-		// 만약 0이면 로직 오류
-		if (totalParticipation == 0) {
+	private double calculateAttendanceScore(UserMeetingStatsDto meetingStats) {
+		if (meetingStats.totalParticipation() == 0) {
 			throw new IllegalStateException("평가받은 사용자인데 참가한 모임이 없습니다. 데이터 정합성 오류!");
 		}
 
-		// 실제 참석한 모임 수 (attendanceStatus = true)
-		long attendedMeetings = meetingParticipantRepository.countByUserIdAndAttendanceStatusTrue(userId);
-
-		// 참석률 계산
-		double attendanceRate = (double)attendedMeetings / totalParticipation;
-
 		// 30점 만점으로 변환
-		return attendanceRate * 30.0;
+		return meetingStats.getAttendanceRate() * 30.0;
 	}
 
 	/**
 	 * 활동도 기반 점수 계산 (10%)
 	 * 최근 3개월 모임 참가 횟수 기준
-	 * 주의: 이 메서드는 모임 참가 기록이 있는 사용자에 대해서만 호출됨
 	 */
-	private double calculateActivityScore(Long userId) {
-		// 최근 3개월 기준 날짜
-		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+	private double calculateActivityScore(UserMeetingStatsDto meetingStats) {
+		double monthlyAverage = meetingStats.getMonthlyAverage();
 
-		// 최근 3개월간 참가한 모임 수
-		long recentParticipation = meetingParticipantRepository
-			.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
-
-		// 월 평균 참가 횟수 계산
-		double monthlyAverage = recentParticipation / 3.0;
-
-		// 활동도 점수 계산 (실제 데이터만으로)
+		// 활동도 점수 계산
 		if (monthlyAverage >= 2.0) {
 			return 10.0; // 월 평균 2회 이상
 		} else if (monthlyAverage >= 1.0) {
