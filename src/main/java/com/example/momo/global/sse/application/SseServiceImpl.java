@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
 
 import lombok.extern.slf4j.Slf4j;
 

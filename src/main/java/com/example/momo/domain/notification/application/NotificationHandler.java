@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 import com.example.momo.domain.notification.domain.dto.NotificationDto;
 import com.example.momo.domain.notification.enums.NotificationType;
 import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
-import com.example.momo.global.socket.service.WebSocketNotificationService;
+import com.example.momo.global.socket.application.WebSocketNotificationService;
+import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +57,7 @@ public class NotificationHandler {
 			webSocketNotificationService.send(
 				WebSocketNotificationDto.builder()
 					.userId(userId)
-					.meetingId(targetId)
+					.targetId(targetId)
 					.type(type)
 					.content(content)
 					.createdAt(LocalDateTime.now())

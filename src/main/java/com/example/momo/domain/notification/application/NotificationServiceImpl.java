@@ -11,8 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.momo.domain.notification.domain.NotificationRepository;
 import com.example.momo.domain.notification.domain.dto.NotificationDto;
 import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
-import com.example.momo.global.socket.service.WebSocketNotificationService;
+import com.example.momo.global.socket.application.WebSocketNotificationService;
+import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class NotificationServiceImpl implements NotificationService {
 		webSocketNotificationService.send(
 			WebSocketNotificationDto.builder()
 				.userId(dto.getUserId())
-				.meetingId(dto.getTargetId())
+				.targetId(dto.getTargetId())
 				.type(dto.getType())
 				.content(dto.getContent())
 				.createdAt(LocalDateTime.now())

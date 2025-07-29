@@ -1,4 +1,4 @@
-package com.example.momo.global.socket.dto;
+package com.example.momo.global.socket.application.dto;
 
 import java.time.LocalDateTime;
 
@@ -14,7 +14,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class WebSocketNotificationDto {
 	private Long userId;
-	private Long meetingId;
+	private Long targetId;
 	private NotificationType type;
 	private String content;
 	private LocalDateTime createdAt;

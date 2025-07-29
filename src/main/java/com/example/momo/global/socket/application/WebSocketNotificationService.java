@@ -1,6 +1,6 @@
-package com.example.momo.global.socket.service;
+package com.example.momo.global.socket.application;
 
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
 
 public interface WebSocketNotificationService {
 
