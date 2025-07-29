@@ -11,8 +11,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.meeting.infra.participant.MeetingParticipantJpaRepository;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
@@ -23,6 +23,7 @@ import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
 import com.example.momo.domain.user.domain.dto.UserListResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
 import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
+import com.example.momo.domain.user.domain.dto.UserMeetingStatsDto;
 import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
 import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
@@ -33,11 +34,14 @@ import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
+import com.example.momo.global.infrastructure.client.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.user.UserWithdrawalEvent;
+import com.example.momo.global.infrastructure.springEvent.user.UserEvents;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -46,7 +50,6 @@ public class UserServiceImpl implements UserService {
 	private final CategoryClient categoryClient;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
-	private final MeetingParticipantJpaRepository meetingParticipantRepository;
 	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
@@ -62,15 +65,25 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 
-		User user = User.builder()
-			.nickname(request.nickname())
-			.email(request.email())
-			.password(passwordEncoder.encode(request.password()))
-			.latitude(request.latitude())
-			.longitude(request.longitude())
-			.build();
+		User user = User.createUser(
+			request.nickname(),
+			request.email(),
+			passwordEncoder.encode(request.password()),
+			request.latitude(),
+			request.longitude()
+		);
 
 		userRepository.save(user);
+
+		// 회원가입 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserRegistered(
+			user.getId(),
+			user.getNickname(),
+			user.getEmail(),
+			user.getLatitude(),
+			user.getLongitude(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -84,14 +97,13 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
-		// 탈퇴 이벤트 발행 (소프트 삭제 전에 발행)
-		UserWithdrawalEvent event = new UserWithdrawalEvent(
+		// 탈퇴 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserWithdrawn(
 			user.getId(),
 			user.getEmail(),
 			user.getNickname(),
 			LocalDateTime.now()
-		);
-		eventPublisher.publishEvent(event);
+		));
 
 		// 소프트 삭제
 		user.delete();
@@ -177,8 +189,12 @@ public class UserServiceImpl implements UserService {
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
 		User user = validateAndGetUser(userId);
 
-		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
+		// 기존 카테고리 백업
+		List<Integer> oldCategoryIds = user.getCategories().stream()
+			.map(UserCategory::getCategoryId)
+			.toList();
 
+		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
 		if (allCategories == null || allCategories.isEmpty()) {
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
@@ -188,12 +204,21 @@ public class UserServiceImpl implements UserService {
 			.toList();
 
 		boolean allValid = new HashSet<>(validCategoryIds).containsAll(categoryIds);
-
 		if (!allValid) {
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 
 		user.updateCategories(categoryIds);
+
+		// 카테고리 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.CategoriesChanged(
+			userId,
+			user.getNickname(),
+			oldCategoryIds,
+			categoryIds,
+			LocalDateTime.now()
+		));
+
 		return user;
 	}
 
@@ -211,17 +236,33 @@ public class UserServiceImpl implements UserService {
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
+
+		// 비밀번호 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.PasswordChanged(
+			userId,
+			user.getEmail(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
 	@Transactional
 	public void updateNickname(Long userId, UserNicknameUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
+		String oldNickname = user.getNickname();
 
 		if (userRepository.isDuplicateNickname(request.nickname(), userId)) {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
+
+		// 닉네임 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.NicknameChanged(
+			userId,
+			oldNickname,
+			request.nickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -229,7 +270,21 @@ public class UserServiceImpl implements UserService {
 	public UserLocationResponseDto updateUserLocation(Long userId, UserLocationUpdateRequestDto request) {
 		User user = validateAndGetUser(userId);
 
+		Double oldLatitude = user.getLatitude();
+		Double oldLongitude = user.getLongitude();
+
 		user.updateLocation(request.latitude(), request.longitude());
+
+		// 위치 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.LocationChanged(
+			userId,
+			user.getNickname(),
+			oldLatitude,
+			oldLongitude,
+			request.latitude(),
+			request.longitude(),
+			LocalDateTime.now()
+		));
 
 		return new UserLocationResponseDto(user);
 	}
@@ -238,25 +293,22 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
-		// 1. 자기 자신 평가 방지
+		// 자기 자신 평가 방지
 		if (reviewerId.equals(targetUserId)) {
 			throw new UserException(UserErrorCode.CANNOT_RATE_SELF);
 		}
 
-		// 2. 평가자 존재 확인
-		validateAndGetUser(reviewerId);
+		// 평가자 존재 확인
+		User reviewer = validateAndGetUser(reviewerId);
 
-		// 3. 평가 대상자 존재 확인
+		// 평가 대상자 존재 확인
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
 			.orElseThrow(() -> new UserException(UserErrorCode.TARGET_USER_NOT_FOUND));
 
-		// 4. 모임 존재 확인
+		// 모임 존재 확인
 		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
 
-		// 5. 같은 모임 참가 여부 확인
-		validateSameMeetingParticipants(reviewerId, targetUserId, request.meetingId());
-
-		// 6. 중복 평가 확인 - targetUser의 ratings 에서 확인
+		// 중복 평가 확인 - targetUser의 ratings 에서 확인
 		boolean alreadyRated = targetUser.getRatings().stream()
 			.anyMatch(rating ->
 				rating.getReviewerId().equals(reviewerId) &&
@@ -267,7 +319,7 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_RATING);
 		}
 
-		// 7. 평가 생성 및 targetUser의 ratings에 추가
+		// 평가 생성 및 targetUser의 ratings에 추가
 		UserRating userRating = new UserRating(
 			reviewerId,
 			targetUserId,
@@ -277,22 +329,31 @@ public class UserServiceImpl implements UserService {
 
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
+
+		// 평가 생성 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserRated(
+			reviewerId,
+			targetUserId,
+			request.meetingId(),
+			request.ratingScore(),
+			reviewer.getNickname(),
+			targetUser.getNickname(),
+			LocalDateTime.now()
+		));
+
 		recalculateUserScore(targetUserId);
 	}
 
 	private void validateSameMeetingParticipants(Long reviewerId, Long targetUserId, Long meetingId) {
-		List<ParticipantClientResponseDto> participants = meetingClient.getParticipants(meetingId);
+		// 참가자 ID 목록만 조회 (현재 Meeting API가 제공하는 방식)
+		List<Long> participantIds = meetingClient.getParticipantIds(meetingId);
 
-		if (participants == null || participants.isEmpty()) {
+		if (participantIds == null || participantIds.isEmpty()) {
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
 
-		List<Long> participantUserIds = participants.stream()
-			.map(ParticipantClientResponseDto::getUserId)
-			.toList();
-
-		boolean reviewerParticipated = participantUserIds.contains(reviewerId);
-		boolean targetParticipated = participantUserIds.contains(targetUserId);
+		boolean reviewerParticipated = participantIds.contains(reviewerId);
+		boolean targetParticipated = participantIds.contains(targetUserId);
 
 		if (!reviewerParticipated || !targetParticipated) {
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
@@ -303,21 +364,78 @@ public class UserServiceImpl implements UserService {
 	@Transactional
 	public void recalculateUserScore(Long userId) {
 		User user = validateAndGetUser(userId);
+		Double oldScore = user.getScore();
 
 		// 1. 평점 점수 계산 (60%)
 		double ratingScore = calculateRatingScore(user);
 
-		// 2. 참석률 점수 계산 (30%)
-		double attendanceScore = calculateAttendanceScore(userId);
+		// 2. MeetingClient를 통한 통계 조회
+		UserMeetingStatsDto meetingStats = getUserMeetingStats(userId);
 
-		// 3. 활동도 점수 계산 (10%)
-		double activityScore = calculateActivityScore(userId);
+		// 3. 참석률 점수 계산 (30%)
+		double attendanceScore = calculateAttendanceScore(meetingStats);
 
-		// 4. 총 점수 계산
+		// 4. 활동도 점수 계산 (10%)
+		double activityScore = calculateActivityScore(meetingStats);
+
+		// 5. 총 점수 계산
 		double totalScore = ratingScore + attendanceScore + activityScore;
 
-		// 5. 점수 업데이트
+		// 6. 점수 업데이트
 		user.updateScore(totalScore);
+
+		// 점수 변경 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.ScoreChanged(
+			userId,
+			user.getNickname(),
+			oldScore,
+			totalScore,
+			"평가 반영",
+			LocalDateTime.now()
+		));
+	}
+
+	/**
+	 * MeetingClient를 통해 사용자의 모임 참가 통계 조회
+	 */
+	private UserMeetingStatsDto getUserMeetingStats(Long userId) {
+		// MeetingClient를 통해 사용자가 참가한 모임 목록 조회
+		List<MeetingClientResponseDto> userMeetings = meetingClient.getMeetingsByUserId(userId);
+
+		if (userMeetings == null || userMeetings.isEmpty()) {
+			// 참가한 모임이 없는 경우 모든 값을 0으로 반환
+			return new UserMeetingStatsDto(0L, 0L, 0L);
+		}
+
+		// 총 참가 모임 수
+		long totalParticipation = userMeetings.size();
+
+		// 최근 3개월 기준 날짜
+		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+
+		// 각 모임별로 출석 여부와 최근 참가 여부 확인
+		long attendedMeetings = 0L;
+		long recentParticipation = 0L;
+
+		for (MeetingClientResponseDto meeting : userMeetings) {
+			// 각 모임의 참가자 중에서 해당 사용자의 출석 정보 확인
+			// 현재는 참가자 상세 정보를 개별 조회해야 함 (N+1 문제)
+			ParticipantClientResponseDto userParticipant = meetingClient.getParticipant(meeting.getId(), userId);
+
+			if (userParticipant != null) {
+				// 출석 여부 확인
+				if (userParticipant.isAttendanceStatus()) {
+					attendedMeetings++;
+				}
+			}
+
+			// 최근 3개월 참가 여부 확인 (모임 생성일 기준)
+			if (meeting.getMeetingDate().isAfter(threeMonthsAgo)) {
+				recentParticipation++;
+			}
+		}
+
+		return new UserMeetingStatsDto(totalParticipation, attendedMeetings, recentParticipation);
 	}
 
 	/**
@@ -344,45 +462,24 @@ public class UserServiceImpl implements UserService {
 	/**
 	 * 참석률 기반 점수 계산 (30%)
 	 * 신청한 모임 대비 실제 참석한 모임의 비율
-	 * 주의: 이 메서드는 평가를 받을 수 있는 사용자(= 최소 1개 모임 참가)에 대해서만 호출됨
 	 */
-	private double calculateAttendanceScore(Long userId) {
-		// 사용자가 참가 신청한 총 모임 수
-		long totalParticipation = meetingParticipantRepository.countByUserId(userId);
-
-		// 평가받을 수 있다는 것은 최소 1개 모임은 참가했다는 의미
-		// 만약 0이면 로직 오류
-		if (totalParticipation == 0) {
+	private double calculateAttendanceScore(UserMeetingStatsDto meetingStats) {
+		if (meetingStats.totalParticipation() == 0) {
 			throw new IllegalStateException("평가받은 사용자인데 참가한 모임이 없습니다. 데이터 정합성 오류!");
 		}
 
-		// 실제 참석한 모임 수 (attendanceStatus = true)
-		long attendedMeetings = meetingParticipantRepository.countByUserIdAndAttendanceStatusTrue(userId);
-
-		// 참석률 계산
-		double attendanceRate = (double)attendedMeetings / totalParticipation;
-
 		// 30점 만점으로 변환
-		return attendanceRate * 30.0;
+		return meetingStats.getAttendanceRate() * 30.0;
 	}
 
 	/**
 	 * 활동도 기반 점수 계산 (10%)
 	 * 최근 3개월 모임 참가 횟수 기준
-	 * 주의: 이 메서드는 모임 참가 기록이 있는 사용자에 대해서만 호출됨
 	 */
-	private double calculateActivityScore(Long userId) {
-		// 최근 3개월 기준 날짜
-		LocalDateTime threeMonthsAgo = LocalDateTime.now().minusMonths(3);
+	private double calculateActivityScore(UserMeetingStatsDto meetingStats) {
+		double monthlyAverage = meetingStats.getMonthlyAverage();
 
-		// 최근 3개월간 참가한 모임 수
-		long recentParticipation = meetingParticipantRepository
-			.countByUserIdAndCreatedAtAfter(userId, threeMonthsAgo);
-
-		// 월 평균 참가 횟수 계산
-		double monthlyAverage = recentParticipation / 3.0;
-
-		// 활동도 점수 계산 (실제 데이터만으로)
+		// 활동도 점수 계산
 		if (monthlyAverage >= 2.0) {
 			return 10.0; // 월 평균 2회 이상
 		} else if (monthlyAverage >= 1.0) {
@@ -421,6 +518,15 @@ public class UserServiceImpl implements UserService {
 
 		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
 		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+
+		// 팔로우 생성 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserFollowed(
+			followerId,
+			followingId,
+			follower.getNickname(),
+			following.getNickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
@@ -447,6 +553,15 @@ public class UserServiceImpl implements UserService {
 
 		follower.decrementFollowingCount();
 		following.decrementFollowerCount();
+
+		// 언팔로우 이벤트 발행
+		eventPublisher.publishEvent(new UserEvents.UserUnfollowed(
+			followerId,
+			followingId,
+			follower.getNickname(),
+			following.getNickname(),
+			LocalDateTime.now()
+		));
 	}
 
 	@Override
