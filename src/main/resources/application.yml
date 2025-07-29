@@ -43,3 +43,15 @@ toss:
 webclient:
   internal:
     secret-key: ${WEBCLIENT_SECRET_KEY}
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    logging:
+      enabled: false
