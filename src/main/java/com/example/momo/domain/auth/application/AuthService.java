@@ -25,6 +25,7 @@ public class AuthService {
 
 	// 로그인만 Auth 도메인에서 담당
 	public LoginResponseDto loginUser(LoginRequestDto request) {
+
 		UserAuthResponseDto user = userClient.getUserByEmailForAuth(request.getEmail());
 
 		if (user == null) {
