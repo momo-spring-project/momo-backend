@@ -178,7 +178,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 
-		// createParticipant 에서는 결제 요청 까지만 진행
+		// createParticipant 에서는 이벤트 발행 까지만 진행
 		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
 	}
 
