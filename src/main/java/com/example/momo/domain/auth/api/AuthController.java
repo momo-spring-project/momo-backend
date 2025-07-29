@@ -29,7 +29,9 @@ public class AuthController {
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@PostMapping("/login")
-	public ResponseEntity<ApiResponse<LoginResponseDto>> login(@Valid @RequestBody LoginRequestDto request) {
+	public ResponseEntity<ApiResponse<LoginResponseDto>> login(
+		@Valid @RequestBody LoginRequestDto request
+	) {
 		LoginResponseDto response = authService.loginUser(request);
 		// Access 토큰과 Refresh 토큰 발행
 		String access = jwtTokenProvider.createToken("access", response.getId(), "ADMIN",

@@ -60,6 +60,12 @@ public class MeetingEvents {
 	) implements MeetingEvent {
 	}
 
+	public record Register(
+		Long meetingId,
+		Long userId
+	) implements MeetingEvent {
+	}
+
 	/**
 	 * 사용자가 모임에 참여했을 때 발생하는 이벤트입니다.
 	 *

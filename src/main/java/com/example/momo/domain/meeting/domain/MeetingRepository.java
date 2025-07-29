@@ -30,10 +30,12 @@ public interface MeetingRepository {
 
 	MeetingParticipant saveParticipant(MeetingParticipant meetingParticipant);
 
-	List<Long> findParticipantsIdsByMeetingId(Long meetingId);
+	List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId);
 
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
 	Optional<MeetingParticipant> findParticipantById(Long participantId);
+
+	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
 
 }

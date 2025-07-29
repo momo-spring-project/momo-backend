@@ -3,12 +3,14 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.domain.dto.response.*;
 
 public interface MeetingService {
 
@@ -32,13 +34,19 @@ public interface MeetingService {
 
 	/** Meeting Participant Service */
 
-	ParticipantResponseDto createParticipant(Long userId, Long meetingId);
+	ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId);
 
 	ParticipantResponseDto getParticipant(Long participantId);
 
-	List<Long> getParticipants(Long meetingId);
+	List<ParticipantResponseDto> getParticipants(Long meetingId);
 
 	ParticipantResponseDto deleteParticipant(Long userId, Long meetingId);
 
 	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
+
+	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
+
+	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
+
+	ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant);
 }
