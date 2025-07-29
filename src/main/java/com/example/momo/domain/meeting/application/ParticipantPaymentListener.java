@@ -6,6 +6,8 @@ import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.global.infrastructure.client.user.UserClient;
 import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
 import com.example.momo.global.utils.RetryUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -27,13 +29,12 @@ public class ParticipantPaymentListener {
 	private final MeetingService meetingService;
 	private final PaymentService paymentService;
 
-	// 결제 성공 어떤 이벤트인지 확인해서 넣기(이벤트 안넣으면 오류 떠서 임시로 넣어둠)
 	@Async
 	@EventListener
-	public void handlePaymentSuccessEvent(MeetingEvents.Register event) {
+	public void handlePaymentSuccessEvent(PaymentCompletedEvent event) {
 
-		Long meetingId = 1L; // event.meetingId (예상)
-		Long userId = 2L; // event.userId (예상)
+		Long meetingId = event.getMeetingId();
+		Long userId = event.getUserId();
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		UserClientResponseDto user = userClient.getUser(userId);
@@ -43,11 +44,9 @@ public class ParticipantPaymentListener {
 			RetryUtil.retry(() -> meetingService.addParticipant(meetingId, userId), 5);
 			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
 		} catch (OptimisticLockingFailureException e) {
-			paymentService.refundPayment(
-				1L, // event.paymentId (예상)
-				userId,
-				new RefundRequestDto("Join Meeting Fail")
-			);
+			eventPublisher.publishEvent(new MeetingEvents.ParticipationFailed(
+				meetingId, userId, event.getPaymentId()
+			));
 			throw e;
 		}
 	}
@@ -55,11 +54,14 @@ public class ParticipantPaymentListener {
 	// 비동기 참가 취소 환불
 	@Async
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handleMeetingCancelEvent(MeetingEvents.Cancel event) {
-		paymentService.refundPayment(
-			1L, // event.getPaymentId
-			1L, // event.getUserId
-			new RefundRequestDto("Meeting Participation Cancel")
-		);
+	public void handleMeetingCancelEvent(PaymentRefundedEvent event) {
+
+		Meeting meeting = meetingReader.getMeetingById(event.getMeetingId());
+
+		eventPublisher.publishEvent(new MeetingEvents.ParticipationCancelCompleted(
+			event.getMeetingId(),
+			meeting.getHostUserId(),
+			event.getUserId()
+		));
 	}
 }
