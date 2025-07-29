@@ -13,8 +13,8 @@ import com.example.momo.domain.meeting.domain.MeetingParticipant;
 public interface MeetingParticipantJpaRepository extends JpaRepository<MeetingParticipant, Long> {
 	boolean existsByMeetingIdAndUserId(Long meetingId, Long userId);
 
-	@Query("SELECT mp.userId FROM MeetingParticipant mp WHERE mp.meetingId = :meetingId")
-	List<Long> findParticipantsIdByMeetingId(@Param("meetingId") Long meetingId);
+	@Query("SELECT mp FROM MeetingParticipant mp WHERE mp.meetingId = :meetingId")
+	List<MeetingParticipant> findAllByMeetingId(@Param("meetingId") Long meetingId);
 
 	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
 

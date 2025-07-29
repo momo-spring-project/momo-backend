@@ -86,24 +86,17 @@ public class PaymentServiceImpl implements PaymentService {
 			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 		}
 
-		String paymentKey = (String)keyInResult.get("paymentKey");
-		String status = (String)keyInResult.get("status");
-
-		// 7. Toss 결제 상태에 따라 처리
-		if ("READY".equals(status) || "WAITING_FOR_CONFIRMATION".equals(status)) {
-			try {
-				paymentClient.confirmPayment(paymentKey, orderId, amount);
-			} catch (HttpClientErrorException e) {
-				log.error("[TOSS] 결제 승인 실패: {}", e.getResponseBodyAsString());
-				throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
-			}
-		} else if (!"DONE".equals(status)) {
-			log.error("[TOSS] 지원하지 않는 결제 상태: {}", status);
-			throw new PaymentException(PaymentErrorCode.UNSUPPORTED_PAYMENT_STATUS);
+		if (!"DONE".equals(keyInResult.get("status"))) {
+			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 		}
 
-		// 8. 결제 정보 저장
-		return savePaidPayment(user, meeting, amount, paymentKey, orderId);
+		String paymentKey = (String)keyInResult.get("paymentKey");
+		String approvedAtStr = (String)keyInResult.get("approvedAt");
+		LocalDateTime approvedAt = LocalDateTime.parse(approvedAtStr);
+
+		// 7. 결제 정보 저장
+		return savePaidPayment(user, meeting, amount, paymentKey, orderId, approvedAt);
+
 	}
 
 	// ==================== 환불 처리 ====================
@@ -279,7 +272,7 @@ public class PaymentServiceImpl implements PaymentService {
 	 * 유료 결제 정보 저장
 	 */
 	private PaymentResponseDto savePaidPayment(User user, Meeting meeting, int amount,
-		String paymentKey, String orderId) {
+		String paymentKey, String orderId, LocalDateTime paidAt) {
 		Payment payment = Payment.builder()
 			.userId(user.getId())
 			.meetingId(meeting.getId())
@@ -288,7 +281,7 @@ public class PaymentServiceImpl implements PaymentService {
 			.pgTransactionId(paymentKey)
 			.orderId(orderId)
 			.status(PaymentStatus.COMPLETED)
-			.paidAt(LocalDateTime.now())
+			.paidAt(paidAt) //토스 기준 승인 시간
 			.build();
 
 		Payment saved = paymentRepository.save(payment);
@@ -298,8 +291,7 @@ public class PaymentServiceImpl implements PaymentService {
 				saved.getId(),
 				user.getId(),
 				meeting.getId(),
-				amount,
-				saved.getPaidAt())
+				amount, paidAt)
 		);
 
 		log.info("Key-in 결제 완료 - paymentId: {}, paymentKey: {}", saved.getId(), paymentKey);

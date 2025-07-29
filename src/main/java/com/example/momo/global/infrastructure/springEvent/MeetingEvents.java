@@ -61,6 +61,18 @@ public class MeetingEvents {
 	}
 
 	/**
+	 * 모임을 신청할 때 발생하는 이벤트입니다.
+	 *
+	 * @param meetingId 모임 ID
+	 * @param userId 유저 ID
+	 */
+	public record Register(
+		Long meetingId,
+		Long userId
+	) implements MeetingEvent {
+	}
+
+	/**
 	 * 사용자가 모임에 참여했을 때 발생하는 이벤트입니다.
 	 *
 	 * @param meetingId 모임 ID
@@ -85,6 +97,34 @@ public class MeetingEvents {
 		Long meetingId,
 		Long hostUserId,
 		String participantNickname
+	) implements MeetingEvent {
+	}
+
+	/**
+	 * 사용자가 모임 참여를 실패했을 때 발생하는 이벤트입니다.
+	 *
+	 * @param meetingId 모임 ID
+	 * @param userId 유저 ID
+	 * @param paymentId 결제 ID
+	 */
+	public record ParticipationFailed(
+		Long meetingId,
+		Long userId,
+		Long paymentId
+	) implements MeetingEvent {
+	}
+
+	/**
+	 * 사용자가 모임 참여를 취소가 완료됐을 때 발생하는 이벤트입니다.
+	 *
+	 * @param meetingId 모임 ID
+	 * @param hostUserId 주최자 유저 ID
+	 * @param userId 취소한 유저 ID
+	 */
+	public record ParticipationCancelCompleted(
+		Long meetingId,
+		Long hostUserId,
+		Long userId
 	) implements MeetingEvent {
 	}
 }

@@ -72,6 +72,16 @@ dependencies {
 
     // Firebase
     implementation 'com.google.firebase:firebase-admin:9.5.0'
+
+    // OpenTelemetry
+    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.18.1")
+    }
+
 }
 
 flyway {

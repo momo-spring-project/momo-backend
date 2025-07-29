@@ -1,19 +1,22 @@
 package com.example.momo.domain.meeting.application;
 
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Component;
-
-import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.global.infrastructure.client.user.UserClient;
-
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
+import com.example.momo.global.utils.RetryUtil;
 import lombok.RequiredArgsConstructor;
-
-/**
- ********************
- *	보험용, 사용중 x  *
- ********************
- */
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Component
 @RequiredArgsConstructor
@@ -23,32 +26,42 @@ public class ParticipantPaymentListener {
 
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingReader meetingReader;
-	private final MeetingRepository meetingRepository;
+	private final MeetingService meetingService;
 	private final PaymentService paymentService;
 
-	// 클라이언트 이용한 동기처리로 진행 예정
-	// addParticipant는 MeetingServiceImpl에 있음
-	// 결제 성공 어떤 이벤트인지 확인해서 넣기
-	// @EventListener
-	// public void handlePaymentSuccessEvent() {
-	//
-	// 	Long meetingId = 1L; // event.meetingId (예상)
-	// 	Long userId = 1L; // event.userId (예상)
-	//
-	// 	Meeting meeting = meetingReader.getMeetingById(meetingId);
-	// 	UserClientResponseDto user = userClient.getUser(userId);
-	//
-	// 	// 참가자 추가 중 예외 발생 시 환불
-	// 	try {
-	// 		RetryUtil.retry(() -> addParticipant(meetingId, userId), 5);
-	// 		eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
-	// 	} catch (OptimisticLockingFailureException e) {
-	// 		paymentService.refundPayment(
-	// 			1L, // event.paymentId (예상)
-	// 			userId,
-	// 			new RefundRequest("Join Meeting Fail")
-	// 		);
-	// 		throw e;
-	// 	}
-	// }
+	@Async
+	@EventListener
+	public void handlePaymentSuccessEvent(PaymentCompletedEvent event) {
+
+		Long meetingId = event.getMeetingId();
+		Long userId = event.getUserId();
+
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		UserClientResponseDto user = userClient.getUser(userId);
+
+		// 참가자 추가 중 예외 발생 시 환불(가능하면 결제 취소) 또는 이벤트만 발행
+		try {
+			RetryUtil.retry(() -> meetingService.addParticipant(meetingId, userId), 5);
+			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
+		} catch (OptimisticLockingFailureException e) {
+			eventPublisher.publishEvent(new MeetingEvents.ParticipationFailed(
+				meetingId, userId, event.getPaymentId()
+			));
+			throw e;
+		}
+	}
+
+	// 비동기 참가 취소 환불
+	@Async
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handleMeetingCancelEvent(PaymentRefundedEvent event) {
+
+		Meeting meeting = meetingReader.getMeetingById(event.getMeetingId());
+
+		eventPublisher.publishEvent(new MeetingEvents.ParticipationCancelCompleted(
+			event.getMeetingId(),
+			meeting.getHostUserId(),
+			event.getUserId()
+		));
+	}
 }

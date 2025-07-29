@@ -4,6 +4,7 @@ import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 public class MeetingParticipantRepositoryImpl implements MeetingParticipantRepository {
 
 	private final MeetingParticipantJpaRepository meetingParticipantJpaRepository;
+	private final MeetingParticipantQueryRepository meetingParticipantQueryRepository;
 
 	@Override
 	public boolean existsByMeetingIdAndUserId(Long meetingId, Long userId) {
@@ -24,8 +26,8 @@ public class MeetingParticipantRepositoryImpl implements MeetingParticipantRepos
 	}
 
 	@Override
-	public List<Long> findParticipantsIdsByMeetingId(Long meetingId) {
-		return meetingParticipantJpaRepository.findParticipantsIdByMeetingId(meetingId);
+	public List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId) {
+		return meetingParticipantJpaRepository.findAllByMeetingId(meetingId);
 	}
 
 	@Override
@@ -36,5 +38,10 @@ public class MeetingParticipantRepositoryImpl implements MeetingParticipantRepos
 	@Override
 	public Optional<MeetingParticipant> findById(Long id) {
 		return meetingParticipantJpaRepository.findById(id);
+	}
+
+	@Override
+	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+		return meetingParticipantQueryRepository.countParticipants(userId, meetingId, attendance, createdAt);
 	}
 }
