@@ -20,6 +20,9 @@ public interface MeetingRepository {
 	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
 		Pageable pageable);
 
+	Page<MeetingDocument> getMeetingDocuments(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Integer categoryId, Pageable pageable);
+
 	List<Meeting> findMeetingsByUserId(Long userId);
 
 	boolean existsById(Long id);

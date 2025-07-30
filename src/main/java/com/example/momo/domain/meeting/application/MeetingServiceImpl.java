@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
@@ -130,6 +131,25 @@ public class MeetingServiceImpl implements MeetingService {
 			meetingPage.getTotalElements(),
 			meetingPage.getTotalPages(),
 			meetingPage.getNumber() + 1
+		);
+	}
+
+	@Override
+	public MeetingPagingResponseDto<MeetingDocument> getMeetingDocuments(String title, MeetingStatus status,
+		LocalDateTime meetingDate, Integer categoryId, int page, int size) {
+
+		Pageable pageable = PageRequest
+			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
+
+		Page<MeetingDocument> mt = meetingRepository.getMeetingDocuments(title, meetingDate, status, categoryId,
+			pageable);
+		List<MeetingDocument> response = mt.stream().toList();
+
+		return new MeetingPagingResponseDto<>(
+			response,
+			mt.getTotalElements(),
+			mt.getTotalPages(),
+			mt.getNumber() + 1
 		);
 	}
 

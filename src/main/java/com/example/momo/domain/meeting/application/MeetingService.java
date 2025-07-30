@@ -3,14 +3,16 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.domain.dto.response.*;
 
 public interface MeetingService {
 
@@ -25,6 +27,10 @@ public interface MeetingService {
 	MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
 	MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
+		LocalDateTime meetingDate, Integer categoryId,
+		int page, int size);
+
+	MeetingPagingResponseDto<MeetingDocument> getMeetingDocuments(String title, MeetingStatus status,
 		LocalDateTime meetingDate, Integer categoryId,
 		int page, int size);
 
@@ -44,7 +50,8 @@ public interface MeetingService {
 
 	ParticipantResponseDto updateParticipantStatus(Long id, Long meetingId, double lat, double lng);
 
-	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
+	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance,
+		LocalDateTime createdAt);
 
 	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
 

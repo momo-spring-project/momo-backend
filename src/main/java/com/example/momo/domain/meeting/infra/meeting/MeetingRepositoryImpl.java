@@ -9,13 +9,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.infra.participant.MeetingParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class MeetingRepositoryImpl implements MeetingRepository {
@@ -23,7 +26,8 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	private final MeetingJpaRepository meetingJpaRepository;
 	private final MeetingQueryRepository meetingQueryRepository;
 	private final MeetingParticipantRepository meetingParticipantRepository;
-
+	private final MeetingElasticCustomRepository meetingElasticCustomRepository;
+	private final MeetingElasticRepository meetingElasticRepository;
 	/* Meeting Repository */
 
 	@Override
@@ -33,7 +37,16 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 
 	@Override
 	public Meeting save(Meeting meeting) {
-		return meetingJpaRepository.save(meeting);
+
+		Meeting result = meetingJpaRepository.save(meeting);
+		
+		log.info("meeting save meeting result:{}", result.getCreatedAt());
+		log.info("meeting save meeting result:{}", result.getUpdatedAt());
+		log.info("meeting save meeting result:{}", result.getMeetingDate());
+		log.info("meeting save meeting result:{}", result.getMeetingEndDate());
+
+		meetingElasticRepository.save(MeetingDocument.from(result));
+		return result;
 	}
 
 	@Override
@@ -41,6 +54,14 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 		Pageable pageable) {
 
 		return meetingQueryRepository.findMeetings(title, meetingDate, status, categoryId, pageable);
+	}
+
+	@Override
+	public Page<MeetingDocument> getMeetingDocuments(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Integer categoryId, Pageable pageable) {
+
+		System.out.println("1");
+		return meetingElasticCustomRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
 	}
 
 	@Override

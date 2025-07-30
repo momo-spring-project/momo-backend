@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import com.example.momo.domain.meeting.domain.dto.response.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
@@ -21,11 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.meeting.application.MeetingService;
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingStatusUpdateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.global.common.dto.ApiResponse;
@@ -85,6 +87,24 @@ public class MeetingController {
 	) {
 
 		MeetingPagingResponseDto<MeetingResponseDto> response = meetingService.getMeetings(title, status, meetingDate,
+			categoryId,
+			page,
+			size);
+		return ResponseEntity.ok(ApiResponse.success("모임 목록 조회가 성공적으로 완료되었습니다.", response));
+	}
+
+	@GetMapping("/test")
+	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingDocument>>> getMeetingDocuments(
+		@RequestParam(defaultValue = "") String title,
+		@RequestParam(required = false) MeetingStatus status,
+		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime meetingDate,
+		@RequestParam(required = false) Integer categoryId,
+		@RequestParam(defaultValue = "1") @Min(1) int page,
+		@RequestParam(defaultValue = "10") @Min(5) int size
+	) {
+
+		MeetingPagingResponseDto<MeetingDocument> response = meetingService.getMeetingDocuments(title, status,
+			meetingDate,
 			categoryId,
 			page,
 			size);
@@ -173,7 +193,8 @@ public class MeetingController {
 		@RequestParam(required = false) Boolean attendance,
 		@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd-HH-mm-ss") LocalDateTime createdAt
 	) {
-		ParticipantCountResponseDto responseData = meetingService.getParticipantCount(userId, meetingId, attendance, createdAt);
+		ParticipantCountResponseDto responseData = meetingService.getParticipantCount(userId, meetingId, attendance,
+			createdAt);
 		ApiResponse<ParticipantCountResponseDto> response = ApiResponse.success("참가자 집계가 처리되었습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
