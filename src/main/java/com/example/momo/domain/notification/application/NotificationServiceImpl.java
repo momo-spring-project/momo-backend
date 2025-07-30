@@ -8,11 +8,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
+import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.domain.NotificationRepository;
-import com.example.momo.domain.notification.domain.dto.NotificationDto;
-import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
 import com.example.momo.global.socket.application.WebSocketNotificationService;
-import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketMessageDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,16 +30,19 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void createNotification(NotificationDto dto) {
+	public Notification createNotification(NotificationRequestDto dto) {
 		try {
-			notificationRepository.save(dto.toEntity());
+			Notification notification = notificationRepository.save(dto.toEntity());
 			log.debug("알림 저장 완료: userId={}, meetingId={}, type={}, content={}",
 				dto.getUserId(), dto.getTargetId(), dto.getType(), dto.getContent());
+
+			return notification;
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
 			log.warn("알림 저장 실패: {}", e.getMessage(), e);
 		}
+		return null;
 	}
 
 	@Override
@@ -53,10 +57,10 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
-	public void sendNotification(NotificationDto dto) {
+	public void sendNotification(NotificationRequestDto dto) {
 
 		webSocketNotificationService.send(
-			WebSocketNotificationDto.builder()
+			WebSocketMessageDto.builder()
 				.userId(dto.getUserId())
 				.targetId(dto.getTargetId())
 				.type(dto.getType())

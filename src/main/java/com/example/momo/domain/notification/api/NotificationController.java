@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.notification.application.NotificationService;
-import com.example.momo.domain.notification.domain.dto.NotificationDto;
-import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
+import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -35,14 +35,14 @@ public class NotificationController {
 	//외부 저장용 메서드
 	@PostMapping("/notifications")
 	public ResponseEntity<ApiResponse<Void>> createNotification(
-		@RequestBody NotificationDto dto) {
+		@RequestBody NotificationRequestDto dto) {
 		notificationService.createNotification(dto);
 		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", null));
 	}
 
 	//외부 전송용 메서드
 	@PostMapping("/notifications/send")
-	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationDto dto) {
+	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationRequestDto dto) {
 		notificationService.sendNotification(dto);
 		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + dto.getContent(), null));
 	}

@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.domain.dto;
+package com.example.momo.domain.notification.application.dto;
 
 import java.time.LocalDateTime;
 
@@ -14,6 +14,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public class NotificationResponseDto {
 	private Long id;
+	private Long userId;
 	private Long targetId;
 	private NotificationType type;
 	private String content;
@@ -22,6 +23,7 @@ public class NotificationResponseDto {
 	public static NotificationResponseDto from(Notification notification) {
 		return NotificationResponseDto.builder()
 			.id(notification.getId())
+			.userId(notification.getUserId())
 			.targetId(notification.getTargetId())
 			.type(notification.getType())
 			.content(notification.getContent())

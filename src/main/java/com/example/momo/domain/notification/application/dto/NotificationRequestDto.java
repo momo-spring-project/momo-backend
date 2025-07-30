@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.domain.dto;
+package com.example.momo.domain.notification.application.dto;
 
 import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.enums.NotificationType;
@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class NotificationDto {
+public class NotificationRequestDto {
 	private Long userId;
 	private Long targetId;
 	private NotificationType type;

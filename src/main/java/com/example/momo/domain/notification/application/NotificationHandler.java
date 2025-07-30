@@ -1,14 +1,14 @@
 package com.example.momo.domain.notification.application;
 
-import java.time.LocalDateTime;
-
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.notification.domain.dto.NotificationDto;
+import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
+import com.example.momo.domain.notification.application.fcm.FcmService;
+import com.example.momo.domain.notification.application.sse.SseService;
+import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
+import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.enums.NotificationType;
 import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
-import com.example.momo.global.socket.application.WebSocketNotificationService;
-import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationHandler {
 
 	private final NotificationService notificationService;
-	private final WebSocketNotificationService webSocketNotificationService;
+	private final SseService sseService;
+	private final FcmService fcmService;
 
 	/**
 	 * 모임 알림 이벤트를 처리합니다.
@@ -45,24 +46,27 @@ public class NotificationHandler {
 		String content = event.content();
 
 		for (Long userId : event.userIdList()) {
-			//DB 저장
-			notificationService.createNotification(NotificationDto.builder()
+			//알림 이벤트 DB 저장
+			Notification notification = notificationService.createNotification(NotificationRequestDto.builder()
 				.userId(userId)
 				.targetId(targetId)
 				.type(type)
 				.content(content)
 				.build());
 
-			//사용자에게 전송
-			webSocketNotificationService.send(
-				WebSocketNotificationDto.builder()
-					.userId(userId)
-					.targetId(targetId)
-					.type(type)
-					.content(content)
-					.createdAt(LocalDateTime.now())
-					.build()
-			);
+			if (notification == null) {
+				log.warn("알림 저장 실패: userId={}, content={}", userId, content);
+				//todo : 저장 실패 알림 메세지큐 저장
+				continue;
+			}
+
+			//SSE 전송 시도
+			boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notification));
+
+			//SSE 전송 실패 시 FCM 전송 시도
+			if (!sseSuccess) {
+				fcmService.processFcmIfTokenExists(notification);
+			}
 		}
 
 	}
