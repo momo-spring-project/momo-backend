@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.domain.dto.AuthUser;
 import com.example.momo.domain.notification.application.fcm.FcmService;
+import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.application.fcm.dto.FcmTokenRequestDto;
 import com.example.momo.global.common.dto.ApiResponse;
 
@@ -26,5 +27,10 @@ public class FcmController {
 		@AuthenticationPrincipal AuthUser authUser) {
 		fcmService.createToken(authUser.getId(), dto);
 		return ResponseEntity.ok(ApiResponse.success("저장완료", null));
+	}
+
+	@PostMapping("/fcm/send")
+	public void send(@RequestBody FcmMessageDto dto) {
+		fcmService.processFcmIfTokenExists(dto);
 	}
 }
