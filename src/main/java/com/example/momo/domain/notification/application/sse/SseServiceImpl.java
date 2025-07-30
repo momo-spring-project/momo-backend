@@ -1,17 +1,15 @@
-package com.example.momo.global.sse.application;
+package com.example.momo.domain.notification.application.sse;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
+import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
 
 import lombok.extern.slf4j.Slf4j;
 
-//SSE 기본구조. 현재는 사용 X. 추후 사용 고려
 @Slf4j
 @Service
 public class SseServiceImpl implements SseService {
@@ -34,21 +32,26 @@ public class SseServiceImpl implements SseService {
 	}
 
 	@Override
-	public void send(WebSocketNotificationDto message) {
-		SseEmitter emitter = emitters.get(message.getUserId());
+	public boolean sendIfConnected(SseMessageDto responseDto) {
+		SseEmitter emitter = emitters.get(responseDto.getUserId());
 		if (emitter != null) {
 			try {
 
 				emitter.send(SseEmitter.event()
 					.name("notification")
-					.data(message));
-				log.debug("SSE 메세지 전송 성공: userId={}, content={}", message.getUserId(), message.getContent());
-			} catch (IOException e) {
+					.data(responseDto));
+				log.debug("SSE 메세지 전송 성공: userId={}, content={}", responseDto.getUserId(), responseDto.getContent());
+				return true;
+			} catch (Exception e) {
 				// 전송 실패 시 emitter 제거
-				log.warn("SSE 메세지 전송 실패: userId={}, content={}, error={}", message.getUserId(), message.getContent(),
+				log.warn("SSE 메세지 전송 실패: userId={}, content={}, error={}", responseDto.getUserId(),
+					responseDto.getContent(),
 					e.toString());
-				emitters.remove(message.getUserId());
+				emitters.remove(responseDto.getUserId());
+				return false;
 			}
 		}
+		log.warn("SSE 메세지 연결 실패: userId={}, content={}", responseDto.getUserId(), responseDto.getContent());
+		return false;
 	}
 }
