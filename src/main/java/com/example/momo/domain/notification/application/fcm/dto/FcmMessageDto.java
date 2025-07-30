@@ -1,4 +1,4 @@
-package com.example.momo.global.firebase.application.dto;
+package com.example.momo.domain.notification.application.fcm.dto;
 
 import com.example.momo.domain.notification.enums.NotificationType;
 
@@ -9,9 +9,8 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class FirebaseResponseDto {
+public class FcmMessageDto {
 	private String token;
-	private Long targetId;
 	private NotificationType type;
 	private String content;
 }
