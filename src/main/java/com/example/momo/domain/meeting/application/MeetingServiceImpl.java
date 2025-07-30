@@ -222,7 +222,8 @@ public class MeetingServiceImpl implements MeetingService {
 
 		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
 
-		eventPublisher.publishEvent(new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), user.getNickname()));
+		eventPublisher.publishEvent(
+			new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), userId, user.getNickname()));
 
 		return responseDto;
 	}
