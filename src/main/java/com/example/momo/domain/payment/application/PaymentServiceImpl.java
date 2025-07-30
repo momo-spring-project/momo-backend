@@ -1,6 +1,7 @@
 package com.example.momo.domain.payment.application;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -92,7 +93,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 		String paymentKey = (String)keyInResult.get("paymentKey");
 		String approvedAtStr = (String)keyInResult.get("approvedAt");
-		LocalDateTime approvedAt = LocalDateTime.parse(approvedAtStr);
+		LocalDateTime approvedAt = OffsetDateTime.parse(approvedAtStr).toLocalDateTime();
 
 		// 7. 결제 정보 저장
 		return savePaidPayment(user, meeting, amount, paymentKey, orderId, approvedAt);
