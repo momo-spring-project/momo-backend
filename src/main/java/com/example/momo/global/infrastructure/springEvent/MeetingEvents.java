@@ -96,6 +96,7 @@ public class MeetingEvents {
 	public record Cancel(
 		Long meetingId,
 		Long hostUserId,
+		Long userId,
 		String participantNickname
 	) implements MeetingEvent {
 	}
