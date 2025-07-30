@@ -11,7 +11,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
-import com.example.momo.global.socket.application.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketMessageDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -87,7 +87,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 	 *
 	 * @param message 전송할 알림 메시지 (userId, content, timestamp 포함)
 	 */
-	public void sendToUser(WebSocketNotificationDto message) {
+	public void sendToUser(WebSocketMessageDto message) {
 		WebSocketSession session = userSessions.get(message.getUserId());
 		if (session != null && session.isOpen()) {
 			try {

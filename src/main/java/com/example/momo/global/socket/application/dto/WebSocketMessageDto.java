@@ -12,7 +12,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class WebSocketNotificationDto {
+public class WebSocketMessageDto {
 	private Long userId;
 	private Long targetId;
 	private NotificationType type;
