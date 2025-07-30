@@ -1,0 +1,62 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  hostmetrics:
+    collection_interval: 10s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      filesystem:
+        exclude_devices:
+          match_type: regexp
+          devices:
+            - '^/dev/loop.*'
+            - '^tmpfs$'
+            - '^overlay$'
+            - '^docker-desktop$'
+        exclude_mount_points:
+          match_type: regexp
+          mount_points:
+            - '^/mnt/wsl/.*'
+            - '^/mnt/wsl/docker-desktop-bind-mounts/.*'
+            - '^/mnt/wslg/.*'
+            - '^/var/lib/docker/.*'
+            - '^/run/docker/.*'
+      network:
+
+exporters:
+  otlp:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+  logging:
+    verbosity: detailed
+
+processors:
+  batch:
+    send_batch_size: 100
+    timeout: 10s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp, logging]
+    metrics:
+      receivers: [otlp, hostmetrics]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging]
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
+      level: detailed

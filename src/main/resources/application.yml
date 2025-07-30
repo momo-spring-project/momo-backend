@@ -49,9 +49,32 @@ management:
     enabled: true
     sampling:
       probability: 1.0
-  otlp:
-    metrics:
-      export:
-        enabled: false
+  metrics:
+    export:
+      otlp:
+        enabled: true
+        step: 5s
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    prometheus:
+      enabled: false
     logging:
       enabled: false
+
+otel:
+  service:
+    name: ${spring.application.name}
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+      protocol: grpc
+  traces:
+    exporter: otlp
+    sampler: always_on
+
+logging:
+  level:
+    io.opentelemetry.exporter: DEBUG
