@@ -17,6 +17,7 @@ import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.meeting.RegisterEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ public class PaymentEventListener {
 	@Async
 	@EventListener
 	@Transactional
-	public void handleMeetingRegisterEvent(MeetingEvents.Register event) {
+	public void handleMeetingRegisterEvent(RegisterEvents event) {
 		log.info("모임 등록 이벤트 수신 - meetingId: {}, userId: {}",
 			event.meetingId(), event.userId());
 
