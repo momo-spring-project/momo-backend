@@ -39,5 +39,5 @@ public class FcmToken extends BaseCreateEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "platform_type", nullable = false)
-	private PlatformType platformType; // ANDROID, IOS, WEB
+	private PlatformType platformType;
 }

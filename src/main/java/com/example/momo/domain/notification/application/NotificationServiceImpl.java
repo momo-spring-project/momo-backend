@@ -1,6 +1,5 @@
 package com.example.momo.domain.notification.application;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -12,8 +11,6 @@ import com.example.momo.domain.notification.application.dto.NotificationRequestD
 import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.domain.NotificationRepository;
-import com.example.momo.global.socket.application.WebSocketNotificationService;
-import com.example.momo.global.socket.application.dto.WebSocketMessageDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationServiceImpl implements NotificationService {
 
 	private final NotificationRepository notificationRepository;
-
-	private final WebSocketNotificationService webSocketNotificationService;
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -54,19 +49,5 @@ public class NotificationServiceImpl implements NotificationService {
 		log.debug("알림 목록 조회 완료: userId={}, count={}", userId, notifications.size());
 
 		return notifications;
-	}
-
-	@Override
-	public void sendNotification(NotificationRequestDto dto) {
-
-		webSocketNotificationService.send(
-			WebSocketMessageDto.builder()
-				.userId(dto.getUserId())
-				.targetId(dto.getTargetId())
-				.type(dto.getType())
-				.content(dto.getContent())
-				.createdAt(LocalDateTime.now())
-				.build()
-		);
 	}
 }

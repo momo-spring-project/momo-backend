@@ -10,8 +10,6 @@ import com.example.momo.domain.notification.application.fcm.dto.FcmTokenRequestD
 import com.example.momo.domain.notification.application.fcm.sender.FcmSender;
 import com.example.momo.domain.notification.domain.FcmToken;
 import com.example.momo.domain.notification.domain.FcmTokenRepository;
-import com.example.momo.domain.notification.domain.Notification;
-import com.example.momo.domain.notification.enums.NotificationType;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 
@@ -27,16 +25,16 @@ public class FcmServiceImpl implements FcmService {
 
 	private final List<FcmSender> fcmSenders;
 
-	@SuppressWarnings("checkstyle:NeedBraces")
 	@Override
-	public void processFcmIfTokenExists(Notification notification) {
-		//get 함수 중복 방지
-		NotificationType notificationType = notification.getType();
-		String content = notification.getContent();
+	public void processFcmIfTokenExists(FcmMessageDto messageDto) {
 
-		List<FcmToken> tokens = fcmTokenRepository.findValidTokens(notification.getUserId());
+		//userId 로 토큰 리스트 생성 -> 유저가 가지고 있는 모든 토큰에 전송
+		List<FcmToken> tokens = fcmTokenRepository.findValidTokens(messageDto.getUserId());
+
+		//전송 실패 리스트 생성 -> 실패한 토큰 삭제 예정
 		List<FcmToken> failedList = new ArrayList<>();
 
+		//모두 전송 실패시 메세지큐 생성 예정
 		boolean successAtLeastOnce = false;
 
 		//token 이 없을경우 메세지큐 저장
@@ -45,18 +43,24 @@ public class FcmServiceImpl implements FcmService {
 			return;
 		}
 
-		for (FcmToken token : tokens) {
+		for (FcmToken fcmToken : tokens) {
 
-			//플랫폼 분리
-			FcmSender fcmSender = getOrSkipSender(token, failedList);
+			//플랫폼 분리(Android, IOS, WEB...)
+			FcmSender fcmSender = getOrSkipSender(fcmToken, failedList);
 			if (fcmSender == null)
 				continue;
 
-			//메세지 플랫폼 서비스로 전송
-			boolean success = sendMessage(fcmSender, token, notificationType, content, failedList);
-			if (success)
-				successAtLeastOnce = true;
+			messageDto.updateToken(fcmToken.getToken());
 
+			//메세지 플랫폼 서비스로 전송 후 성공/실패 반환
+			boolean success = sendMessage(fcmSender, messageDto);
+
+			//하나라도 성공 시 메세지큐 저장 X
+			if (success) {
+				successAtLeastOnce = true;
+			} else {
+				failedList.add(fcmToken);
+			}
 		}
 
 		// 실패 토큰 DB 삭제
@@ -68,35 +72,28 @@ public class FcmServiceImpl implements FcmService {
 		}
 	}
 
-	private boolean sendMessage(FcmSender sender, FcmToken token,
-		NotificationType type, String content,
-		List<FcmToken> failedList) {
+	private boolean sendMessage(FcmSender sender, FcmMessageDto messageDto) {
 		try {
-			sender.send(FcmMessageDto.builder()
-				.token(token.getToken())
-				.type(type)
-				.content(content)
-				.build());
-
+			//플랫폼 Sender 에 send 메서드로 전송
+			sender.send(messageDto);
 			return true;
 
 		} catch (FirebaseMessagingException e) {
 			MessagingErrorCode code = e.getMessagingErrorCode();
 
 			if (code == MessagingErrorCode.INVALID_ARGUMENT || code == MessagingErrorCode.UNREGISTERED) {
-				log.info("유효하지 않은 토큰: token={}, code={}", token.getToken(), code);
+				log.info("유효하지 않은 토큰: token={}, code={}", messageDto.getToken(), code);
 			} else {
-				log.error("FCM 전송 실패 (Firebase 예외): token={}, code={}", token.getToken(), code, e);
+				log.error("FCM 전송 실패 (Firebase 예외): token={}, code={}", messageDto.getToken(), code, e);
 			}
 
 		} catch (Exception e) {
-			log.error("FCM 전송 실패 (기타 예외): token={}, error={}", token.getToken(), e.getMessage(), e);
+			log.error("FCM 전송 실패 (기타 예외): token={}, error={}", messageDto.getToken(), e.getMessage(), e);
 		}
-
-		failedList.add(token);
 		return false;
 	}
 
+	//지원하는 플랫폼 서비스 생성
 	private FcmSender getOrSkipSender(FcmToken token, List<FcmToken> failedList) {
 		return fcmSenders.stream()
 			.filter(sender -> sender.handles().contains(token.getPlatformType()))
@@ -108,6 +105,7 @@ public class FcmServiceImpl implements FcmService {
 			});
 	}
 
+	//전송 실패 토큰 리스트 삭제
 	private void deleteFailedTokens(List<FcmToken> failedList) {
 		if (!failedList.isEmpty()) {
 			fcmTokenRepository.deleteAll(failedList);
@@ -115,6 +113,7 @@ public class FcmServiceImpl implements FcmService {
 		}
 	}
 
+	//전달 받은 토큰을 userId 와 DB 저장
 	@Override
 	public void createToken(Long userId, FcmTokenRequestDto requestDto) {
 		FcmToken token = requestDto.toEntity(userId);

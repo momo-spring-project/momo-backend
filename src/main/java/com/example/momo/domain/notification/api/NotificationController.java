@@ -39,11 +39,4 @@ public class NotificationController {
 		notificationService.createNotification(dto);
 		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", null));
 	}
-
-	//외부 전송용 메서드
-	@PostMapping("/notifications/send")
-	public ResponseEntity<ApiResponse<Void>> sendToUser(@RequestBody NotificationRequestDto dto) {
-		notificationService.sendNotification(dto);
-		return ResponseEntity.ok(ApiResponse.success("전송됨 : " + dto.getContent(), null));
-	}
 }

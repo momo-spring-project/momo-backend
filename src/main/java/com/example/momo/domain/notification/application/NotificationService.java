@@ -21,11 +21,4 @@ public interface NotificationService {
 	 * @return 해당 사용자의 알림 목록
 	 */
 	List<NotificationResponseDto> getNotifications(Long userId);
-
-	/**
-	 * 사용자에게 실시간 알림 메시지를 전송하는 로직을 불러옵니다.
-	 *
-	 * @param command 전송할 알림 정보를 담은 객체
-	 */
-	void sendNotification(NotificationRequestDto command);
 }

@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
 import com.example.momo.domain.notification.application.fcm.FcmService;
+import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.application.sse.SseService;
 import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
 import com.example.momo.domain.notification.domain.Notification;
@@ -15,9 +16,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 알림 처리 흐름을 담당하는 컴포넌트입니다.
- * 이 클래스는 도메인 이벤트 발생 이후의 후속 처리를 담당하며,
- * 비즈니스 로직과 전송 로직 사이의 흐름을 제어하는 역할을 합니다.
+ * 알림 저장 및 전송 로직을 담당하는 컴포넌트입니다.
+ * <p>
+ * 도메인 이벤트 발생 이후, 알림 데이터를 DB에 저장하고 사용자에게 SSE 또는 FCM을 통해 전송합니다.
+ * <p>
+ * 주요 역할:
+ * <ul>
+ *     <li>이벤트 타입 → NotificationType 매핑</li>
+ *     <li>알림 생성 및 저장</li>
+ *     <li>SSE 실시간 전송 시도</li>
+ *     <li>SSE 실패 시 FCM 푸시 전송</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -29,11 +38,16 @@ public class NotificationHandler {
 	private final FcmService fcmService;
 
 	/**
-	 * 모임 알림 이벤트를 처리합니다.
-	 * DB에 알림 정보를 저장하고, 사용자에게 실시간으로 알림을 전송합니다.
-	 * 이 메서드는 하나의 트랜잭션 내에서 동작하며, 저장 및 전송이 함께 처리됩니다.
+	 * 도메인 이벤트를 기반으로 알림을 저장하고 전송합니다.
+	 * <p>
+	 * - 이벤트 타입을 파악하여 알림 유형으로 변환하고<br>
+	 * - 각 사용자에게 알림을 생성한 후<br>
+	 * - 우선적으로 SSE 로 실시간 전송을 시도하며<br>
+	 * - SSE 연결이 없을 경우 FCM 푸시로 대체 전송합니다.
+	 * <p>
+	 * 해당 작업은 하나의 트랜잭션 내에서 수행됩니다.
 	 *
-	 * @param event 처리할 알림 이벤트 정보
+	 * @param event 알림을 유발한 이벤트 정보
 	 */
 	@Transactional
 	public void processNotification(MessageEvents event) {
@@ -60,17 +74,18 @@ public class NotificationHandler {
 				continue;
 			}
 
-			//SSE 전송 시도
+			//SSE 전송 시도 후 결과 반환
 			boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notification));
 
 			//SSE 전송 실패 시 FCM 전송 시도
 			if (!sseSuccess) {
-				fcmService.processFcmIfTokenExists(notification);
+				fcmService.processFcmIfTokenExists(FcmMessageDto.from(notification));
 			}
 		}
 
 	}
 
+	//수신한 문자열을 NotificationType으로 변환합니다.
 	private NotificationType resolveNotificationType(String typeName) {
 		try {
 			return NotificationType.valueOf(typeName);
