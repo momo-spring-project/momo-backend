@@ -11,10 +11,10 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 
 @Service
-public class AndroidWebFcmSender implements FcmSender {
+public class WebFcmSender implements FcmSender {
 	@Override
 	public Set<PlatformType> handles() {
-		return Set.of(PlatformType.ANDROID, PlatformType.WEB);
+		return Set.of(PlatformType.WEB);
 	}
 
 	@Override

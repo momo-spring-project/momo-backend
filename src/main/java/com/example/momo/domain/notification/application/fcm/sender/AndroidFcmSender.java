@@ -6,17 +6,17 @@ import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.enums.PlatformType;
-import com.google.firebase.messaging.ApnsConfig;
-import com.google.firebase.messaging.Aps;
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 
 @Service
-public class IosFcmSender implements FcmSender {
+public class AndroidFcmSender implements FcmSender {
 	@Override
 	public Set<PlatformType> handles() {
-		return Set.of(PlatformType.IOS);
+		return Set.of(PlatformType.ANDROID);
 	}
 
 	@Override
@@ -27,10 +27,10 @@ public class IosFcmSender implements FcmSender {
 				.setTitle(dto.getType().getLabel())
 				.setBody(dto.getContent())
 				.build())
-			.setApnsConfig(ApnsConfig.builder()
-				.setAps(Aps.builder()
-					.setSound("default") // iOS 사운드 설정
-					.setBadge(1)         // 뱃지 1 증가
+			.setAndroidConfig(AndroidConfig.builder()
+				.setPriority(AndroidConfig.Priority.HIGH)
+				.setNotification(AndroidNotification.builder()
+					.setSound("default") // 사운드 설정
 					.build())
 				.build())
 			.build();
