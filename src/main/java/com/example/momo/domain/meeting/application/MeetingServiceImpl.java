@@ -3,13 +3,6 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.dto.response.*;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.utils.HaversineUtils;
-import com.example.momo.global.utils.RetryUtil;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,15 +10,29 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
+import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.infrastructure.client.category.CategoryClient;
 import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
+import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.meeting.RegisterEvents;
+import com.example.momo.global.utils.HaversineUtils;
+import com.example.momo.global.utils.RetryUtil;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -176,7 +183,7 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
+		eventPublisher.publishEvent(new RegisterEvents(meetingId, userId));
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
 		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
@@ -193,7 +200,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<ParticipantResponseDto> getParticipants(Long meetingId) {
-		if(!meetingRepository.existsById(meetingId)) {
+		if (!meetingRepository.existsById(meetingId)) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
 		}
 
@@ -246,9 +253,10 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional(readOnly = true)
-	public ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+	public ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance,
+		LocalDateTime createdAt) {
 
-		if(createdAt == null) {
+		if (createdAt == null) {
 			createdAt = LocalDateTime.now().minusYears(1);
 		}
 

@@ -1,15 +1,5 @@
 package com.example.momo.domain.meeting.application;
 
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
-import com.example.momo.global.utils.RetryUtil;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -17,6 +7,19 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+
+import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
+import com.example.momo.global.infrastructure.springEvent.meeting.ParticipationCancelCompletedEvents;
+import com.example.momo.global.infrastructure.springEvent.meeting.ParticipationFailedEvents;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
+import com.example.momo.global.utils.RetryUtil;
+
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -44,7 +47,7 @@ public class ParticipantPaymentListener {
 			RetryUtil.retry(() -> meetingService.addParticipant(meetingId, userId), 5);
 			eventPublisher.publishEvent(new MeetingEvents.Join(meetingId, meeting.getHostUserId(), user.getNickname()));
 		} catch (OptimisticLockingFailureException e) {
-			eventPublisher.publishEvent(new MeetingEvents.ParticipationFailed(
+			eventPublisher.publishEvent(new ParticipationFailedEvents(
 				meetingId, userId, event.getPaymentId()
 			));
 			throw e;
@@ -58,7 +61,7 @@ public class ParticipantPaymentListener {
 
 		Meeting meeting = meetingReader.getMeetingById(event.getMeetingId());
 
-		eventPublisher.publishEvent(new MeetingEvents.ParticipationCancelCompleted(
+		eventPublisher.publishEvent(new ParticipationCancelCompletedEvents(
 			event.getMeetingId(),
 			meeting.getHostUserId(),
 			event.getUserId()
