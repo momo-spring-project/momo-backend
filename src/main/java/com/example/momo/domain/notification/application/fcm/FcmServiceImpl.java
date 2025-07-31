@@ -45,7 +45,6 @@ public class FcmServiceImpl implements FcmService {
 	}
 
 	@Override
-	@Transactional(readOnly = true)
 	public void processFcmIfTokenExists(FcmMessageDto messageDto) {
 
 		//userId 로 토큰 리스트 생성 -> 유저가 가지고 있는 모든 토큰에 전송
