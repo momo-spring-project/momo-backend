@@ -9,6 +9,15 @@ import com.example.momo.domain.notification.application.fcm.dto.FcmTokenRequestD
  * 유저의 FCM 토큰 저장 및 알림 전송을 처리합니다.
  */
 public interface FcmService {
+
+	/**
+	 * 전달받은 FCM 토큰을 userId와 함께 저장합니다.
+	 *
+	 * @param userId     토큰을 저장할 사용자 ID
+	 * @param dto        FCM 토큰 요청 DTO
+	 */
+	void createToken(Long userId, FcmTokenRequestDto dto);
+
 	/**
 	 * 해당 유저에게 저장된 FCM 토큰이 존재할 경우, 알림을 각 디바이스에 전송합니다.
 	 * <ul>
@@ -20,13 +29,5 @@ public interface FcmService {
 	 * @param messageDto 전송할 알림 엔티티 객체
 	 */
 	void processFcmIfTokenExists(FcmMessageDto messageDto);
-
-	/**
-	 * 전달받은 FCM 토큰을 userId와 함께 저장합니다.
-	 *
-	 * @param userId     토큰을 저장할 사용자 ID
-	 * @param dto        FCM 토큰 요청 DTO
-	 */
-	void createToken(Long userId, FcmTokenRequestDto dto);
 
 }

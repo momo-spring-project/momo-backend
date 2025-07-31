@@ -1,7 +1,5 @@
 package com.example.momo.domain.notification.application.fcm.sender;
 
-import java.util.Set;
-
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.enums.PlatformType;
 
@@ -18,7 +16,7 @@ public interface FcmSender {
 	 *
 	 * @return 지원하는 플랫폼 타입 집합
 	 */
-	Set<PlatformType> handles();
+	PlatformType handles();
 
 	/**
 	 * 주어진 {@link FcmMessageDto}를 이용하여 FCM 메시지를 전송합니다.

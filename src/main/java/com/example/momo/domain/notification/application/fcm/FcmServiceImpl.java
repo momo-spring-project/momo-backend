@@ -25,7 +25,13 @@ public class FcmServiceImpl implements FcmService {
 
 	private final List<FcmSender> fcmSenders;
 
-	@SuppressWarnings("checkstyle:NeedBraces")
+	//전달 받은 토큰을 userId 와 DB 저장
+	@Override
+	public void createToken(Long userId, FcmTokenRequestDto requestDto) {
+		FcmToken token = requestDto.toEntity(userId);
+		fcmTokenRepository.save(token);
+	}
+
 	@Override
 	public void processFcmIfTokenExists(FcmMessageDto messageDto) {
 
@@ -99,7 +105,7 @@ public class FcmServiceImpl implements FcmService {
 	//지원하는 플랫폼 서비스 생성
 	private FcmSender getOrSkipSender(FcmToken token, List<FcmToken> failedList) {
 		return fcmSenders.stream()
-			.filter(sender -> sender.handles().contains(token.getPlatformType()))
+			.filter(sender -> sender.handles() == token.getPlatformType())
 			.findFirst()
 			.orElseGet(() -> {
 				log.warn("지원하지 않는 플랫폼: {}, token={}", token.getPlatformType(), token.getToken());
@@ -116,10 +122,4 @@ public class FcmServiceImpl implements FcmService {
 		}
 	}
 
-	//전달 받은 토큰을 userId 와 DB 저장
-	@Override
-	public void createToken(Long userId, FcmTokenRequestDto requestDto) {
-		FcmToken token = requestDto.toEntity(userId);
-		fcmTokenRepository.save(token);
-	}
 }

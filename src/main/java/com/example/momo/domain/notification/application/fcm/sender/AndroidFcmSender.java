@@ -1,7 +1,5 @@
 package com.example.momo.domain.notification.application.fcm.sender;
 
-import java.util.Set;
-
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
@@ -15,8 +13,8 @@ import com.google.firebase.messaging.Notification;
 @Service
 public class AndroidFcmSender implements FcmSender {
 	@Override
-	public Set<PlatformType> handles() {
-		return Set.of(PlatformType.ANDROID);
+	public PlatformType handles() {
+		return PlatformType.ANDROID;
 	}
 
 	@Override
