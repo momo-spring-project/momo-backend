@@ -72,6 +72,13 @@ dependencies {
 
     // OpenTelemetry
     implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+
+    // RabbitMQ 지원 (spring-amqp + spring-rabbit)
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // JSON 직렬화/역직렬화용 Jackson
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
 }
 
 dependencyManagement {
