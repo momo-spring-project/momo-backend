@@ -348,16 +348,30 @@ public class UserServiceImpl implements UserService {
 		// 참가자 ID 목록만 조회 (현재 Meeting API가 제공하는 방식)
 		List<Long> participantIds = meetingClient.getParticipantIds(meetingId);
 
+		// 디버그 로그 추가
+		log.info("=== 모임 참가자 검증 시작 ===");
+		log.info("meetingId: {}", meetingId);
+		log.info("reviewerId: {}", reviewerId);
+		log.info("targetUserId: {}", targetUserId);
+		log.info("participantIds from API: {}", participantIds);
+
 		if (participantIds == null || participantIds.isEmpty()) {
+			log.error("참가자 목록이 비어있음!");
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
 
 		boolean reviewerParticipated = participantIds.contains(reviewerId);
 		boolean targetParticipated = participantIds.contains(targetUserId);
 
+		log.info("reviewerParticipated: {}", reviewerParticipated);
+		log.info("targetParticipated: {}", targetParticipated);
+
 		if (!reviewerParticipated || !targetParticipated) {
+			log.error("참가 검증 실패!");
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
+
+		log.info("=== 모임 참가자 검증 완료 ===");
 	}
 
 	@Override
