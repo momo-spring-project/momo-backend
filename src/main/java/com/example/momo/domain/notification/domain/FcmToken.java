@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "fcm_token", uniqueConstraints = {
-	@UniqueConstraint(name = "uq_user_token", columnNames = {"user_id", "token"})
+	@UniqueConstraint(name = "uq_user_token", columnNames = {"user_id", "device_id"})
 })
 public class FcmToken extends BaseCreateEntity {
 
@@ -37,7 +37,14 @@ public class FcmToken extends BaseCreateEntity {
 	@Column(nullable = false)
 	private String token;
 
+	@Column(name = "device_id", nullable = false)
+	private String deviceId;
+
 	@Enumerated(EnumType.STRING)
 	@Column(name = "platform_type", nullable = false)
 	private PlatformType platformType;
+
+	public void updateToken(String newToken) {
+		this.token = newToken;
+	}
 }

@@ -2,11 +2,13 @@ package com.example.momo.domain.notification.application.fcm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.notification.application.fcm.dto.FcmCreateRequestDto;
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
-import com.example.momo.domain.notification.application.fcm.dto.FcmTokenRequestDto;
 import com.example.momo.domain.notification.application.fcm.sender.FcmSender;
 import com.example.momo.domain.notification.domain.FcmToken;
 import com.example.momo.domain.notification.domain.FcmTokenRepository;
@@ -19,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class FcmServiceImpl implements FcmService {
 
 	private final FcmTokenRepository fcmTokenRepository;
@@ -27,12 +30,22 @@ public class FcmServiceImpl implements FcmService {
 
 	//전달 받은 토큰을 userId 와 DB 저장
 	@Override
-	public void createToken(Long userId, FcmTokenRequestDto requestDto) {
-		FcmToken token = requestDto.toEntity(userId);
-		fcmTokenRepository.save(token);
+	public void createToken(Long userId, FcmCreateRequestDto requestDto) {
+
+		Optional<FcmToken> existingToken = fcmTokenRepository.findByUserIdAndDeviceId(userId, requestDto.deviceId());
+		if (existingToken.isPresent()) {
+			// 기존 디바이스의 토큰 갱신
+			FcmToken findToken = existingToken.get();
+			findToken.updateToken(requestDto.token());
+		} else {
+			// 새로운 디바이스 등록
+			FcmToken token = requestDto.toEntity(userId);
+			fcmTokenRepository.save(token);
+		}
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public void processFcmIfTokenExists(FcmMessageDto messageDto) {
 
 		//userId 로 토큰 리스트 생성 -> 유저가 가지고 있는 모든 토큰에 전송
@@ -79,6 +92,11 @@ public class FcmServiceImpl implements FcmService {
 			//todo : 메세지큐에 전송 실패 메세지 저장
 			log.info("FCM 전송 모두 실패: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
 		}
+	}
+
+	@Override
+	public void deleteToken(Long userId, String deviceId) {
+		fcmTokenRepository.deleteToken(userId, deviceId);
 	}
 
 	private boolean sendMessage(FcmSender sender, FcmMessageDto messageDto) {

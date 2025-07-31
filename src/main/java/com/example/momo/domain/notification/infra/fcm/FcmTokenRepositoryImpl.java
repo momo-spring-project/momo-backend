@@ -1,6 +1,7 @@
 package com.example.momo.domain.notification.infra.fcm;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
@@ -29,5 +30,15 @@ public class FcmTokenRepositoryImpl implements FcmTokenRepository {
 	@Override
 	public void deleteAll(List<FcmToken> failedList) {
 		fcmTokenJpaRepository.deleteAll(failedList);
+	}
+
+	@Override
+	public Optional<FcmToken> findByUserIdAndDeviceId(Long userId, String deviceId) {
+		return fcmTokenJpaRepository.findByUserIdAndDeviceId(userId, deviceId);
+	}
+
+	@Override
+	public void deleteToken(Long userId, String deviceId) {
+		fcmTokenJpaRepository.deleteByUserIdAndDeviceId(userId, deviceId);
 	}
 }

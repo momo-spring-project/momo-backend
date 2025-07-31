@@ -1,7 +1,7 @@
 package com.example.momo.domain.notification.application.fcm;
 
+import com.example.momo.domain.notification.application.fcm.dto.FcmCreateRequestDto;
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
-import com.example.momo.domain.notification.application.fcm.dto.FcmTokenRequestDto;
 
 /**
  * FCM(Firebase Cloud Messaging)을 활용한 알림 처리 서비스 인터페이스입니다.
@@ -16,7 +16,7 @@ public interface FcmService {
 	 * @param userId     토큰을 저장할 사용자 ID
 	 * @param dto        FCM 토큰 요청 DTO
 	 */
-	void createToken(Long userId, FcmTokenRequestDto dto);
+	void createToken(Long userId, FcmCreateRequestDto dto);
 
 	/**
 	 * 해당 유저에게 저장된 FCM 토큰이 존재할 경우, 알림을 각 디바이스에 전송합니다.
@@ -30,4 +30,11 @@ public interface FcmService {
 	 */
 	void processFcmIfTokenExists(FcmMessageDto messageDto);
 
+	/**
+	 * 전달받은 deviceId 와 userId 로 토큰을 삭제합니다.
+	 *
+	 * @param userId     토큰을 삭제할 사용자 ID
+	 * @param deviceId   토큰을 삭제할 디바이스 ID
+	 */
+	void deleteToken(Long userId, String deviceId);
 }

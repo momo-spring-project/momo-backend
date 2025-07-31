@@ -4,7 +4,8 @@ CREATE TABLE fcm_token
     created_at    DATETIME DEFAULT NULL,
     user_id       BIGINT       NOT NULL,
     token         VARCHAR(512) NOT NULL,
+    device_id     VARCHAR(255) NOT NULL,
     platform_type VARCHAR(255) NOT NULL,
 
-    CONSTRAINT uq_user_token UNIQUE (user_id, token)
+    CONSTRAINT uq_user_token UNIQUE (user_id, device_id)
 );
