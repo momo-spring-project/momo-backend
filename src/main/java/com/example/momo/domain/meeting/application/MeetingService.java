@@ -3,15 +3,15 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.application.dto.request.MeetingCreateRequestDto;
+import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.application.dto.response.MeetingPagingResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 
 public interface MeetingService {

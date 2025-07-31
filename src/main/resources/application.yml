@@ -55,3 +55,18 @@ management:
         enabled: false
     logging:
       enabled: false
+
+otel:
+  service:
+    name: ${spring.application.name}
+  exporter:
+    otlp:
+      endpoint: http://localhost:4317
+      protocol: grpc
+  traces:
+    exporter: otlp
+    sampler: always_on
+
+logging:
+  level:
+    io.opentelemetry.exporter: DEBUG

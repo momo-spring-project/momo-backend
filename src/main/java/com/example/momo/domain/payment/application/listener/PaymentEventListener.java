@@ -11,13 +11,17 @@ import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.application.dto.RefundRequestDto;
+import com.example.momo.domain.payment.domain.Payment;
+import com.example.momo.domain.payment.domain.PaymentRepository;
+import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.meeting.RegisterEvents;
+import com.example.momo.global.springEvent.MeetingEvents;
+import com.example.momo.global.springEvent.meeting.RegisterEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +33,7 @@ public class PaymentEventListener {
 
 	private final MeetingRepository meetingRepository;
 	private final UserRepository userRepository;
+	private final PaymentRepository paymentRepository;
 	private final PaymentService paymentService;
 	private final ApplicationEventPublisher eventPublisher;
 
@@ -75,6 +80,29 @@ public class PaymentEventListener {
 			eventPublisher.publishEvent(new MeetingEvents.ParticipationFailed(
 				event.meetingId(), event.userId(), null));
 		}
+	}
+
+	/* --------------------------------------------------
+ 참가자 개별 취소(Cancel) → 1건 환불
+  -------------------------------------------------- */
+	@Async
+	@EventListener
+	@Transactional
+	public void handleParticipantCancel(MeetingEvents.Cancel event) {
+
+		log.info("참가자 취소 이벤트 – meetingId={}, userId={}",
+			event.meetingId(), event.userId());
+
+		Payment payment = paymentRepository
+			.findByMeetingIdAndUserIdAndStatus(
+				event.meetingId(), event.userId(), PaymentStatus.COMPLETED)
+			.orElseThrow(() ->
+				new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+		paymentService.refundPayment(
+			payment.getId(),
+			event.userId(),
+			new RefundRequestDto("참가자 취소 환불"));
 	}
 
 	/**
