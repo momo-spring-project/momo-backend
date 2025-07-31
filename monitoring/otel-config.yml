@@ -29,10 +29,9 @@ receivers:
       network:
 
 exporters:
-  otlp:
-    endpoint: jaeger:4317
-    tls:
-      insecure: true
+  elasticsearch:
+    endpoint: http://elasticsearch:9200
+    index: "otel-span-index"
   prometheus:
     endpoint: "0.0.0.0:8889"
   logging:
@@ -48,7 +47,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, logging]
+      exporters: [elasticsearch, logging]
     metrics:
       receivers: [otlp, hostmetrics]
       exporters: [prometheus]

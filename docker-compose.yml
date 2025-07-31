@@ -1,6 +1,7 @@
 version: "3.8"
 
 services:
+  # Collector
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.97.0
     container_name: otel-collector
@@ -14,17 +15,15 @@ services:
       - ./monitoring/otel-config.yml:/etc/otel/config.yaml
     command: ["--config=/etc/otel/config.yaml"]
     depends_on:
-      - jaeger
+      - elasticsearch
 
-  jaeger:
-    image: jaegertracing/all-in-one:1.55
-    container_name: jaeger
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
     ports:
-      - "16686:16686"  # Jaeger UI
-    environment:
-      COLLECTOR_OTLP_ENABLED: true
-      LOG_LEVEL: debug
+      - "9100:9100"
 
+  # Metrics
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -37,12 +36,30 @@ services:
       - "--log.level=debug"
     restart: unless-stopped
 
-  node_exporter:
-    image: prom/node-exporter:latest
-    container_name: node_exporter
+  # Traces
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.21
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
     ports:
-      - "9100:9100"
+      - "9200:9200"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
 
+  jaeger-query:
+    image: jaegertracing/jaeger-query:1.57
+    container_name: jaeger-query
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+      - ES-SERVER-URLS=https://elasticsearch:9200
+    ports:
+      - "16686:16686"
+    depends_on:
+      - elasticsearch
+
+  # Visualization
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -54,3 +71,4 @@ services:
 
 volumes:
   grafana-storage:
+  es-data:
