@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
-public class MeetingElasticCustomCustomRepositoryImpl implements MeetingElasticCustomRepository {
+public class MeetingElasticCustomRepositoryImpl implements MeetingElasticCustomRepository {
 
 	private final ElasticsearchOperations elasticsearchOperations;
 
