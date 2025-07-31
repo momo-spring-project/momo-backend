@@ -51,10 +51,12 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public MeetingResponseDto createMeeting(MeetingCreateRequestDto request, Long userId) {
 
+		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
+
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
-		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
+		meetingRepository.saveMeetingElastic(meeting);
 
 		eventPublisher.publishEvent(new MeetingEvents.Create(
 			meeting.getId(),
@@ -79,6 +81,7 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.updateMeeting(request);
+		meetingRepository.saveMeetingElastic(meeting);
 
 		eventPublisher.publishEvent(new MeetingEvents.Update(
 			meeting.getId(),
@@ -110,38 +113,19 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.updateStatus(status);
+		meetingRepository.saveMeetingElastic(meeting);
+
 		return new MeetingResponseDto(meeting);
 	}
 
 	@Override
-	@Transactional(readOnly = true)
-	public MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
+	public MeetingPagingResponseDto<MeetingDocument> getMeetings(String title, MeetingStatus status,
 		LocalDateTime meetingDate, Integer categoryId, int page, int size) {
 
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<Meeting> meetingPage = meetingRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
-		List<MeetingResponseDto> meetingResponses = meetingPage.stream()
-			.map(MeetingResponseDto::new)
-			.toList();
-
-		return new MeetingPagingResponseDto<>(
-			meetingResponses,
-			meetingPage.getTotalElements(),
-			meetingPage.getTotalPages(),
-			meetingPage.getNumber() + 1
-		);
-	}
-
-	@Override
-	public MeetingPagingResponseDto<MeetingDocument> getMeetingDocuments(String title, MeetingStatus status,
-		LocalDateTime meetingDate, Integer categoryId, int page, int size) {
-
-		Pageable pageable = PageRequest
-			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
-
-		Page<MeetingDocument> mt = meetingRepository.getMeetingDocuments(title, meetingDate, status, categoryId,
+		Page<MeetingDocument> mt = meetingRepository.getMeetings(title, meetingDate, status, categoryId,
 			pageable);
 		List<MeetingDocument> response = mt.stream().toList();
 
@@ -164,6 +148,7 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
+		meetingRepository.deleteMeetingElastic(meeting);
 		meeting.delete();
 
 		eventPublisher.publishEvent(new MeetingEvents.Delete(

@@ -38,30 +38,26 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	@Override
 	public Meeting save(Meeting meeting) {
 
-		Meeting result = meetingJpaRepository.save(meeting);
-		
-		log.info("meeting save meeting result:{}", result.getCreatedAt());
-		log.info("meeting save meeting result:{}", result.getUpdatedAt());
-		log.info("meeting save meeting result:{}", result.getMeetingDate());
-		log.info("meeting save meeting result:{}", result.getMeetingEndDate());
-
-		meetingElasticRepository.save(MeetingDocument.from(result));
-		return result;
+		return meetingJpaRepository.save(meeting);
 	}
 
 	@Override
-	public Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
-		Pageable pageable) {
-
-		return meetingQueryRepository.findMeetings(title, meetingDate, status, categoryId, pageable);
-	}
-
-	@Override
-	public Page<MeetingDocument> getMeetingDocuments(String title, LocalDateTime meetingDate, MeetingStatus status,
+	public Page<MeetingDocument> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
 		Integer categoryId, Pageable pageable) {
 
-		System.out.println("1");
 		return meetingElasticCustomRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
+	}
+
+	@Override
+	public void saveMeetingElastic(Meeting meeting) {
+
+		meetingElasticRepository.save(MeetingDocument.from(meeting));
+	}
+
+	@Override
+	public void deleteMeetingElastic(Meeting meeting) {
+
+		meetingElasticRepository.delete(MeetingDocument.from(meeting));
 	}
 
 	@Override
@@ -105,4 +101,5 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	public List<Meeting> findMeetingsByUserId(Long userId) {
 		return meetingQueryRepository.findMeetingsByUserId(userId);
 	}
+
 }

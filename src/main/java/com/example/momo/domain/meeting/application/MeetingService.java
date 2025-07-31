@@ -26,11 +26,7 @@ public interface MeetingService {
 
 	MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
-	MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
-		LocalDateTime meetingDate, Integer categoryId,
-		int page, int size);
-
-	MeetingPagingResponseDto<MeetingDocument> getMeetingDocuments(String title, MeetingStatus status,
+	MeetingPagingResponseDto<MeetingDocument> getMeetings(String title, MeetingStatus status,
 		LocalDateTime meetingDate, Integer categoryId,
 		int page, int size);
 

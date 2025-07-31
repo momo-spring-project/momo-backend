@@ -77,7 +77,7 @@ public class MeetingController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> getMeetings(
+	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingDocument>>> getMeetings(
 		@RequestParam(defaultValue = "") String title,
 		@RequestParam(required = false) MeetingStatus status,
 		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime meetingDate,
@@ -86,24 +86,7 @@ public class MeetingController {
 		@RequestParam(defaultValue = "10") @Min(5) int size
 	) {
 
-		MeetingPagingResponseDto<MeetingResponseDto> response = meetingService.getMeetings(title, status, meetingDate,
-			categoryId,
-			page,
-			size);
-		return ResponseEntity.ok(ApiResponse.success("모임 목록 조회가 성공적으로 완료되었습니다.", response));
-	}
-
-	@GetMapping("/test")
-	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingDocument>>> getMeetingDocuments(
-		@RequestParam(defaultValue = "") String title,
-		@RequestParam(required = false) MeetingStatus status,
-		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime meetingDate,
-		@RequestParam(required = false) Integer categoryId,
-		@RequestParam(defaultValue = "1") @Min(1) int page,
-		@RequestParam(defaultValue = "10") @Min(5) int size
-	) {
-
-		MeetingPagingResponseDto<MeetingDocument> response = meetingService.getMeetingDocuments(title, status,
+		MeetingPagingResponseDto<MeetingDocument> response = meetingService.getMeetings(title, status,
 			meetingDate,
 			categoryId,
 			page,
