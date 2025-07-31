@@ -53,7 +53,7 @@ public class FcmServiceImpl implements FcmService {
 		//token 이 없을경우 메세지큐 저장
 		if (tokens.isEmpty()) {
 			//todo : 메세지큐에 전송 실패 메세지 저장
-			log.info("유효한 토큰이 없습니다.: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
+			log.warn("유효한 토큰이 없습니다.: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
 			return;
 		}
 
@@ -89,7 +89,7 @@ public class FcmServiceImpl implements FcmService {
 		//토큰은 있지만 모든 토큰에 전송 실패했을 경우 메세지큐 저장
 		if (!successAtLeastOnce) {
 			//todo : 메세지큐에 전송 실패 메세지 저장
-			log.info("FCM 전송 모두 실패: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
+			log.warn("FCM 전송 모두 실패: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
 		}
 	}
 
@@ -108,13 +108,13 @@ public class FcmServiceImpl implements FcmService {
 			MessagingErrorCode code = e.getMessagingErrorCode();
 
 			if (code == MessagingErrorCode.INVALID_ARGUMENT || code == MessagingErrorCode.UNREGISTERED) {
-				log.info("유효하지 않은 토큰: token={}, code={}", messageDto.getToken(), code);
+				log.warn("유효하지 않은 토큰: token={}, code={}", messageDto.getToken(), code);
 			} else {
-				log.error("FCM 전송 실패 (Firebase 예외): token={}, code={}", messageDto.getToken(), code, e);
+				log.warn("FCM 전송 실패 (Firebase 예외): token={}, code={}", messageDto.getToken(), code, e);
 			}
 
 		} catch (Exception e) {
-			log.error("FCM 전송 실패 (기타 예외): token={}, error={}", messageDto.getToken(), e.getMessage(), e);
+			log.warn("FCM 전송 실패 (기타 예외): token={}, error={}", messageDto.getToken(), e.getMessage(), e);
 		}
 		return false;
 	}
