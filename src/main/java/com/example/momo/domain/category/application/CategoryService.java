@@ -1,10 +1,10 @@
 package com.example.momo.domain.category.application;
 
-import com.example.momo.domain.category.domain.dto.CategoryCreateRequestDto;
-import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
-import com.example.momo.domain.category.domain.dto.CategoryUpdateRequestDto;
-
 import java.util.List;
+
+import com.example.momo.domain.category.application.dto.CategoryCreateRequestDto;
+import com.example.momo.domain.category.application.dto.CategoryResponseDto;
+import com.example.momo.domain.category.application.dto.CategoryUpdateRequestDto;
 
 public interface CategoryService {
 	CategoryResponseDto createCategory(CategoryCreateRequestDto request);

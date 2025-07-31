@@ -16,19 +16,19 @@ import org.springframework.web.client.HttpClientErrorException;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
+import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
-import com.example.momo.domain.payment.domain.dto.PaymentResponseDto;
-import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
+import com.example.momo.global.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.springEvent.payment.PaymentRefundedEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

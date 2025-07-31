@@ -1,15 +1,17 @@
 package com.example.momo.domain.meeting.application;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
+
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor

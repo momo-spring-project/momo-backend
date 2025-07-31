@@ -10,14 +10,14 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.payment.application.PaymentService;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.meeting.ParticipationCancelCompletedEvents;
-import com.example.momo.global.infrastructure.springEvent.meeting.ParticipationFailedEvents;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentCompletedEvent;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentRefundedEvent;
+import com.example.momo.global.springEvent.MeetingEvents;
+import com.example.momo.global.springEvent.meeting.ParticipationCancelCompletedEvents;
+import com.example.momo.global.springEvent.meeting.ParticipationFailedEvents;
+import com.example.momo.global.springEvent.payment.PaymentCompletedEvent;
+import com.example.momo.global.springEvent.payment.PaymentRefundedEvent;
 import com.example.momo.global.utils.RetryUtil;
+import com.example.momo.global.webclient.user.UserClient;
+import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 

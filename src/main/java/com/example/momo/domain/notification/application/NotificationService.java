@@ -2,8 +2,8 @@ package com.example.momo.domain.notification.application;
 
 import java.util.List;
 
-import com.example.momo.domain.notification.domain.dto.NotificationDto;
-import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
+import com.example.momo.domain.notification.application.dto.NotificationDto;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 
 public interface NotificationService {
 	/**

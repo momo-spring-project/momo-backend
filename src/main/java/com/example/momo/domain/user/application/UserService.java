@@ -4,18 +4,18 @@ import java.util.List;
 
 import org.springframework.data.domain.Pageable;
 
+import com.example.momo.domain.user.application.dto.RegisterRequestDto;
+import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
+import com.example.momo.domain.user.application.dto.UserFollowListResponseDto;
+import com.example.momo.domain.user.application.dto.UserListResponseDto;
+import com.example.momo.domain.user.application.dto.UserLocationResponseDto;
+import com.example.momo.domain.user.application.dto.UserLocationUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserNicknameUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserPasswordUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.application.dto.UserResponseDto;
+import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
-import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
-import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
-import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserResponseDto;
-import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 
 public interface UserService {
 

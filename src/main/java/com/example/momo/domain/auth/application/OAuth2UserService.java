@@ -1,8 +1,5 @@
 package com.example.momo.domain.auth.application;
 
-import java.util.Optional;
-
-import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -10,16 +7,15 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import com.example.momo.domain.auth.application.dto.CustomOAuth2User;
+import com.example.momo.domain.auth.application.dto.GoogleOAuth2Dto;
+import com.example.momo.domain.auth.application.dto.NaverOAuth2Dto;
+import com.example.momo.domain.auth.application.dto.OAuth2Response;
 import com.example.momo.domain.auth.domain.UserSocial;
-import com.example.momo.domain.auth.domain.dto.CustomOAuth2User;
-import com.example.momo.domain.auth.domain.dto.GoogleOAuth2Dto;
-import com.example.momo.domain.auth.domain.dto.NaverOAuth2Dto;
-import com.example.momo.domain.auth.domain.dto.OAuth2Response;
 import com.example.momo.domain.auth.enums.OAuth2Type;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
-import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
+import com.example.momo.global.webclient.user.UserClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 public class OAuth2UserService extends DefaultOAuth2UserService {
 	private final UserSocialRepository userSocialRepository;
 	private final UserClient userClient;
+
 	@Override
 	public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 

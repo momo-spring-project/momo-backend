@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.global.common.entity.BaseEntity;
 
