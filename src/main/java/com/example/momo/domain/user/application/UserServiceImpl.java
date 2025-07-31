@@ -11,32 +11,32 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.user.application.dto.RegisterRequestDto;
+import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
+import com.example.momo.domain.user.application.dto.UserFollowListResponseDto;
+import com.example.momo.domain.user.application.dto.UserFollowResponseDto;
+import com.example.momo.domain.user.application.dto.UserListResponseDto;
+import com.example.momo.domain.user.application.dto.UserLocationResponseDto;
+import com.example.momo.domain.user.application.dto.UserLocationUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserMeetingStatsDto;
+import com.example.momo.domain.user.application.dto.UserNicknameUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserPasswordUpdateRequestDto;
+import com.example.momo.domain.user.application.dto.UserRatingCreateRequestDto;
+import com.example.momo.domain.user.application.dto.UserResponseDto;
+import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.domain.user.domain.dto.RegisterRequestDto;
-import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
-import com.example.momo.domain.user.domain.dto.UserFollowListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserFollowResponseDto;
-import com.example.momo.domain.user.domain.dto.UserListResponseDto;
-import com.example.momo.domain.user.domain.dto.UserLocationResponseDto;
-import com.example.momo.domain.user.domain.dto.UserLocationUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserMeetingStatsDto;
-import com.example.momo.domain.user.domain.dto.UserNicknameUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserPasswordUpdateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserRatingCreateRequestDto;
-import com.example.momo.domain.user.domain.dto.UserResponseDto;
-import com.example.momo.domain.user.domain.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.global.infrastructure.client.category.CategoryClient;
-import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
-import com.example.momo.global.infrastructure.client.meeting.MeetingClient;
-import com.example.momo.global.infrastructure.client.meeting.dto.MeetingClientResponseDto;
-import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.user.UserEvents;
+import com.example.momo.global.springEvent.user.UserEvents;
+import com.example.momo.global.webclient.category.CategoryClient;
+import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
+import com.example.momo.global.webclient.meeting.MeetingClient;
+import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
+import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -348,16 +348,30 @@ public class UserServiceImpl implements UserService {
 		// 참가자 ID 목록만 조회 (현재 Meeting API가 제공하는 방식)
 		List<Long> participantIds = meetingClient.getParticipantIds(meetingId);
 
+		// 디버그 로그 추가
+		log.info("=== 모임 참가자 검증 시작 ===");
+		log.info("meetingId: {}", meetingId);
+		log.info("reviewerId: {}", reviewerId);
+		log.info("targetUserId: {}", targetUserId);
+		log.info("participantIds from API: {}", participantIds);
+
 		if (participantIds == null || participantIds.isEmpty()) {
+			log.error("참가자 목록이 비어있음!");
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
 
 		boolean reviewerParticipated = participantIds.contains(reviewerId);
 		boolean targetParticipated = participantIds.contains(targetUserId);
 
+		log.info("reviewerParticipated: {}", reviewerParticipated);
+		log.info("targetParticipated: {}", targetParticipated);
+
 		if (!reviewerParticipated || !targetParticipated) {
+			log.error("참가 검증 실패!");
 			throw new UserException(UserErrorCode.NOT_SAME_MEETING_PARTICIPANTS);
 		}
+
+		log.info("=== 모임 참가자 검증 완료 ===");
 	}
 
 	@Override

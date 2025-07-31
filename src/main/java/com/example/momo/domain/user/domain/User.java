@@ -128,7 +128,7 @@ public class User extends BaseEntity {
 	public void updateCategories(List<Integer> categoryIds) {
 		this.categories.clear();
 		categoryIds.forEach(categoryId ->
-			this.categories.add(new UserCategory(categoryId))
+			this.categories.add(new UserCategory(this.id, categoryId))  // userId 전달
 		);
 	}
 }

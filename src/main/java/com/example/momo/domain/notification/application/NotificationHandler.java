@@ -9,7 +9,7 @@ import com.example.momo.domain.notification.application.sse.SseService;
 import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
 import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
+import com.example.momo.global.springEvent.notification.MessageEvents;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

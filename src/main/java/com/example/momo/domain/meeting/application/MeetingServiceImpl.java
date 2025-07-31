@@ -11,27 +11,27 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.meeting.application.dto.request.MeetingCreateRequestDto;
+import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;
+import com.example.momo.domain.meeting.application.dto.response.MeetingPagingResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.MeetingResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
+import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingCreateRequestDto;
-import com.example.momo.domain.meeting.domain.dto.request.MeetingUpdateRequestDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingPagingResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.MeetingResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCountResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantCreateResponseDto;
-import com.example.momo.domain.meeting.domain.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.global.infrastructure.client.category.CategoryClient;
-import com.example.momo.global.infrastructure.client.category.dto.CategoryClientResponseDto;
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.meeting.RegisterEvents;
+import com.example.momo.global.springEvent.MeetingEvents;
+import com.example.momo.global.springEvent.meeting.RegisterEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.utils.RetryUtil;
+import com.example.momo.global.webclient.category.CategoryClient;
+import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
+import com.example.momo.global.webclient.user.UserClient;
+import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -222,7 +222,8 @@ public class MeetingServiceImpl implements MeetingService {
 
 		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
 
-		eventPublisher.publishEvent(new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), user.getNickname()));
+		eventPublisher.publishEvent(
+			new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), userId, user.getNickname()));
 
 		return responseDto;
 	}

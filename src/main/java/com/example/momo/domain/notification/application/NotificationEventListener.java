@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import com.example.momo.global.common.aop.EventLoggable;
-import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
+import com.example.momo.global.springEvent.notification.MessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
