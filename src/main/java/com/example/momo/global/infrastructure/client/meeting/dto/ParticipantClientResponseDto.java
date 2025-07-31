@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 public class ParticipantClientResponseDto {
 	private Long id;
 	private Long meetingId;
-	private Long userId;
+	private Long participantId;
 	private boolean attendanceStatus;
 }

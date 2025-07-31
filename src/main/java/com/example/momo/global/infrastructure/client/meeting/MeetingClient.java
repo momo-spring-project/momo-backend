@@ -1,6 +1,7 @@
 package com.example.momo.global.infrastructure.client.meeting;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -17,8 +18,6 @@ import com.example.momo.global.infrastructure.client.meeting.dto.ParticipantCoun
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.LocalDateTime;
 
 @Slf4j
 @Component
@@ -111,40 +110,66 @@ public class MeetingClient {
 	}
 
 	/**
-	 * 참가자 ID 목록 조회 (기존 API 그대로 사용)
-	 * 현재 Meeting API는 List<Long> 참가자 ID만 반환함
+	 * 참가자 ID 목록 조회 - UserService에서 평가 검증용으로 사용
+	 * Meeting API에서 ParticipantResponseDto 리스트를 받아서 userId만 추출
 	 */
 	public List<Long> getParticipantIds(Long meetingId) {
 		try {
-			ApiResponse<List<Long>> response = webClient
+			log.info("=== MeetingClient.getParticipantIds 시작 ===");
+			log.info("요청 meetingId: {}", meetingId);
+			log.info("요청 URL: {}", MEETING_SERVICE_BASE_URI + "/" + meetingId + "/participants");
+
+			ApiResponse<List<ParticipantClientResponseDto>> response = webClient
 				.get()
 				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants", meetingId)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<Long>>>() {
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<List<ParticipantClientResponseDto>>>() {
 				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
-			if (response == null || !response.isSuccess()) {
+			log.info("API 응답 전체: {}", response);
+
+			if (response == null) {
+				log.error("응답이 null!");
 				return List.of();
 			}
 
-			log.debug("참석자 ID 목록 조회 성공: meetingId={}, count={}", meetingId, response.getData().size());
-			return response.getData();
-
-		} catch (WebClientResponseException e) {
-			if (e.getStatusCode().value() == 404) {
-				log.debug("참석자 목록을 찾을 수 없습니다: meetingId={}", meetingId);
+			if (!response.isSuccess()) {
+				log.error("응답 실패: success={}, message={}", response.isSuccess(), response.getMessage());
 				return List.of();
 			}
 
-			log.error("참석자 목록 조회 실패: meetingId={}, status={}, error={}",
-				meetingId, e.getStatusCode(), e.getMessage());
-			throw new MeetingClientException("참석자 목록 조회 중 오류가 발생했습니다: " + e.getMessage());
+			if (response.getData() == null) {
+				log.error("응답 데이터가 null!");
+				return List.of();
+			}
+
+			log.info("응답 데이터 크기: {}", response.getData().size());
+			log.info("응답 데이터 내용: {}", response.getData());
+
+			List<Long> participantIds = response.getData().stream()
+				.map(participant -> {
+					log.info("참가자 정보: id={}, meetingId={}, participantId={}, attendance={}",
+						participant.getId(), participant.getMeetingId(),
+						participant.getParticipantId(),
+						participant.isAttendanceStatus()); // getUserId() -> getParticipantId()
+					return participant.getParticipantId(); // getUserId() -> getParticipantId()
+				})
+				.toList();
+
+			log.info("최종 추출된 participantIds: {}", participantIds);
+			log.info("=== MeetingClient.getParticipantIds 완료 ===");
+			return participantIds;
+
+		} catch (Exception e) {
+			log.error("=== MeetingClient.getParticipantIds 오류 ===", e);
+			return List.of();
 		}
 	}
 
-	public ParticipantCountClientResponseDto getParticipantCount(Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+	public ParticipantCountClientResponseDto getParticipantCount(Long meetingId, Boolean attendance,
+		LocalDateTime createdAt) {
 		try {
 			ApiResponse<ParticipantCountClientResponseDto> response = webClient
 				.get()
@@ -154,7 +179,8 @@ public class MeetingClient {
 					.queryParam("createdAt", createdAt)
 					.build(meetingId))
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantCountClientResponseDto>>() {})
+				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantCountClientResponseDto>>() {
+				})
 				.timeout(REQUEST_TIMEOUT)
 				.block();
 
