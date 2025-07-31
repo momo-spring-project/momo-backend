@@ -34,9 +34,8 @@ public class NotificationController {
 
 	//외부 저장용 메서드
 	@PostMapping
-	public ResponseEntity<ApiResponse<Void>> createNotification(
+	public ResponseEntity<ApiResponse<NotificationResponseDto>> createNotification(
 		@RequestBody NotificationRequestDto dto) {
-		notificationService.createNotification(dto);
-		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", null));
+		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", notificationService.createNotification(dto)));
 	}
 }

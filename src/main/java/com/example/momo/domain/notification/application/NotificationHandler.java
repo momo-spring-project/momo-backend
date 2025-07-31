@@ -3,11 +3,11 @@ package com.example.momo.domain.notification.application;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.domain.notification.application.fcm.FcmService;
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.application.sse.SseService;
 import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
-import com.example.momo.domain.notification.domain.Notification;
 import com.example.momo.domain.notification.enums.NotificationType;
 import com.example.momo.global.springEvent.notification.MessageEvents;
 
@@ -61,25 +61,26 @@ public class NotificationHandler {
 
 		for (Long userId : event.userIdList()) {
 			//알림 이벤트 DB 저장
-			Notification notification = notificationService.createNotification(NotificationRequestDto.builder()
-				.userId(userId)
-				.targetId(targetId)
-				.type(type)
-				.content(content)
-				.build());
+			NotificationResponseDto notificationDto = notificationService.createNotification(
+				NotificationRequestDto.builder()
+					.userId(userId)
+					.targetId(targetId)
+					.type(type)
+					.content(content)
+					.build());
 
-			if (notification == null) {
+			if (notificationDto == null) {
 				log.warn("알림 저장 실패: userId={}, content={}", userId, content);
 				//todo : 저장 실패 알림 메세지큐 저장
 				continue;
 			}
 
 			//SSE 전송 시도 후 결과 반환
-			boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notification));
+			boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notificationDto));
 
 			//SSE 전송 실패 시 FCM 전송 시도
 			if (!sseSuccess) {
-				fcmService.processFcmIfTokenExists(FcmMessageDto.from(notification));
+				fcmService.processFcmIfTokenExists(FcmMessageDto.from(notificationDto));
 			}
 		}
 

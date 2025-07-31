@@ -25,13 +25,13 @@ public class NotificationServiceImpl implements NotificationService {
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public Notification createNotification(NotificationRequestDto dto) {
+	public NotificationResponseDto createNotification(NotificationRequestDto dto) {
 		try {
 			Notification notification = notificationRepository.save(dto.toEntity());
 			log.debug("알림 저장 완료: userId={}, meetingId={}, type={}, content={}",
 				dto.getUserId(), dto.getTargetId(), dto.getType(), dto.getContent());
 
-			return notification;
+			return NotificationResponseDto.from(notification);
 		} catch (DataIntegrityViolationException e) {
 			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {

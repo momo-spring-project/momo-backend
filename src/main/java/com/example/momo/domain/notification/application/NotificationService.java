@@ -4,7 +4,6 @@ import java.util.List;
 
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
 import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
-import com.example.momo.domain.notification.domain.Notification;
 
 public interface NotificationService {
 	/**
@@ -12,7 +11,7 @@ public interface NotificationService {
 	 *
 	 * @param command 저장할 알림 정보를 담은 객체
 	 */
-	Notification createNotification(NotificationRequestDto command);
+	NotificationResponseDto createNotification(NotificationRequestDto command);
 
 	/**
 	 * 특정 사용자의 알림 목록을 조회합니다.

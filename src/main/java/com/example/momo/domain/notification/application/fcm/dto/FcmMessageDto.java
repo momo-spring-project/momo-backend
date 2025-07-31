@@ -1,6 +1,6 @@
 package com.example.momo.domain.notification.application.fcm.dto;
 
-import com.example.momo.domain.notification.domain.Notification;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.domain.notification.enums.NotificationType;
 
 import lombok.AllArgsConstructor;
@@ -16,11 +16,11 @@ public class FcmMessageDto {
 	private NotificationType type;
 	private String content;
 
-	public static FcmMessageDto from(Notification notification) {
+	public static FcmMessageDto from(NotificationResponseDto dto) {
 		return FcmMessageDto.builder()
-			.userId(notification.getUserId())
-			.type(notification.getType())
-			.content(notification.getContent())
+			.userId(dto.getUserId())
+			.type(dto.getType())
+			.content(dto.getContent())
 			.build();
 	}
 
