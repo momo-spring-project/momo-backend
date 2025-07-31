@@ -6,7 +6,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.example.momo.domain.auth.infra.UserSocialRepository;
-import com.example.momo.global.infrastructure.springEvent.user.UserEvents;
+import com.example.momo.global.springEvent.user.UserEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

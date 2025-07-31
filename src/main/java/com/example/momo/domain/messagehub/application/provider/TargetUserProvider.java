@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
-import com.example.momo.global.infrastructure.client.user.UserClient;
-import com.example.momo.global.infrastructure.client.user.dto.UserClientResponseDto;
+import com.example.momo.global.webclient.user.UserClient;
+import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
 

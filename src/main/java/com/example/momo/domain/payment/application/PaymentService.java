@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
-import com.example.momo.domain.payment.domain.dto.CardPaymentTestRequestDto;
-import com.example.momo.domain.payment.domain.dto.PaymentResponseDto;
-import com.example.momo.domain.payment.domain.dto.RefundRequestDto;
+import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
+import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
+import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 
 public interface PaymentService {

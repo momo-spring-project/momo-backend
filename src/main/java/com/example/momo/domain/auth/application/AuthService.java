@@ -1,17 +1,15 @@
 package com.example.momo.domain.auth.application;
 
-import java.util.List;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.domain.dto.LoginRequestDto;
-import com.example.momo.domain.auth.domain.dto.LoginResponseDto;
-import com.example.momo.domain.user.domain.dto.UserAuthResponseDto;
+import com.example.momo.domain.auth.application.dto.LoginRequestDto;
+import com.example.momo.domain.auth.application.dto.LoginResponseDto;
+import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.global.infrastructure.client.user.UserClient;
+import com.example.momo.global.webclient.user.UserClient;
 
 import lombok.RequiredArgsConstructor;
 

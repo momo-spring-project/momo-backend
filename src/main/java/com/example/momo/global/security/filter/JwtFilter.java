@@ -15,7 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.example.momo.domain.auth.domain.dto.AuthUser;
+import com.example.momo.domain.auth.application.dto.AuthUser;
 import com.example.momo.domain.auth.exception.AuthException;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.security.jwt.JwtTokenProvider;

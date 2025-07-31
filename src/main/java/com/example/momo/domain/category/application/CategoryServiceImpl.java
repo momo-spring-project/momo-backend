@@ -1,22 +1,24 @@
 package com.example.momo.domain.category.application;
 
-import com.example.momo.domain.category.domain.dto.CategoryUpdateRequestDto;
-import com.example.momo.domain.category.exception.CategoryException;
-import com.example.momo.domain.category.exception.CategoryExceptionCode;
-import com.example.momo.domain.category.infra.CategoryRepository;
-import com.example.momo.domain.category.domain.dto.CategoryCreateRequestDto;
-import com.example.momo.domain.category.domain.dto.CategoryResponseDto;
-import com.example.momo.domain.category.domain.Category;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.List;
+import com.example.momo.domain.category.application.dto.CategoryCreateRequestDto;
+import com.example.momo.domain.category.application.dto.CategoryResponseDto;
+import com.example.momo.domain.category.application.dto.CategoryUpdateRequestDto;
+import com.example.momo.domain.category.domain.Category;
+import com.example.momo.domain.category.exception.CategoryException;
+import com.example.momo.domain.category.exception.CategoryExceptionCode;
+import com.example.momo.domain.category.infra.CategoryRepository;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class CategoryServiceImpl implements CategoryService{
+public class CategoryServiceImpl implements CategoryService {
 
 	private final CategoryRepository categoryRepository;
 
@@ -48,7 +50,7 @@ public class CategoryServiceImpl implements CategoryService{
 
 		// ID 목록 없으면 전체 조회, 있으면 목록 조회
 		List<Category> categories;
-		if(categoryIds == null) {
+		if (categoryIds == null) {
 			categories = categoryRepository.findAll();
 		} else {
 			categories = categoryRepository.findAllByIdIn(categoryIds);
@@ -65,15 +67,15 @@ public class CategoryServiceImpl implements CategoryService{
 	public CategoryResponseDto updateCategory(Integer id, CategoryUpdateRequestDto request) {
 
 		// 입력 잘못됐을 경우 예외처리(공백 포함)
-		if(request.getCategoryName() != null && !StringUtils.hasText(request.getCategoryName())) {
+		if (request.getCategoryName() != null && !StringUtils.hasText(request.getCategoryName())) {
 			throw new CategoryException(CategoryExceptionCode.BLANK_CATEGORY_NAME);
 		}
-		if(request.getDescription() != null && !StringUtils.hasText(request.getDescription())) {
+		if (request.getDescription() != null && !StringUtils.hasText(request.getDescription())) {
 			throw new CategoryException(CategoryExceptionCode.BLANK_CATEGORY_DESCRIPTION);
 		}
 
 		// 입력이 모두 null 일 경우 예외처리
-		if(request.getCategoryName() == null && request.getDescription() == null) {
+		if (request.getCategoryName() == null && request.getDescription() == null) {
 			throw new CategoryException(CategoryExceptionCode.NULL_INPUT);
 		}
 
@@ -81,12 +83,15 @@ public class CategoryServiceImpl implements CategoryService{
 			.orElseThrow(() -> new CategoryException(CategoryExceptionCode.CATEGORY_NOT_FOUND));
 
 		// 변경사항 없을 경우 예외처리
-		if(category.getName().equals(request.getCategoryName()) && category.getDescription().equals(request.getDescription())) {
+		if (category.getName().equals(request.getCategoryName()) && category.getDescription()
+			.equals(request.getDescription())) {
 			throw new CategoryException(CategoryExceptionCode.NOT_UPDATE_CATEGORY);
 		}
 
-		if(request.getCategoryName() != null) category.updateName(request.getCategoryName());
-		if(request.getDescription() != null) category.updateDescription(request.getDescription());
+		if (request.getCategoryName() != null)
+			category.updateName(request.getCategoryName());
+		if (request.getDescription() != null)
+			category.updateDescription(request.getDescription());
 
 		return new CategoryResponseDto(category);
 	}
