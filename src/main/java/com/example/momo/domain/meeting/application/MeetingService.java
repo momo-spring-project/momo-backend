@@ -10,6 +10,7 @@ import com.example.momo.domain.meeting.application.dto.response.MeetingResponseD
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 
@@ -25,7 +26,7 @@ public interface MeetingService {
 
 	MeetingResponseDto updateMeetingStatus(Long meetingId, MeetingStatus status, Long userId);
 
-	MeetingPagingResponseDto<MeetingResponseDto> getMeetings(String title, MeetingStatus status,
+	MeetingPagingResponseDto<MeetingDocument> getMeetings(String title, MeetingStatus status,
 		LocalDateTime meetingDate, Integer categoryId,
 		int page, int size);
 

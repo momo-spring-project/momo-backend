@@ -17,10 +17,14 @@ public interface MeetingRepository {
 
 	Meeting save(Meeting meeting);
 
-	Page<Meeting> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status, Integer categoryId,
-		Pageable pageable);
+	Page<MeetingDocument> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Integer categoryId, Pageable pageable);
 
 	List<Meeting> findMeetingsByUserId(Long userId);
+
+	void saveMeetingElastic(Meeting meeting);
+
+	void deleteMeetingElastic(Meeting meeting);
 
 	boolean existsById(Long id);
 
