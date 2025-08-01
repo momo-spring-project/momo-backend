@@ -49,6 +49,10 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    // elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    implementation 'org.elasticsearch:elasticsearch:8.18.1'
+
     // WebClient를 위한 Spring WebFlux
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
