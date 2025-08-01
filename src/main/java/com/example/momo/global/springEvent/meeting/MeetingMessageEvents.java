@@ -2,12 +2,24 @@ package com.example.momo.global.springEvent.meeting;
 
 import java.util.List;
 
+import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 public class MeetingMessageEvents {
 
 	/**
 	 * 모임 이벤트 마커 인터페이스입니다.
 	 */
-	public interface MeetingMessageEvent {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
+	@JsonSubTypes({
+		@JsonSubTypes.Type(value = Create.class, name = "MeetingCreate"),
+		@JsonSubTypes.Type(value = Update.class, name = "MeetingUpdate"),
+		@JsonSubTypes.Type(value = Delete.class, name = "MeetingDelete"),
+		@JsonSubTypes.Type(value = Join.class, name = "MeetingJoin"),
+		@JsonSubTypes.Type(value = Cancel.class, name = "MeetingCancel")
+	})
+	public interface MeetingMessageEvent extends HubEvent {
 		Long meetingId();
 	}
 

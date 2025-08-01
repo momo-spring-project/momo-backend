@@ -1,5 +1,9 @@
 package com.example.momo.global.springEvent.follow;
 
+import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 /**
  * 팔로우 도메인에서 발생하는 메세지 이벤트를 정의합니다.
  */
@@ -8,7 +12,11 @@ public class FollowMessageEvents {
 	/**
 	 * 팔로우 이벤트 마커 인터페이스입니다.
 	 */
-	public interface FollowEvent {
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
+	@JsonSubTypes({
+		@JsonSubTypes.Type(value = Followed.class, name = "Followed")
+	})
+	public interface FollowEvent extends HubEvent {
 	}
 
 	/**

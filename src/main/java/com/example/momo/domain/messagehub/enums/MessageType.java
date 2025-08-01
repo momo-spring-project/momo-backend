@@ -7,7 +7,7 @@ package com.example.momo.domain.messagehub.enums;
  * 도메인별(모임, 팔로우, 결제 등)로 발생하는 알림의 종류를 구분하며,
  * 클라이언트에 전달되는 알림 타입 식별자 또는 처리 분기 등에 사용됩니다.
  */
-public enum NotificationEventType {
+public enum MessageType {
 	MEETING_JOINED,
 	MEETING_CANCELLED,
 	MEETING_UPDATED,

@@ -1,6 +1,6 @@
 package com.example.momo.domain.notification.application;
 
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
 import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
@@ -9,7 +9,7 @@ import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.application.sse.SseService;
 import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.springEvent.notification.MessageEvents;
+import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
  * </ul>
  */
 @Slf4j
-@Service
+@Component
 @RequiredArgsConstructor
 public class NotificationHandler {
 
@@ -47,46 +47,45 @@ public class NotificationHandler {
 	 * <p>
 	 * 해당 작업은 하나의 트랜잭션 내에서 수행됩니다.
 	 *
-	 * @param event 알림을 유발한 이벤트 정보
+	 * @param message 알림을 유발한 이벤트 정보
 	 */
 	@Transactional
-	public void processNotification(MessageEvents event) {
+	public void processNotification(NotificationQueueEvent message) {
 		NotificationType type;
-		if ((type = resolveNotificationType(event.typeName())) == null) {
+		if ((type = resolveNotificationType(message.typeName())) == null) {
 			return;
 		}
 
-		Long targetId = event.targetId();
-		String content = event.content();
+		Long userId = message.userId();
+		Long targetId = message.targetId();
+		String content = message.content();
 
-		for (Long userId : event.userIdList()) {
-			//알림 이벤트 DB 저장
-			NotificationResponseDto notificationDto = notificationService.createNotification(
-				NotificationRequestDto.builder()
-					.userId(userId)
-					.targetId(targetId)
-					.type(type)
-					.content(content)
-					.build());
+		//알림 이벤트 DB 저장
+		NotificationResponseDto notificationDto = notificationService.createNotification(
+			NotificationRequestDto.builder()
+				.userId(userId)
+				.targetId(targetId)
+				.type(type)
+				.content(content)
+				.build());
 
-			if (notificationDto == null) {
-				log.warn("알림 저장 실패: userId={}, content={}", userId, content);
-				//todo : 저장 실패 알림 메세지큐 저장
-				continue;
-			}
+		if (notificationDto == null) {
+			log.warn("알림 저장 실패: userId={}, content={}", userId, content);
+			//todo : 저장 실패 알림 메세지큐 저장
+			return;
+		}
 
-			//SSE 전송 시도 후 결과 반환
-			boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notificationDto));
+		//SSE 전송 시도 후 결과 반환
+		boolean sseSuccess = sseService.sendIfConnected(SseMessageDto.from(notificationDto));
 
-			//SSE 전송 실패 시 FCM 전송 시도
-			if (!sseSuccess) {
-				fcmService.processFcmIfTokenExists(FcmMessageDto.from(notificationDto));
-			}
+		//SSE 전송 실패 시 FCM 전송 시도
+		if (!sseSuccess) {
+			fcmService.processFcmIfTokenExists(FcmMessageDto.from(notificationDto));
 		}
 
 	}
 
-	//수신한 문자열을 NotificationType으로 변환합니다.
+	//수신한 문자열을 NotificationType 으로 변환합니다.
 	private NotificationType resolveNotificationType(String typeName) {
 		try {
 			return NotificationType.valueOf(typeName);
