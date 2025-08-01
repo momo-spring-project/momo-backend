@@ -35,5 +35,18 @@ services:
       COLLECTOR_OTLP_ENABLED: true
       LOG_LEVEL: debug
 
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"     # AMQP (Spring에서 연결)
+      - "15672:15672"   # RabbitMQ Web 관리 콘솔
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
 volumes:
   esdata:
+  rabbitmq_data:
