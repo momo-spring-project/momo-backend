@@ -1,0 +1,53 @@
+auth_enabled: false
+
+receviers:
+
+server:
+  http_listen_port: 3100
+
+# 수집기 설정
+ingester:
+  lifecycler:
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  chunk_idle_period: 30s # chunk 마감 대기 시간
+  max_chunk_age: 10s # 로그 수집 시간
+  chunk_target_size: 1048576
+  chunk_retain_period: 30s
+  max_transfer_retries: 0
+
+# 인덱싱, 구조 설정
+schema_config:
+  configs:
+    - from: 2020-10-15
+      store: boltdb-shipper
+      object_store: filesystem # 운영단계에서 수정 확인
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+# 저장소 설정
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/boltdb-cache
+    shared_store: filesystem # 운영단계에서 수정 확인
+  filesystem:
+    directory: /loki/chunks
+
+# 오래된 로그 제한
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+chunk_store_config:
+  max_look_back_period: 24h
+
+# 오래된 로그 제거
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 168h
