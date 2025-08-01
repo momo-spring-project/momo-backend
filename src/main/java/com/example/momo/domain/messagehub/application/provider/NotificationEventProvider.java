@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.NotificationEventType;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.follow.FollowMessageEvents;
-import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentMessageEvents;
+import com.example.momo.global.springEvent.follow.FollowMessageEvents;
+import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.global.springEvent.notification.MessageEvents;
+import com.example.momo.global.springEvent.payment.PaymentMessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,8 @@ public class NotificationEventProvider {
 	private final MessageFormatUtil messageUtil;
 	private final TargetUserProvider targetUserProvider;
 
-	public MessageEvents processMeetingMessage(MeetingEvents.MeetingEvent meetingEvent) {
-		if (meetingEvent instanceof MeetingEvents.Create event) {
+	public MessageEvents processMeetingMessage(MeetingMessageEvents.MeetingMessageEvent meetingEvent) {
+		if (meetingEvent instanceof MeetingMessageEvents.Create event) {
 			String message = messageUtil.buildCreateMessage(event.categoryName());
 			List<Long> userIdList = targetUserProvider.getUserIdList(event.categoryId(), event.latitude(),
 				event.longitude());
@@ -38,31 +38,32 @@ public class NotificationEventProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingEvents.Update event) {
+		if (meetingEvent instanceof MeetingMessageEvents.Update event) {
 			String message = messageUtil.buildUpdateMessage(event.meetingName());
 			return new MessageEvents(event.userIdList(), event.meetingId(),
 				NotificationEventType.MEETING_UPDATED.name(),
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingEvents.Delete event) {
+		if (meetingEvent instanceof MeetingMessageEvents.Delete event) {
 			String message = messageUtil.buildDeleteMessage(event.meetingName());
 			return new MessageEvents(event.userIdList(), event.meetingId(),
 				NotificationEventType.MEETING_DELETED.name(),
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingEvents.Join event) {
+		if (meetingEvent instanceof MeetingMessageEvents.Join event) {
 			String message = messageUtil.buildJoinMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
 			return new MessageEvents(userIdList, event.meetingId(), NotificationEventType.MEETING_JOINED.name(),
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingEvents.Cancel event) {
+		if (meetingEvent instanceof MeetingMessageEvents.Cancel event) {
 			String message = messageUtil.buildCancelMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
-			return new MessageEvents(userIdList, event.meetingId(), NotificationEventType.MEETING_CANCELLED.name(),
+			return new MessageEvents(userIdList, event.meetingId(),
+				NotificationEventType.MEETING_CANCELLED.name(),
 				message);
 		}
 		return null;

@@ -8,9 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.notification.application.dto.NotificationDto;
+import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.domain.notification.domain.NotificationRepository;
-import com.example.momo.domain.notification.domain.dto.NotificationDto;
-import com.example.momo.domain.notification.domain.dto.NotificationResponseDto;
 import com.example.momo.global.socket.dto.WebSocketNotificationDto;
 import com.example.momo.global.socket.service.WebSocketNotificationService;
 

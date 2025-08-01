@@ -7,9 +7,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.example.momo.domain.messagehub.application.handler.EventRoutingHandler;
 import com.example.momo.global.common.aop.EventLoggable;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.follow.FollowMessageEvents;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentMessageEvents;
+import com.example.momo.global.springEvent.follow.FollowMessageEvents;
+import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.global.springEvent.payment.PaymentMessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public class DomainEventListener {
 
 	@EventLoggable
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handleMeetingMessageEvent(MeetingEvents.MeetingEvent event) {
+	public void handleMeetingMessageEvent(MeetingMessageEvents.MeetingMessageEvent event) {
 		eventRoutingHandler.handleMeetingMessage(event);
 	}
 

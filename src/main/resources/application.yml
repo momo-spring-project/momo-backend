@@ -34,6 +34,12 @@ spring:
     basename: validations, messages
     encoding: UTF-8
 
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
+
 toss:
   payments:
     secret-key: ${TOSS_SECRET_KEY}

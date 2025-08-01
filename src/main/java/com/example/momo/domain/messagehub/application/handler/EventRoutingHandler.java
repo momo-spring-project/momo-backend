@@ -4,10 +4,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.provider.NotificationEventProvider;
-import com.example.momo.global.infrastructure.springEvent.MeetingEvents;
-import com.example.momo.global.infrastructure.springEvent.follow.FollowMessageEvents;
-import com.example.momo.global.infrastructure.springEvent.notification.MessageEvents;
-import com.example.momo.global.infrastructure.springEvent.payment.PaymentMessageEvents;
+import com.example.momo.global.springEvent.follow.FollowMessageEvents;
+import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.global.springEvent.notification.MessageEvents;
+import com.example.momo.global.springEvent.payment.PaymentMessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class EventRoutingHandler {
 
 	private final ApplicationEventPublisher eventPublisher;
 
-	public void handleMeetingMessage(MeetingEvents.MeetingEvent event) {
+	public void handleMeetingMessage(MeetingMessageEvents.MeetingMessageEvent event) {
 		MessageEvents messageEvents = notificationEventProvider.processMeetingMessage(event);
 
 		if (!hasMessageEvent(messageEvents)) {
