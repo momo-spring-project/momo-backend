@@ -1,24 +1,37 @@
 package com.example.momo.global.rabbitMQ.config;
 
-import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+@EnableRabbit
 @Configuration
 public class MessagehubRabbitConfig {
 
 	public static final String HUB_QUEUE = "hub.queue";
 	public static final String HUB_EXCHANGE = "hub.exchange";
 	public static final String HUB_ROUTING_KEY = "hub.key";
+
+	@Bean
+	public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+		ConnectionFactory connectionFactory,
+		MessageConverter consumerMessageConverter
+	) {
+		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+		factory.setConnectionFactory(connectionFactory);
+		factory.setMessageConverter(consumerMessageConverter);
+		return factory;
+	}
 
 	@Bean
 	public Queue hubQueue() {
@@ -39,14 +52,8 @@ public class MessagehubRabbitConfig {
 	}
 
 	@Bean
-	public MessageConverter jsonMessageConverter() {
-		return new Jackson2JsonMessageConverter();
-	}
-
-	@Bean
-	public AmqpTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-		RabbitTemplate template = new RabbitTemplate(connectionFactory);
-		template.setMessageConverter(jsonMessageConverter());
-		return template;
+	public ObjectMapper hubObjectMapper() {
+		return new ObjectMapper()
+			.findAndRegisterModules(); // JavaTime 등
 	}
 }

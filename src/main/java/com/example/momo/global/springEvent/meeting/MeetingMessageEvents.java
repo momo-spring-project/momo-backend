@@ -2,23 +2,15 @@ package com.example.momo.global.springEvent.meeting;
 
 import java.util.List;
 
+import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;
 import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 public class MeetingMessageEvents {
 
 	/**
 	 * 모임 이벤트 마커 인터페이스입니다.
 	 */
-	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "eventType")
-	@JsonSubTypes({
-		@JsonSubTypes.Type(value = Create.class, name = "MeetingCreate"),
-		@JsonSubTypes.Type(value = Update.class, name = "MeetingUpdate"),
-		@JsonSubTypes.Type(value = Delete.class, name = "MeetingDelete"),
-		@JsonSubTypes.Type(value = Join.class, name = "MeetingJoin"),
-		@JsonSubTypes.Type(value = Cancel.class, name = "MeetingCancel")
-	})
 	public interface MeetingMessageEvent extends HubEvent {
 		Long meetingId();
 	}
@@ -32,6 +24,7 @@ public class MeetingMessageEvents {
 	 * @param latitude 위도
 	 * @param longitude 경도
 	 */
+	@JsonTypeName(EventMessageType.MEETING_CREATE)
 	public record Create(
 		Long meetingId,
 		int categoryId,
@@ -48,11 +41,12 @@ public class MeetingMessageEvents {
 	 * @param meetingName 변경된 모임 이름
 	 * @param userIdList 관련 유저 ID 목록
 	 */
+	@JsonTypeName(EventMessageType.MEETING_UPDATE)
 	public record Update(
 		Long meetingId,
 		String meetingName,
 		List<Long> userIdList
-	) implements MeetingMessageEvent {
+	) implements MeetingMessageEvent, HubEvent {
 	}
 
 	/**
@@ -62,6 +56,7 @@ public class MeetingMessageEvents {
 	 * @param meetingName 삭제된 모임 이름
 	 * @param userIdList 관련 유저 ID 목록
 	 */
+	@JsonTypeName(EventMessageType.MEETING_DELETE)
 	public record Delete(
 		Long meetingId,
 		String meetingName,
@@ -76,6 +71,7 @@ public class MeetingMessageEvents {
 	 * @param hostUserId 주최자 유저 ID
 	 * @param participantNickname 참여한 유저 닉네임
 	 */
+	@JsonTypeName(EventMessageType.MEETING_JOIN)
 	public record Join(
 		Long meetingId,
 		Long hostUserId,
@@ -90,6 +86,7 @@ public class MeetingMessageEvents {
 	 * @param hostUserId 주최자 유저 ID
 	 * @param participantNickname 취소한 유저 닉네임
 	 */
+	@JsonTypeName(EventMessageType.MEETING_CANCEL)
 	public record Cancel(
 		Long meetingId,
 		Long hostUserId,

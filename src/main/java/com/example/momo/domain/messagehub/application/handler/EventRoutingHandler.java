@@ -31,14 +31,14 @@ public class EventRoutingHandler {
 	private final NotificationMessagePublisher messagePublisher;
 
 	public void handleMessage(HubEvent event) {
-		MessageDto dto = getMessageDto(event);
+		MessageDto dto = createMessageDto(event);
 
 		if (hasMessageEvent(dto)) {
 			publishMessageEvent(dto);
 		}
 	}
 
-	private MessageDto getMessageDto(HubEvent event) {
+	private MessageDto createMessageDto(HubEvent event) {
 		if (event instanceof MeetingMessageEvents.MeetingMessageEvent e) {
 			return messageProvider.processMeetingMessage(e);
 		} else if (event instanceof PaymentMessageEvents.PaymentEvent e) {
