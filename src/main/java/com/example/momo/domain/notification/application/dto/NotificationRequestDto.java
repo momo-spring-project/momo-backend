@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
-public class NotificationDto {
+public class NotificationRequestDto {
 	private Long userId;
 	private Long targetId;
 	private NotificationType type;
