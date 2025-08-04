@@ -10,6 +10,11 @@ import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
  */
 public record MessageDto(List<Long> userIdList, Long targetId, MessageType type, String content) {
 	public NotificationQueueEvent toMessage(Long userId) {
-		return new NotificationQueueEvent(userId, this.targetId, this.type.name(), this.content);
+		return NotificationQueueEvent.builder()
+			.userId(userId)
+			.targetId(this.targetId)
+			.typeName(this.type().name())
+			.content(this.content)
+			.build();
 	}
 }

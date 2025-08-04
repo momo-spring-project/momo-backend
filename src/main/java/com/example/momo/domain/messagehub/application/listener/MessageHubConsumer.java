@@ -22,8 +22,9 @@ public class MessageHubConsumer {
 		queues = MessageHubRabbitConfig.HUB_QUEUE,
 		containerFactory = "hubListenerContainerFactory")
 	public void consume(HubEvent event) {
+		log.info("메세지 허브 리스너 접근 : {}", event);
 		eventRoutingHandler.handleMessage(event);
-		log.info("메세지 허브 리스너 통과 : {}", event.toString());
+
 	}
 
 }

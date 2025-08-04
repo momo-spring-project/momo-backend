@@ -1,5 +1,8 @@
 package com.example.momo.domain.notification.application;
 
+import static com.example.momo.domain.notification.application.NotificationRetryPublisher.*;
+
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
@@ -17,11 +20,33 @@ public class NotificationConsumer {
 
 	@RabbitListener(
 		queues = NotificationRabbitConfig.NOTIFICATION_QUEUE,
-		containerFactory = "notificationListenerContainerFactory"
+		containerFactory = "notificationFactory"
 	)
-	public void consume(NotificationQueueEvent message) {
+	public void consumeMain(NotificationQueueEvent queueEvent, Message message) {
+		log.info("알림 컨슈머 접근 : userId = {}", queueEvent.getUserId());
+		notificationHandler.handleNotification(queueEvent, message);
 
-		notificationHandler.processNotification(message);
-		log.info("메세지 허브 리스너 통과 : {}", message);
 	}
+
+	@RabbitListener(
+		queues = NotificationRabbitConfig.NOTIFICATION_RETRY_QUEUE,
+		containerFactory = "notificationFactory"
+	)
+	public void consumeRetry(NotificationQueueEvent queueEvent, Message message) {
+		int retryCount = calculateRetryCount(message);
+		log.info("알림 컨슈머 재시도 접근 : userId = {}, 시도 횟수 = {}", queueEvent.getUserId(), retryCount);
+		if (queueEvent.getNotificationId() != null && retryCount >= 3) {
+			log.info("알림 DLQ 삭제 : userId = {}, notificationId = {}", queueEvent.getUserId(),
+				queueEvent.getNotificationId());
+			return;
+		}
+		notificationHandler.handleNotification(queueEvent, message);
+
+	}
+
+	private static int calculateRetryCount(Message message) {
+		Object object = message.getMessageProperties().getHeaders().get(NOTIFICATION_RETRY_HEADER);
+		return (object instanceof Number) ? ((Number)object).intValue() : 1;
+	}
+
 }

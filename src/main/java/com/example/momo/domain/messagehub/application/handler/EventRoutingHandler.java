@@ -33,9 +33,11 @@ public class EventRoutingHandler {
 	public void handleMessage(HubEvent event) {
 		MessageDto dto = createMessageDto(event);
 
-		if (hasMessageEvent(dto)) {
-			publishMessageEvent(dto);
+		if (dto == null) {
+			log.warn("MessageEvent 발행 시도 - 이벤트가 null입니다");
+			return;
 		}
+		publishMessageEvent(dto);
 	}
 
 	private MessageDto createMessageDto(HubEvent event) {
@@ -48,14 +50,6 @@ public class EventRoutingHandler {
 		} else {
 			return null;
 		}
-	}
-
-	private boolean hasMessageEvent(MessageDto messageDto) {
-		if (messageDto == null) {
-			log.warn("MessageEvent 발행 시도 - 이벤트가 null입니다");
-			return false;
-		}
-		return true;
 	}
 
 	//이벤트 발행

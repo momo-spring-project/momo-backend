@@ -16,11 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationMessagePublisher {
 	private final RabbitTemplate rabbitTemplate;
 
-	public void publish(NotificationQueueEvent message) {
+	public void publish(NotificationQueueEvent queueEvent) {
 		rabbitTemplate.convertAndSend(
 			NOTIFICATION_EXCHANGE,
 			NOTIFICATION_KEY,
-			message
+			queueEvent
 		);
 	}
 }

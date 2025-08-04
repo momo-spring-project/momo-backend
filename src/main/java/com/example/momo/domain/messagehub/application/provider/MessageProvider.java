@@ -33,6 +33,10 @@ public class MessageProvider {
 			String message = messageUtil.buildCreateMessage(event.categoryName());
 			List<Long> userIdList = targetUserProvider.getUserIdList(event.categoryId(), event.latitude(),
 				event.longitude());
+			if (userIdList.isEmpty()) {
+				log.warn("모임을 추천할만한 인원이 없습니다.");
+				return null;
+			}
 			return new MessageDto(userIdList, event.meetingId(),
 				MessageType.MEETING_RECOMMENDED,
 				message);

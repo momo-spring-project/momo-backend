@@ -31,11 +31,11 @@ public class MessageHubRabbitConfig {
 	@Bean(name = "hubListenerContainerFactory")
 	public SimpleRabbitListenerContainerFactory hubListenerContainerFactory(
 		ConnectionFactory connectionFactory,
-		MessageConverter consumerMessageConverter
+		@Qualifier("jsonMessageConverter") MessageConverter messageConverter
 	) {
 		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
-		factory.setMessageConverter(consumerMessageConverter);
+		factory.setMessageConverter(messageConverter);
 		return factory;
 	}
 
@@ -46,6 +46,13 @@ public class MessageHubRabbitConfig {
 			.withArgument("x-dead-letter-routing-key", HUB_DLX_KEY)
 			.withArgument("x-message-ttl", HUB_QUEUE_TTL_MS)
 			.build();
+	}
+
+	//DLQ (실패 메시지 수신용 큐)
+	@Bean(name = "hubDlq")
+	public Queue hubDlq() {
+
+		return new Queue(HUB_DLQ, true);
 	}
 
 	@Bean(name = "hubExchange")
@@ -59,13 +66,6 @@ public class MessageHubRabbitConfig {
 	public TopicExchange hubDlxExchange() {
 
 		return new TopicExchange(HUB_DLX);
-	}
-
-	//DLQ (실패 메시지 수신용 큐)
-	@Bean(name = "hubDlq")
-	public Queue hubDlq() {
-
-		return new Queue(HUB_DLQ, true);
 	}
 
 	//DLQ Binding

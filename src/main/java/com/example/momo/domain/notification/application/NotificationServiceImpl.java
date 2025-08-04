@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.notification.application.dto.NotificationMessageDto;
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
 import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.domain.notification.domain.Notification;
@@ -41,6 +42,28 @@ public class NotificationServiceImpl implements NotificationService {
 	}
 
 	@Override
+	public Long createNotification(NotificationMessageDto dto) {
+
+		try {
+			Notification savedNotification = notificationRepository.save(Notification.builder()
+				.userId(dto.getUserId())
+				.targetId(dto.getTargetId())
+				.type(dto.getType())
+				.content(dto.getContent())
+				.build());
+			log.debug("알림 저장 완료: userId={},content={}",
+				savedNotification.getUserId(), savedNotification.getContent());
+
+			return savedNotification.getId();
+		} catch (DataIntegrityViolationException e) {
+			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
+		} catch (Exception e) {
+			log.warn("알림 저장 실패: {}", e.getMessage(), e);
+		}
+		return null;
+	}
+
+	@Override
 	public List<NotificationResponseDto> getNotifications(Long userId) {
 		List<NotificationResponseDto> notifications = notificationRepository.findAllByUserId(userId).stream()
 			.map(NotificationResponseDto::from)
@@ -50,4 +73,5 @@ public class NotificationServiceImpl implements NotificationService {
 
 		return notifications;
 	}
+
 }

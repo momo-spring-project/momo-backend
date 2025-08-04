@@ -26,8 +26,13 @@ public class NotificationRabbitConfig {
 
 	public static final int NOTIFICATION_TTL_MS = 10_000;
 
-	@Bean(name = "notificationListenerContainerFactory")
-	public SimpleRabbitListenerContainerFactory notificationListenerContainerFactory(
+	public static final String NOTIFICATION_RETRY_EXCHANGE = "notification.retry.exchange";
+	public static final String NOTIFICATION_RETRY_QUEUE = "notification.retry.queue";
+	public static final String NOTIFICATION_RETRY_KEY = "notification.retry.key";
+	public static final int NOTIFICATION_RETRY_TTL_MS = 30_000;
+
+	@Bean(name = "notificationFactory")
+	public SimpleRabbitListenerContainerFactory notificationMainFactory(
 		ConnectionFactory connectionFactory,
 		MessageConverter messageConverter
 	) {
@@ -79,6 +84,28 @@ public class NotificationRabbitConfig {
 		return BindingBuilder.bind(notificationQueue)
 			.to(notificationExchange)
 			.with(NOTIFICATION_KEY);
+	}
+
+	// 재시도 교환기/큐/바인딩
+	@Bean
+	public TopicExchange notificationRetryExchange() {
+		return new TopicExchange(NOTIFICATION_RETRY_EXCHANGE);
+	}
+
+	@Bean
+	public Queue notificationRetryQueue() {
+		return QueueBuilder.durable(NOTIFICATION_RETRY_QUEUE)
+			.withArgument("x-message-ttl", NOTIFICATION_RETRY_TTL_MS) // 30초 지연 후
+			.withArgument("x-dead-letter-exchange", NOTIFICATION_EXCHANGE)  // 메인으로 복귀
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_KEY) // 메인 라우팅키
+			.build();
+	}
+
+	@Bean
+	public Binding notificationRetryBinding() {
+		return BindingBuilder.bind(notificationRetryQueue())
+			.to(notificationRetryExchange())
+			.with(NOTIFICATION_RETRY_KEY);
 	}
 
 }
