@@ -1,14 +1,16 @@
 package com.example.momo.global.webclient.payment;
 
 import java.time.Duration;
-import java.util.Map;
 
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.example.momo.domain.payment.application.PaymentClient;
+import com.example.momo.global.webclient.payment.dto.TossCancelRequestDto;
+import com.example.momo.global.webclient.payment.dto.TossConfirmRequestDto;
+import com.example.momo.global.webclient.payment.dto.TossKeyInRequestDto;
+import com.example.momo.global.webclient.payment.dto.TossPaymentResponseDto;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,24 +25,24 @@ public class TossPaymentsClient implements PaymentClient {
 
 	// ==================== 결제 처리 API ====================
 
-	public Map<String, Object> confirmPayment(String paymentKey, String orderId, int amount) {
+	@Override
+	public TossPaymentResponseDto confirmPayment(String paymentKey, String orderId, int amount) {
 		String url = "/payments/confirm";
 
-		Map<String, Object> body = Map.of(
-			"paymentKey", paymentKey,
-			"orderId", orderId,
-			"amount", amount
-		);
+		TossConfirmRequestDto request = TossConfirmRequestDto.builder()
+			.paymentKey(paymentKey)
+			.orderId(orderId)
+			.amount(amount)
+			.build();
 
 		try {
-			Map<String, Object> response = tossWebClient
+			TossPaymentResponseDto response = tossWebClient
 				.post()
 				.uri(url)
 				.header("Idempotency-Key", "confirm-" + orderId)
-				.bodyValue(body)
+				.bodyValue(request)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
-				})
+				.bodyToMono(TossPaymentResponseDto.class)
 				.block(REQUEST_TIMEOUT);
 
 			log.info("[TOSS] 결제 승인 완료 - orderId: {}, amount: {}", orderId, amount);
@@ -51,20 +53,22 @@ public class TossPaymentsClient implements PaymentClient {
 		}
 	}
 
-	public Map<String, Object> cancelPayment(String paymentKey, String reason) {
+	@Override
+	public TossPaymentResponseDto cancelPayment(String paymentKey, String reason) {
 		String url = "/payments/{paymentKey}/cancel";
 
-		Map<String, Object> body = Map.of("cancelReason", reason);
+		TossCancelRequestDto request = TossCancelRequestDto.builder()
+			.cancelReason(reason)
+			.build();
 
 		try {
-			Map<String, Object> response = tossWebClient
+			TossPaymentResponseDto response = tossWebClient
 				.post()
 				.uri(url, paymentKey)
 				.header("Idempotency-Key", "cancel-" + paymentKey)
-				.bodyValue(body)
+				.bodyValue(request)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
-				})
+				.bodyToMono(TossPaymentResponseDto.class)
 				.block(REQUEST_TIMEOUT);
 
 			log.info("[TOSS] 결제 취소 완료 - paymentKey: {}, reason: {}", paymentKey, reason);
@@ -77,16 +81,16 @@ public class TossPaymentsClient implements PaymentClient {
 
 	// ==================== 조회 API ====================
 
-	public Map<String, Object> getPayment(String paymentKey) {
+	@Override
+	public TossPaymentResponseDto getPayment(String paymentKey) {
 		String url = "/payments/{paymentKey}";
 
 		try {
-			Map<String, Object> result = tossWebClient
+			TossPaymentResponseDto result = tossWebClient
 				.get()
 				.uri(url, paymentKey)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
-				})
+				.bodyToMono(TossPaymentResponseDto.class)
 				.block(REQUEST_TIMEOUT);
 
 			log.debug("[TOSS] 결제 조회 - paymentKey: {}", paymentKey);
@@ -99,18 +103,18 @@ public class TossPaymentsClient implements PaymentClient {
 
 	// ==================== 테스트 전용 API ====================
 
-	public Map<String, Object> createTestKeyInPayment(Map<String, Object> payload, String orderId) {
-		String url = "/payments/key-in";  // 토스 API 문서에 따른 엔드포인트
+	@Override
+	public TossPaymentResponseDto createTestKeyInPayment(TossKeyInRequestDto request, String orderId) {
+		String url = "/payments/key-in";
 
 		try {
-			Map<String, Object> response = tossWebClient
+			TossPaymentResponseDto response = tossWebClient
 				.post()
 				.uri(url)
 				.header("Idempotency-Key", "keyin-" + orderId)
-				.bodyValue(payload)
+				.bodyValue(request)
 				.retrieve()
-				.bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
-				})
+				.bodyToMono(TossPaymentResponseDto.class)
 				.block(REQUEST_TIMEOUT);
 
 			log.info("[TOSS] Key-in 결제 생성 완료 - orderId: {}", orderId);
