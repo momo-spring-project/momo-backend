@@ -4,11 +4,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 public record UserEventMessage(
 	String eventId,
 	String eventType,
 	LocalDateTime timestamp,
 	String source,
+	@JsonTypeInfo(
+		use = JsonTypeInfo.Id.CLASS,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "@class"
+	)
 	Object data  // 다양한 이벤트 데이터를 담기 위해 Object 사용
 ) {
 
@@ -101,22 +108,5 @@ public record UserEventMessage(
 			new UserRatedData(reviewerId, targetUserId, meetingId, ratingScore,
 				reviewerNickname, targetUserNickname, LocalDateTime.now())
 		);
-	}
-
-	// 데이터 타입 안전 캐스팅을 위한 헬퍼 메서드들
-	public UserWithdrawnData getWithdrawnData() {
-		return (UserWithdrawnData)data;
-	}
-
-	public UserRegisteredData getRegisteredData() {
-		return (UserRegisteredData)data;
-	}
-
-	public UserFollowedData getFollowedData() {
-		return (UserFollowedData)data;
-	}
-
-	public UserRatedData getRatedData() {
-		return (UserRatedData)data;
 	}
 }
