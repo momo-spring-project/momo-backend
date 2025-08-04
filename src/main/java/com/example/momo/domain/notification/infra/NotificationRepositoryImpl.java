@@ -2,10 +2,10 @@ package com.example.momo.domain.notification.infra;
 
 import java.util.List;
 
-import com.example.momo.domain.notification.domain.NotificationRepository;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.notification.domain.Notification;
+import com.example.momo.domain.notification.domain.NotificationRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,9 +16,9 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 	private final NotificationJpaRepository notificationJpaRepository;
 
 	@Override
-	public void save(Notification notification) {
+	public Notification save(Notification notification) {
 
-		notificationJpaRepository.save(notification);
+		return notificationJpaRepository.save(notification);
 	}
 
 	@Override

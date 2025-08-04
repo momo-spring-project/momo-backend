@@ -1,10 +1,10 @@
-package com.example.momo.global.socket.service;
+package com.example.momo.global.socket.application;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketMessageDto;
 import com.example.momo.global.socket.handler.WebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class WebSocketNotificationServiceImpl implements WebSocketNotificationSe
 
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void send(WebSocketNotificationDto message) {
+	public void send(WebSocketMessageDto message) {
 		webSocketHandler.sendToUser(message);
 	}
 }

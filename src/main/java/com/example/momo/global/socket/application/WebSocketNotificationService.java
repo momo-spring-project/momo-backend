@@ -1,6 +1,6 @@
-package com.example.momo.global.socket.service;
+package com.example.momo.global.socket.application;
 
-import com.example.momo.global.socket.dto.WebSocketNotificationDto;
+import com.example.momo.global.socket.application.dto.WebSocketMessageDto;
 
 public interface WebSocketNotificationService {
 
@@ -9,5 +9,5 @@ public interface WebSocketNotificationService {
 	 *
 	 * @param message 메시지 전송에 필요한 정보를 담은 객체
 	 */
-	void send(WebSocketNotificationDto message);
+	void send(WebSocketMessageDto message);
 }

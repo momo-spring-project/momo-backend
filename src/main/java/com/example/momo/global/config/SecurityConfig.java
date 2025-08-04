@@ -83,7 +83,8 @@ public class SecurityConfig {
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/categories").hasRole("ADMIN")
 				.requestMatchers(HttpMethod.PATCH, "/categories/**").hasRole("ADMIN")
-				.requestMatchers("/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**").permitAll()
+				.requestMatchers("/firebase/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**")
+				.permitAll()
 				.requestMatchers(
 					"/api/v2/users/register",
 					"/api/v2/auth/login",
@@ -93,8 +94,10 @@ public class SecurityConfig {
 				.requestMatchers(
 					"/swagger-ui/**",
 					"/v3/api-docs/**"
-				).permitAll()
-				.anyRequest().authenticated()
+				)
+				.permitAll()
+				.anyRequest()
+				.authenticated()
 			)
 			.exceptionHandling(configure -> configure
 				.authenticationEntryPoint(jwtAuthenticationEntryPoint)
