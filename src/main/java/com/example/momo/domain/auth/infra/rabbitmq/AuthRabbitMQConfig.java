@@ -13,11 +13,6 @@ public class AuthRabbitMQConfig {
 	public static final String AUTH_USER_EVENTS_QUEUE = "auth.user.events.queue";
 
 	@Bean
-	public TopicExchange userEventsExchange() {
-		return new TopicExchange("momo.user.events.exchange");
-	}
-
-	@Bean
 	public Queue authUserEventsQueue() {
 		return new Queue(AUTH_USER_EVENTS_QUEUE, true);
 	}
@@ -26,7 +21,7 @@ public class AuthRabbitMQConfig {
 	public Binding authUserEventsBinding() {
 		return BindingBuilder
 			.bind(authUserEventsQueue())
-			.to(userEventsExchange())
-			.with("user.*");
+			.to(new TopicExchange("momo.user.events", true, false))
+			.with("user.withdrawn");
 	}
 }
