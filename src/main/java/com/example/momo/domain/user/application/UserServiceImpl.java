@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -31,7 +30,7 @@ import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
-import com.example.momo.global.springEvent.user.UserEvents;
+import com.example.momo.domain.user.infra.rabbitmq.UserEventPublisher;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.meeting.MeetingClient;
@@ -50,7 +49,7 @@ public class UserServiceImpl implements UserService {
 	private final CategoryClient categoryClient;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
-	private final ApplicationEventPublisher eventPublisher;
+	private final UserEventPublisher userEventPublisher;
 
 	@Override
 	@Transactional
@@ -76,14 +75,14 @@ public class UserServiceImpl implements UserService {
 		userRepository.save(user);
 
 		// 회원가입 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.UserRegistered(
+		userEventPublisher.publishUserRegistered(
 			user.getId(),
 			user.getNickname(),
 			user.getEmail(),
 			user.getLatitude(),
 			user.getLongitude(),
-			LocalDateTime.now()
-		));
+			List.of() // 초기 카테고리는 빈 리스트
+		);
 	}
 
 	@Override
@@ -97,16 +96,10 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
-		// 탈퇴 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.UserWithdrawn(
-			user.getId(),
-			user.getEmail(),
-			user.getNickname(),
-			LocalDateTime.now()
-		));
-
-		// 소프트 삭제
 		user.delete();
+
+		// 탈퇴 이벤트 발행
+		userEventPublisher.publishUserWithdrawn(user.getId(), user.getEmail(), user.getNickname());
 	}
 
 	// === 사용자 정보 조회 ===
@@ -210,15 +203,6 @@ public class UserServiceImpl implements UserService {
 
 		user.updateCategories(categoryIds);
 
-		// 카테고리 변경 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.CategoriesChanged(
-			userId,
-			user.getNickname(),
-			oldCategoryIds,
-			categoryIds,
-			LocalDateTime.now()
-		));
-
 		return user;
 	}
 
@@ -236,13 +220,6 @@ public class UserServiceImpl implements UserService {
 		}
 
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
-
-		// 비밀번호 변경 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.PasswordChanged(
-			userId,
-			user.getEmail(),
-			LocalDateTime.now()
-		));
 	}
 
 	@Override
@@ -255,14 +232,6 @@ public class UserServiceImpl implements UserService {
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 		user.updateNickname(request.nickname());
-
-		// 닉네임 변경 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.NicknameChanged(
-			userId,
-			oldNickname,
-			request.nickname(),
-			LocalDateTime.now()
-		));
 	}
 
 	@Override
@@ -274,17 +243,6 @@ public class UserServiceImpl implements UserService {
 		Double oldLongitude = user.getLongitude();
 
 		user.updateLocation(request.latitude(), request.longitude());
-
-		// 위치 변경 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.LocationChanged(
-			userId,
-			user.getNickname(),
-			oldLatitude,
-			oldLongitude,
-			request.latitude(),
-			request.longitude(),
-			LocalDateTime.now()
-		));
 
 		return new UserLocationResponseDto(user);
 	}
@@ -331,15 +289,14 @@ public class UserServiceImpl implements UserService {
 		targetUser.getRatings().add(userRating);
 
 		// 평가 생성 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.UserRated(
+		userEventPublisher.publishUserRated(
 			reviewerId,
 			targetUserId,
 			request.meetingId(),
 			request.ratingScore(),
 			reviewer.getNickname(),
-			targetUser.getNickname(),
-			LocalDateTime.now()
-		));
+			targetUser.getNickname()
+		);
 
 		recalculateUserScore(targetUserId);
 	}
@@ -397,16 +354,6 @@ public class UserServiceImpl implements UserService {
 
 		// 6. 점수 업데이트
 		user.updateScore(totalScore);
-
-		// 점수 변경 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.ScoreChanged(
-			userId,
-			user.getNickname(),
-			oldScore,
-			totalScore,
-			"평가 반영",
-			LocalDateTime.now()
-		));
 	}
 
 	/**
@@ -534,13 +481,12 @@ public class UserServiceImpl implements UserService {
 		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
 
 		// 팔로우 생성 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.UserFollowed(
+		userEventPublisher.publishUserFollowed(
 			followerId,
 			followingId,
 			follower.getNickname(),
-			following.getNickname(),
-			LocalDateTime.now()
-		));
+			following.getNickname()
+		);
 	}
 
 	@Override
@@ -567,15 +513,6 @@ public class UserServiceImpl implements UserService {
 
 		follower.decrementFollowingCount();
 		following.decrementFollowerCount();
-
-		// 언팔로우 이벤트 발행
-		eventPublisher.publishEvent(new UserEvents.UserUnfollowed(
-			followerId,
-			followingId,
-			follower.getNickname(),
-			following.getNickname(),
-			LocalDateTime.now()
-		));
 	}
 
 	@Override
