@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CategoryClient {
 
-	private final static String CATEGORY_SERVICE_BASE_URI = "/api/v2/categories";
+	private final static String CATEGORY_SERVICE_BASE_URI = "/categories";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 	private final WebClient webClient;
 

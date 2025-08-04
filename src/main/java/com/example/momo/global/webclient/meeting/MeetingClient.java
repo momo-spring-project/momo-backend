@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MeetingClient {
 
-	private final static String MEETING_SERVICE_BASE_URI = "/api/v2/meetings";
+	private final static String MEETING_SERVICE_BASE_URI = "/meetings";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 	private final WebClient webClient;
 

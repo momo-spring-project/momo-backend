@@ -47,6 +47,26 @@ exporters:
     verbosity: detailed
 
 processors:
+  filter/ottl:
+    error_mode: ignore
+    traces:
+      span:
+        - 'name == "Ping"'
+        - 'name == "POST"'
+        - 'name == "Create connection"'
+        - 'name == "Load server variables"'
+        - "name == \"Set variable 'character_set_results'\""
+        - "name == \"Set transaction access mode 'read-only'\""
+        - "name == \"Set transaction access mode 'read-write'\""
+        - "name == \"Set variable 'autocommit'\""
+        - 'name == "Rollback"'
+        - 'name == "Transaction.commit"'
+        - 'IsMatch(name, ".*@@session.transaction_.*")'
+  attributes/error_flag:
+    actions:
+      - action: insert
+        key: error
+        value: "false"
   batch:
     send_batch_size: 100
     timeout: 10s
@@ -56,16 +76,16 @@ processors:
 service:
   pipelines:
     traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [otlp, logging]
+      receivers: [ otlp ]
+      processors: [ batch, filter/ottl, attributes/error_flag ]
+      exporters: [ otlp, logging ]
     metrics:
-      receivers: [otlp, hostmetrics]
-      exporters: [prometheus]
+      receivers: [ otlp, hostmetrics ]
+      exporters: [ prometheus ]
     logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [loki]
+      receivers: [ otlp ]
+      processors: [ batch ]
+      exporters: [ loki ]
   telemetry: # 콜렉터 본인 파이프라인, metrics 는 localhost:8888/metrics 접속해서 확인 가능
     logs:
       level: debug
