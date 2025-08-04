@@ -1,6 +1,6 @@
 package com.example.momo.global.rabbitMQ.producer;
 
-import static com.example.momo.global.rabbitMQ.config.MessagehubRabbitConfig.*;
+import static com.example.momo.global.rabbitMQ.config.MessageHubRabbitConfig.*;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -17,7 +17,7 @@ public class HubMessagePublisher {
 	public void publish(HubEvent event) {
 		rabbitTemplate.convertAndSend(
 			HUB_EXCHANGE,
-			HUB_ROUTING_KEY,
+			HUB_KEY,
 			event
 		);
 	}

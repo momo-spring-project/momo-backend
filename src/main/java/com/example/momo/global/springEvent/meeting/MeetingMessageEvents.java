@@ -46,7 +46,7 @@ public class MeetingMessageEvents {
 		Long meetingId,
 		String meetingName,
 		List<Long> userIdList
-	) implements MeetingMessageEvent, HubEvent {
+	) implements MeetingMessageEvent {
 	}
 
 	/**

@@ -2,10 +2,14 @@ package com.example.momo.global.rabbitMQ.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,24 +18,67 @@ import org.springframework.context.annotation.Configuration;
 public class NotificationRabbitConfig {
 	public static final String NOTIFICATION_QUEUE = "notification.queue";
 	public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
-	public static final String NOTIFICATION_ROUTING_KEY = "notification.key";
+	public static final String NOTIFICATION_KEY = "notification.key";
 
-	@Bean
+	public static final String NOTIFICATION_DLX = "notification.dlx";
+	public static final String NOTIFICATION_DLQ = "notification.dlq";
+	public static final String NOTIFICATION_DLX_KEY = "notification.dlx.key";
+
+	public static final int NOTIFICATION_TTL_MS = 10_000;
+
+	@Bean(name = "notificationListenerContainerFactory")
+	public SimpleRabbitListenerContainerFactory notificationListenerContainerFactory(
+		ConnectionFactory connectionFactory,
+		MessageConverter messageConverter
+	) {
+		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+		factory.setConnectionFactory(connectionFactory);
+		factory.setMessageConverter(messageConverter);
+		return factory;
+	}
+
+	@Bean(name = "notificationQueue")
 	public Queue notificationQueue() {
-		return QueueBuilder.durable(NOTIFICATION_QUEUE).build();
+		return QueueBuilder.durable(NOTIFICATION_QUEUE)
+			.withArgument("x-dead-letter-exchange", NOTIFICATION_DLX)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_DLX_KEY)
+			.withArgument("x-message-ttl", NOTIFICATION_TTL_MS)
+			.build();
 	}
 
-	@Bean
-	public DirectExchange notificationExchange() {
-		return new DirectExchange(NOTIFICATION_EXCHANGE);
+	@Bean(name = "notificationExchange")
+	public TopicExchange notificationExchange() {
+		return new TopicExchange(NOTIFICATION_EXCHANGE);
 	}
 
-	@Bean
-	public Binding notificationBinding(Queue notificationQueue, DirectExchange notificationExchange) {
-		return BindingBuilder
-			.bind(notificationQueue)
+	@Bean(name = "notificationDlxExchange")
+	public TopicExchange notificationDlxExchange() {
+
+		return new TopicExchange(NOTIFICATION_DLX);
+	}
+
+	@Bean(name = "notificationDlq")
+	public Queue notificationDlq() {
+
+		return QueueBuilder.durable(NOTIFICATION_DLQ).build();
+	}
+
+	@Bean(name = "notificationDlqBinding")
+	public Binding notificationDlqBinding(
+		@Qualifier("notificationDlq") Queue dlq,
+		@Qualifier("notificationDlxExchange") TopicExchange dlx
+	) {
+		return BindingBuilder.bind(dlq).to(dlx).with(NOTIFICATION_DLX_KEY);
+	}
+
+	@Bean(name = "notificationBinding")
+	public Binding notificationBinding(
+		@Qualifier("notificationQueue") Queue notificationQueue,
+		@Qualifier("notificationExchange") TopicExchange notificationExchange
+	) {
+		return BindingBuilder.bind(notificationQueue)
 			.to(notificationExchange)
-			.with(NOTIFICATION_ROUTING_KEY);
+			.with(NOTIFICATION_KEY);
 	}
 
 }

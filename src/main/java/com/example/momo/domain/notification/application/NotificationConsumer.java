@@ -15,7 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
 
-	@RabbitListener(queues = NotificationRabbitConfig.NOTIFICATION_QUEUE)
+	@RabbitListener(
+		queues = NotificationRabbitConfig.NOTIFICATION_QUEUE,
+		containerFactory = "notificationListenerContainerFactory"
+	)
 	public void consume(NotificationQueueEvent message) {
 
 		notificationHandler.processNotification(message);

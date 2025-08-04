@@ -19,7 +19,7 @@ public class NotificationMessagePublisher {
 	public void publish(NotificationQueueEvent message) {
 		rabbitTemplate.convertAndSend(
 			NOTIFICATION_EXCHANGE,
-			NOTIFICATION_ROUTING_KEY,
+			NOTIFICATION_KEY,
 			message
 		);
 	}
