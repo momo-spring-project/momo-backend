@@ -39,7 +39,7 @@ import lombok.AllArgsConstructor;
 @Validated
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/v2/meetings")
+@RequestMapping("/meetings")
 public class MeetingController {
 
 	private final MeetingService meetingService;
