@@ -132,15 +132,24 @@ public class MeetingServiceImpl implements MeetingService {
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<MeetingDocument> mt = meetingRepository.getMeetings(title, meetingDate, status, categoryId,
-			pageable);
-		List<MeetingDocument> response = mt.stream().toList();
+		Page<MeetingDocument> meetings;
+
+		try {
+			meetings = meetingRepository.getMeetings(title, meetingDate, status, categoryId,
+				pageable);
+		} catch (Exception e) {
+			Page<Meeting> meetingPage = meetingRepository.getMeetingsForDatabase(title, meetingDate, status, categoryId,
+				pageable);
+			meetings = meetingPage.map(MeetingDocument::from);
+		}
+
+		List<MeetingDocument> response = meetings.stream().toList();
 
 		return new MeetingPagingResponseDto<>(
 			response,
-			mt.getTotalElements(),
-			mt.getTotalPages(),
-			mt.getNumber() + 1
+			meetings.getTotalElements(),
+			meetings.getTotalPages(),
+			meetings.getNumber() + 1
 		);
 	}
 
