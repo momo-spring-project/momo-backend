@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.event.rabbitmq;
+package com.example.momo.domain.notification.event.rabbitmq.producer;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class NotificationRetryPublisher {
+public class NotificationRetryProducer {
 	public static final String NOTIFICATION_RETRY_HEADER = "x-notification-retry-attempts";
 	public static final int NOTIFICATION_MAX_RETRY = 3;
 

@@ -1,4 +1,4 @@
-package com.example.momo.global.springEvent.payment;
+package com.example.momo.global.rabbitMQ.dto.payment;
 
 import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;

@@ -1,4 +1,4 @@
-package com.example.momo.global.springEvent.follow;
+package com.example.momo.global.rabbitMQ.dto.follow;
 
 import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;

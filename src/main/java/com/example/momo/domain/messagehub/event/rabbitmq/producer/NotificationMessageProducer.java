@@ -1,4 +1,4 @@
-package com.example.momo.domain.messagehub.event.rabbitmq;
+package com.example.momo.domain.messagehub.event.rabbitmq.producer;
 
 import static com.example.momo.global.rabbitMQ.config.NotificationRabbitConfig.*;
 
@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NotificationMessagePublisher {
+public class NotificationMessageProducer {
 	private final RabbitTemplate rabbitTemplate;
 
 	public void publish(MessageHubNotificationEvent event) {

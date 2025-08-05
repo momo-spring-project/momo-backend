@@ -13,7 +13,7 @@ public record MessageDto(List<Long> userIdList, Long targetId, MessageType type,
 		return MessageHubNotificationEvent.builder()
 			.userId(userId)
 			.targetId(this.targetId)
-			.type(this.type().name())
+			.type(this.type.name())
 			.content(this.content)
 			.build();
 	}

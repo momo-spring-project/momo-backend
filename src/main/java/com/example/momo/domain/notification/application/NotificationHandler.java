@@ -1,12 +1,12 @@
 package com.example.momo.domain.notification.application;
 
-import static com.example.momo.domain.notification.event.rabbitmq.NotificationRetryPublisher.*;
+import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.dto.NotificationMessageDto;
-import com.example.momo.domain.notification.event.rabbitmq.NotificationRetryPublisher;
+import com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer;
 import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
 
 import jakarta.transaction.Transactional;
@@ -31,13 +31,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class NotificationHandler {
 
-	private final NotificationRetryPublisher notificationRetryPublisher;
+	private final NotificationRetryProducer notificationRetryProducer;
 	private final NotificationProvider notificationProvider;
 
 	@Transactional
 	public void handleNotification(MessageHubNotificationEvent event, Message raw) {
 
 		NotificationMessageDto dto = NotificationMessageDto.of(event);
+
+		if (dto == null) {
+			log.warn("알림 저장 실패 - 타입 불일치: userId={}, content={}", event.getUserId(), event.getContent());
+			return;
+		}
 
 		if (!tryCreateNotificationId(event, dto)) {
 			handleNotificationRetry(event, raw);
@@ -69,10 +74,10 @@ public class NotificationHandler {
 			.getHeaders().getOrDefault(NOTIFICATION_RETRY_HEADER, 0)).intValue() + 1;
 
 		if (attempts > NOTIFICATION_MAX_RETRY) {
-			notificationRetryPublisher.publishToDlq(event);
+			notificationRetryProducer.publishToDlq(event);
 			return;
 		}
-		notificationRetryPublisher.publishRetry(event, attempts); // TTL 있는 재시도 큐로
+		notificationRetryProducer.publishRetry(event, attempts); // TTL 있는 재시도 큐로
 	}
 
 }

@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class HubMessagePublisher {
+public class HubMessageProducer {
 	private final RabbitTemplate rabbitTemplate;
 
 	public void publish(DomainMessageEvent event) {

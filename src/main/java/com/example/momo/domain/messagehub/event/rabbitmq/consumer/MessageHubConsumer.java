@@ -1,4 +1,4 @@
-package com.example.momo.domain.messagehub.event.rabbitmq;
+package com.example.momo.domain.messagehub.event.rabbitmq.consumer;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;

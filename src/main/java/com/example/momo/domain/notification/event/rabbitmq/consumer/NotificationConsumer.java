@@ -1,6 +1,6 @@
-package com.example.momo.domain.notification.event.rabbitmq;
+package com.example.momo.domain.notification.event.rabbitmq.consumer;
 
-import static com.example.momo.domain.notification.event.rabbitmq.NotificationRetryPublisher.*;
+import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

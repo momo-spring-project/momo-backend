@@ -27,10 +27,13 @@ public class NotificationMessageDto {
 	}
 
 	public static NotificationMessageDto of(MessageHubNotificationEvent event) {
+		NotificationType changedType = NotificationType.from(event.getType());
+		if (changedType == null)
+			return null;
 		return NotificationMessageDto.builder()
 			.userId(event.getUserId())
 			.targetId(event.getTargetId())
-			.type(NotificationType.from(event.getType()))
+			.type(changedType)
 			.content(event.getContent())
 			.notificationId(event.getNotificationId())
 			.build();

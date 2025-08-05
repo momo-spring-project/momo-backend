@@ -13,6 +13,8 @@ public enum NotificationType {
 	MEETING_UPDATED("모임 정보 변경"),
 	MEETING_DELETED("모임 삭제"),
 	MEETING_RECOMMENDED("추천 모임"),
+	MEETING_UPCOMING("모임 예정"),
+	MEETING_TOMORROW("내일 모임 예정"),
 
 	// 팔로우
 	FOLLOWED("팔로우"),

@@ -5,11 +5,11 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
-import com.example.momo.domain.messagehub.event.rabbitmq.NotificationMessagePublisher;
+import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
+import com.example.momo.global.rabbitMQ.dto.follow.FollowMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.meeting.MeetingMessageEvents;
 import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
-import com.example.momo.global.springEvent.follow.FollowMessageEvents;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
-import com.example.momo.global.springEvent.payment.PaymentMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.payment.PaymentMessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class EventRoutingHandler {
 
 	private final MessageProvider messageProvider;
 
-	private final NotificationMessagePublisher messagePublisher;
+	private final NotificationMessageProducer messagePublisher;
 
 	public void handleMessage(DomainMessageEvent event) {
 		MessageDto dto = createMessageDto(event);
