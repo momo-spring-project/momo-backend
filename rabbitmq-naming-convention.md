@@ -70,29 +70,6 @@ public class QueueNames {
 
 RabbitMQ 이벤트 처리는 도메인 단위로 다음과 같은 패키지 구조를 따릅니다.
 
-### 📁 패키지 구조
-
-```
-src
-└── main
-    └── java
-        └── com.example.momo
-            └── user
-                └── event
-                    └── rabbitmq
-                        ├── config      # Queue, Exchange, Binding, ListenerContainer 설정
-                        ├── producer    # 메시지를 발행하는 클래스
-                        └── consumer    # 메시지를 구독하고 처리하는 클래스
-```
-
-### 📦 각 패키지의 역할
-
-| 패키지        | 설명                                                                  |
-|------------|---------------------------------------------------------------------|
-| `config`   | Queue, Exchange, Binding, `SimpleRabbitListenerContainerFactory` 설정 |
-| `producer` | 이벤트 발행 (RabbitTemplate 기반)                                          |
-| `consumer` | 이벤트 수신 및 처리 (`@RabbitListener`)                                     |
-
 ### 🧾 예시 클래스 (user 도메인 기준)
 
 ```
@@ -109,6 +86,14 @@ user
 ```
 
 ---
+
+### 📦 각 패키지의 역할
+
+| 패키지        | 설명                                                                  |
+|------------|---------------------------------------------------------------------|
+| `config`   | Queue, Exchange, Binding, `SimpleRabbitListenerContainerFactory` 설정 |
+| `producer` | 이벤트 발행 (RabbitTemplate 기반)                                          |
+| `consumer` | 이벤트 수신 및 처리 (`@RabbitListener`)                                     |
 
 ## ✅ 요약
 
@@ -127,7 +112,6 @@ com.example.momo
 │       └── rabbitmq
 │           ├── config
 │           │   ├── UserRabbitConfig.java
-│           │   └── UserRabbitListenerContainerFactoryConfig.java
 │           ├── producer
 │           │   └── UserEventProducer.java
 │           └── consumer
@@ -172,7 +156,7 @@ com.example.momo
 RabbitMQ 이벤트로 주고받는 메시지는 공통 구조로 설계하고, 다음과 같은 위치에 배치합니다:
 
 ```
-com.example.momo.global.event.dto
+com.example.momo.global.rabbitmq.dto
 └── UserEventMessage.java
 ```
 
