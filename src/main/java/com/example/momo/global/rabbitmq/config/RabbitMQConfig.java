@@ -1,4 +1,4 @@
-package com.example.momo.global.config;
+package com.example.momo.global.rabbitmq.config;
 
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Configuration
-public class CommonRabbitMQConfig {
+public class RabbitMQConfig {
 
 	/**
 	 * 메시지 직렬화 컨버터
