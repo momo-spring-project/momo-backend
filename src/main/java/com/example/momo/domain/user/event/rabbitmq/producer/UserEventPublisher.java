@@ -1,7 +1,5 @@
 package com.example.momo.domain.user.event.rabbitmq.producer;
 
-import java.util.List;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,27 +20,6 @@ public class UserEventPublisher {
 	public void publishUserWithdrawn(Long userId, String email, String nickname) {
 		UserEventMessage message = UserEventMessage.createWithdrawn(userId, email, nickname);
 		publishEvent(message, RoutingKeys.USER_WITHDRAWN);
-	}
-
-	public void publishUserRegistered(Long userId, String nickname, String email,
-		Double latitude, Double longitude, List<Integer> categoryIds) {
-		UserEventMessage message = UserEventMessage.createRegistered(userId, nickname, email, latitude, longitude,
-			categoryIds);
-		publishEvent(message, RoutingKeys.USER_REGISTERED);
-	}
-
-	public void publishUserFollowed(Long followerId, Long followingId,
-		String followerNickname, String followingNickname) {
-		UserEventMessage message = UserEventMessage.createFollowed(followerId, followingId, followerNickname,
-			followingNickname);
-		publishEvent(message, RoutingKeys.USER_FOLLOWED);
-	}
-
-	public void publishUserRated(Long reviewerId, Long targetUserId, Long meetingId,
-		Integer ratingScore, String reviewerNickname, String targetUserNickname) {
-		UserEventMessage message = UserEventMessage.createRated(reviewerId, targetUserId, meetingId,
-			ratingScore, reviewerNickname, targetUserNickname);
-		publishEvent(message, RoutingKeys.USER_RATED);
 	}
 
 	private void publishEvent(UserEventMessage message, String routingKey) {
