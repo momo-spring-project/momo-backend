@@ -25,10 +25,9 @@ public class UserOutboxCleanupScheduler {
 	private static final int CLEANUP_DAYS_OLD = 7;
 
 	/**
-	 * 실패한 아웃박스 이벤트 재시도
-	 * 매 5분마다 실행
+	 * 실패한 아웃박스 이벤트 재시도 (매 5분)
 	 */
-	@Scheduled(fixedRate = 300_000) // 5분 = 300,000ms
+	@Scheduled(fixedRate = 300_000)
 	public void retryFailedEvents() {
 		try {
 			log.info("실패한 아웃박스 이벤트 재시도 시작");
@@ -50,7 +49,6 @@ public class UserOutboxCleanupScheduler {
 				try {
 					userOutboxService.retryEvent(event);
 					successCount++;
-
 				} catch (Exception e) {
 					failCount++;
 					log.warn("아웃박스 이벤트 재시도 실패: id={}, userId={}, retryCount={}",
@@ -66,8 +64,7 @@ public class UserOutboxCleanupScheduler {
 	}
 
 	/**
-	 * 오래된 발행 완료 이벤트 정리
-	 * 매일 새벽 3시에 실행
+	 * 오래된 발행 완료 이벤트 정리 (매일 새벽 3시)
 	 */
 	@Scheduled(cron = "0 0 3 * * *")
 	public void cleanupOldEvents() {
@@ -80,34 +77,6 @@ public class UserOutboxCleanupScheduler {
 
 		} catch (Exception e) {
 			log.error("오래된 아웃박스 이벤트 정리 중 오류 발생", e);
-		}
-	}
-
-	/**
-	 * 아웃박스 상태 모니터링
-	 * 매 30분마다 실행
-	 */
-	@Scheduled(fixedRate = 1_800_000) // 30분 = 1,800,000ms
-	public void monitorOutboxStatus() {
-		try {
-			List<UserOutboxEvent> unpublishedEvents = userOutboxService.getUnpublishedEvents();
-
-			if (!unpublishedEvents.isEmpty()) {
-				log.warn("미발행 아웃박스 이벤트 {}개 발견 - 확인 필요", unpublishedEvents.size());
-
-				// 재시도 횟수 초과한 이벤트 체크
-				long maxRetryExceeded = unpublishedEvents.stream()
-					.filter(event -> event.getRetryCount() >= MAX_RETRY_COUNT)
-					.count();
-
-				if (maxRetryExceeded > 0) {
-					log.error("재시도 횟수 초과한 아웃박스 이벤트 {}개 발견 - 수동 처리 필요",
-						maxRetryExceeded);
-				}
-			}
-
-		} catch (Exception e) {
-			log.error("아웃박스 상태 모니터링 중 오류 발생", e);
 		}
 	}
 }

@@ -15,15 +15,11 @@ public interface UserOutboxEventRepository {
 	/**
 	 * 특정 사용자의 특정 이벤트 타입을 발행 완료로 마킹
 	 */
-	void markAsPublished(Long userId, String eventType);
-
-	/**
-	 * 미발행된 이벤트 목록 조회 (재시도용)
-	 */
-	List<UserOutboxEvent> findUnpublishedEvents();
+	int markAsPublished(Long userId, String eventType);
 
 	/**
 	 * 특정 재시도 횟수 이하인 미발행 이벤트 목록 조회
+	 * - maxRetryCount에 Integer.MAX_VALUE를 전달하면 모든 미발행 이벤트 조회 가능
 	 */
 	List<UserOutboxEvent> findUnpublishedEventsWithRetryCountLessThan(int maxRetryCount);
 
@@ -34,9 +30,6 @@ public interface UserOutboxEventRepository {
 
 	/**
 	 * 발행 완료된 오래된 이벤트 삭제
-	 *
-	 * @param daysOld 며칠 이전 데이터를 삭제할지
-	 * @return 삭제된 이벤트 개수
 	 */
 	int deleteOldPublishedEvents(int daysOld);
 }

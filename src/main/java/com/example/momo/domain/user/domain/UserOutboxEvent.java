@@ -57,16 +57,4 @@ public class UserOutboxEvent extends BaseEntity {
 		outboxEvent.eventData = eventData;
 		return outboxEvent;
 	}
-
-	// 발행 완료 처리
-	public void markAsPublished() {
-		this.published = true;
-		this.publishedAt = LocalDateTime.now();
-	}
-
-	// 재시도 처리
-	public void incrementRetryCount() {
-		this.retryCount++;
-		this.lastRetryAt = LocalDateTime.now();
-	}
 }
