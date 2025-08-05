@@ -14,25 +14,25 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
 public class RedisConfig {
+
 	@Bean
-	public RedisTemplate<String, MeetingReminderMessage> reminderTemplate(
+	public RedisTemplate<String, MeetingReminderMessage> reminderRedisTemplate(
 		RedisConnectionFactory connectionFactory) {
 
-		// 1) ObjectMapper 세팅 (JavaTime 등 모듈 등록)
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.registerModule(new JavaTimeModule());
 		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-		// 2) 생성자로 ObjectMapper와 타입 지정
 		Jackson2JsonRedisSerializer<MeetingReminderMessage> serializer =
 			new Jackson2JsonRedisSerializer<>(objectMapper, MeetingReminderMessage.class);
 
-		// 3) RedisTemplate 구성
-		RedisTemplate<String, MeetingReminderMessage> template =
-			new RedisTemplate<>();
+		RedisTemplate<String, MeetingReminderMessage> template = new RedisTemplate<>();
 		template.setConnectionFactory(connectionFactory);
 		template.setKeySerializer(new StringRedisSerializer());
 		template.setValueSerializer(serializer);
+		// 이게 **핵심**!
+		template.setHashKeySerializer(new StringRedisSerializer());
+		template.setHashValueSerializer(serializer);
 		template.afterPropertiesSet();
 
 		return template;

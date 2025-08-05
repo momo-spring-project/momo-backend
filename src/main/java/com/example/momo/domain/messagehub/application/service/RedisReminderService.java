@@ -5,7 +5,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -21,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class RedisReminderService {
 	private final RedisReminderRepository redisReminderRepository;
-	private final ZoneId zone = ZoneId.systemDefault();
+	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 
 	public void saveReminderMessage(MeetingReminderMessage message) {
 		LocalDateTime meetingDate = message.getMeetingStartTime();
@@ -46,24 +50,28 @@ public class RedisReminderService {
 	}
 
 	/** 30분 전 알림 (기존 로직 유지) */
-	public Set<MeetingReminderMessage> getUpcomingMessages(Instant now, int max, AlarmType type) {
-		Instant nextPoint = now.plus(type.getDuration());
+	public List<MeetingReminderMessage> getUpcomingMessages(int max) {
+		Instant now = Instant.now();
+		log.debug("[30분전 알림] 실행 시간: {}", now);
+		Instant nextPoint = now.plus(AlarmType.MIN30.getDuration());
 		long nowMs = now.toEpochMilli();
 		long toMs = nextPoint.toEpochMilli();
 
-		Set<MeetingReminderMessage> candidates =
-			redisReminderRepository.findByScoreRange(nowMs, toMs, max);
+		// ZSet에서 uniqueKey(알림 식별자)만 범위 조회
+		Set<String> uniqueKeys = redisReminderRepository.findUniqueKeysByScoreRange(nowMs, toMs, max);
 
-		if (candidates.isEmpty()) {
-			return Set.of();
+		if (uniqueKeys.isEmpty()) {
+			return List.of();
 		}
 
-		log.debug("[30분전 알림] 발송 대기 메시지 수: {}", candidates.size());
-		return candidates;
+		// Hash에서 uniqueKey로 실제 객체를 한 번에 조회
+		List<MeetingReminderMessage> messages = redisReminderRepository.findMessagesByKeys(uniqueKeys);
+
+		return messages;
 	}
 
 	/** 하루 전 알림 전용 — 내일 일정만 조회 */
-	public Set<MeetingReminderMessage> getTomorrowMessages(int max) {
+	public List<MeetingReminderMessage> getTomorrowMessages(int max) {
 		LocalDate tomorrow = LocalDate.now(zone).plusDays(1);
 		Instant startOfTomorrow = tomorrow.atStartOfDay(zone).toInstant();
 		Instant endOfTom = tomorrow.atTime(LocalTime.MAX).atZone(zone).toInstant();
@@ -71,25 +79,36 @@ public class RedisReminderService {
 		long from = startOfTomorrow.toEpochMilli();
 		long to = endOfTom.toEpochMilli();
 
-		Set<MeetingReminderMessage> candidates =
-			redisReminderRepository.findByScoreRange(from, to, max);
+		log.debug("[하루전 알림] 조회범위 from: {}, to: {}, KST: {} ~ {}", from, to,
+			Instant.ofEpochMilli(from).atZone(zone),
+			Instant.ofEpochMilli(to).atZone(zone));
+		// ZSet에서 uniqueKey(알림 식별자)만 범위 조회
+		Set<String> uniqueKeys = redisReminderRepository.findUniqueKeysByScoreRange(from, to, max);
 
-		if (candidates.isEmpty()) {
-			return Set.of();
+		if (uniqueKeys.isEmpty()) {
+			return List.of();
 		}
 
-		log.debug("[하루전 알림] 발송 대기 메시지 수: {}", candidates.size());
-		return candidates;
+		// Hash에서 uniqueKey로 실제 객체를 한 번에 조회
+		List<MeetingReminderMessage> messages = redisReminderRepository.findMessagesByKeys(uniqueKeys);
+
+		// === sentKey 체크 추가! ===
+
+		return messages.stream()
+			.filter(Objects::nonNull)
+			.filter(msg -> {
+				String uniqueKey = msg.getUserId() + ":" + msg.getMeetingId();
+				return !redisReminderRepository.isSent(uniqueKey, AlarmType.DAY);
+			})
+			.collect(Collectors.toList());
 	}
 
-	public void updateSentMessages(Set<MeetingReminderMessage> messageSet, AlarmType type) {
-		for (MeetingReminderMessage message : messageSet) {
-			redisReminderRepository.markAsSent(message, type);
-		}
-
+	public void updateSentMessages(Collection<String> uniqueKeys, AlarmType alarmType) {
+		// 각 uniqueKey에 해당하는 메시지의 "발송 완료" 상태/플래그를 갱신
+		redisReminderRepository.markAsSent(uniqueKeys, alarmType);
 	}
 
-	public void deleteSentMessages(Set<MeetingReminderMessage> messageSet) {
+	public void deleteSentMessages(Set<String> messageSet) {
 		redisReminderRepository.deleteSentMessages(messageSet);
 	}
 

@@ -31,7 +31,7 @@ public class MessageHubRabbitConfig {
 	@Bean(name = "hubListenerContainerFactory")
 	public SimpleRabbitListenerContainerFactory hubListenerContainerFactory(
 		ConnectionFactory connectionFactory,
-		@Qualifier("jsonMessageConverter") MessageConverter messageConverter
+		MessageConverter messageConverter
 	) {
 		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
