@@ -61,10 +61,18 @@ management:
     enabled: true
     sampling:
       probability: 1.0
-  otlp:
-    metrics:
-      export:
-        enabled: false
+  metrics:
+    export:
+      otlp:
+        enabled: true
+        step: 5s
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    prometheus:
+      enabled: false
     logging:
       enabled: false
 
@@ -83,4 +91,6 @@ logging:
   level:
     root: INFO
     com.example.momo: DEBUG
+    io.opentelemetry.exporter: DEBUG
+
 

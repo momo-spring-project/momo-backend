@@ -1,11 +1,14 @@
 package com.example.momo.domain.payment.domain;
 
-import static jakarta.persistence.EnumType.STRING;
-import static jakarta.persistence.GenerationType.IDENTITY;
-import static lombok.AccessLevel.PROTECTED;
+import static jakarta.persistence.EnumType.*;
+import static jakarta.persistence.GenerationType.*;
+import static lombok.AccessLevel.*;
 
-import com.example.momo.global.common.entity.BaseCreateEntity;
+import java.time.LocalDateTime;
+
 import com.example.momo.domain.payment.enums.PaymentStatus;
+import com.example.momo.global.common.entity.BaseCreateEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
@@ -14,7 +17,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
-import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,10 +24,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "payments",
-    uniqueConstraints = @UniqueConstraint(
-        name = "uq_payment_meeting_user",
-        columnNames = {"meeting_id", "user_id"}
-    )
+	uniqueConstraints = @UniqueConstraint(
+		name = "uq_payment_meeting_user",
+		columnNames = {"meeting_id", "user_id"}
+	)
 )
 @Getter
 @NoArgsConstructor(access = PROTECTED)
@@ -33,56 +35,121 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Payment extends BaseCreateEntity {
 
-  @Id
-  @GeneratedValue(strategy = IDENTITY)
-  private Long id;
+	@Id
+	@GeneratedValue(strategy = IDENTITY)
+	private Long id;
 
-  @Column(name = "user_id", nullable = false)
-  private Long userId;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
 
-  @Column(name = "meeting_id", nullable = false)
-  private Long meetingId;
+	@Column(name = "meeting_id", nullable = false)
+	private Long meetingId;
 
-  @Column(nullable = false)
-  private int amount; // Toss: totalAmount
+	@Column(nullable = false)
+	private int amount; // Toss: totalAmount
 
-  @Column(name = "payment_method", nullable = false)
-  private String paymentMethod; // Toss: method
+	@Column(name = "payment_method", nullable = false)
+	private String paymentMethod; // Toss: method
 
-  @Column(name = "pg_transaction_id")
-  private String pgTransactionId;  // Toss: paymentKey
+	@Column(name = "pg_transaction_id")
+	private String pgTransactionId;  // Toss: paymentKey
 
-  @Column(name = "order_id")
-  private String orderId; // Toss: orderId
+	@Column(name = "order_id")
+	private String orderId; // Toss: orderId
 
-  @Enumerated(STRING)
-  @Column(nullable = false)
-  private PaymentStatus status;  // Toss: status (DONE, CANCELED 등)
+	@Enumerated(STRING)
+	@Column(nullable = false)
+	private PaymentStatus status;  // Toss: status (DONE, CANCELED 등)
 
-  @Column(name = "paid_at")
-  private LocalDateTime paidAt; // Toss: approvedAt
+	@Column(name = "paid_at")
+	private LocalDateTime paidAt; // Toss: approvedAt
 
-  // 낙관적 잠금을 위한 버전
-  @Version
-  private Long version;
+	@Column(name = "failed_at")
+	private LocalDateTime failedAt;
 
-  // V1: 무료 결제 생성 (참가비 0원)
-  public static Payment createFree(Long userId, Long meetingId) {
-    return Payment.builder()
-        .userId(userId)
-        .meetingId(meetingId)
-        .amount(0)
-        .paymentMethod("FREE")
-        .status(PaymentStatus.COMPLETED)
-        .paidAt(LocalDateTime.now())
-        .build();
-  }
+	@Column(name = "canceled_at")
+	private LocalDateTime canceledAt;
 
-  // 환불 처리
-  public void refund() {
-    if (this.status != PaymentStatus.COMPLETED) {
-      throw new IllegalStateException("완료된 결제만 환불 가능합니다.");
-    }
-    this.status = PaymentStatus.REFUNDED;
-  }
+	@Column(name = "refunded_at")
+	private LocalDateTime refundedAt;
+
+	@Column(name = "fail_reason")
+	private String failReason;
+
+	// 낙관적 잠금을 위한 버전
+	@Version
+	private Long version;
+
+	// 무료 결제 생성 (참가비 0원)
+	public static Payment createFree(Long userId, Long meetingId) {
+		return Payment.builder()
+			.userId(userId)
+			.meetingId(meetingId)
+			.amount(0)
+			.paymentMethod("FREE")
+			.status(PaymentStatus.COMPLETED)
+			.paidAt(LocalDateTime.now())
+			.build();
+	}
+
+	// PENDING 결제 생성 (결제 시작)
+	public static Payment createPending(Long userId, Long meetingId, int amount) {
+		return Payment.builder()
+			.userId(userId)
+			.meetingId(meetingId)
+			.amount(amount)
+			.paymentMethod("TOSS")
+			.status(PaymentStatus.PENDING)
+			.build();
+	}
+
+	// 결제 완료 처리
+	public void complete(String pgTransactionId, String orderId, LocalDateTime paidAt) {
+		if (this.status != PaymentStatus.PENDING) {
+			throw new IllegalStateException("PENDING 상태에서만 완료 처리가 가능합니다.");
+		}
+		this.status = PaymentStatus.COMPLETED;
+		this.pgTransactionId = pgTransactionId;
+		this.orderId = orderId;
+		this.paidAt = paidAt;
+	}
+
+	// 결제 실패 처리
+	public void fail(String reason) {
+		if (this.status == PaymentStatus.COMPLETED || this.status == PaymentStatus.REFUNDED) {
+			throw new IllegalStateException("완료되거나 환불된 결제는 실패 처리할 수 없습니다.");
+		}
+		this.status = PaymentStatus.FAILED;
+		this.failedAt = LocalDateTime.now();
+		this.failReason = reason;
+	}
+
+	// 결제 취소 처리 (사용자가 결제 진행 중 취소)
+	public void cancel(String reason) {
+		if (this.status != PaymentStatus.PENDING) {
+			throw new IllegalStateException("PENDING 상태에서만 취소 가능합니다.");
+		}
+		this.status = PaymentStatus.CANCELED;
+		this.canceledAt = LocalDateTime.now();
+		this.failReason = reason;
+	}
+
+	// 환불 처리 (완료된 결제를 환불)
+	public void refund() {
+		if (this.status != PaymentStatus.COMPLETED) {
+			throw new IllegalStateException("완료된 결제만 환불 가능합니다.");
+		}
+		this.status = PaymentStatus.REFUNDED;
+		this.refundedAt = LocalDateTime.now();
+	}
+
+	// 타임아웃 처리
+	public void expire() {
+		if (this.status != PaymentStatus.PENDING) {
+			throw new IllegalStateException("PENDING 상태에서만 만료 처리가 가능합니다.");
+		}
+		this.status = PaymentStatus.EXPIRED;
+		this.failedAt = LocalDateTime.now();
+		this.failReason = "결제 시간 초과";
+	}
 }

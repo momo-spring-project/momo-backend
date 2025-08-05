@@ -39,3 +39,8 @@ out/
 ### Environment Variables ###
 .env
 gradle.properties
+
+### FCM ###
+src/main/resources/firebase/*
+src/main/resources/static/firebase/*
+

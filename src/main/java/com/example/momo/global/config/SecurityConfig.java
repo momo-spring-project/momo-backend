@@ -81,19 +81,16 @@ public class SecurityConfig {
 				UsernamePasswordAuthenticationFilter.class)
 			.authorizeHttpRequests(auth -> auth
 				// 인증이 필요없는 공개 엔드포인트
-				.requestMatchers(HttpMethod.POST, "/api/v2/categories")
-				.hasRole("ADMIN")
-				.requestMatchers(HttpMethod.PATCH, "/api/v2/categories/**")
-				.hasRole("ADMIN")
+				.requestMatchers(HttpMethod.POST, "/categories").hasRole("ADMIN")
+				.requestMatchers(HttpMethod.PATCH, "/categories/**").hasRole("ADMIN")
 				.requestMatchers("/firebase/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**")
 				.permitAll()
 				.requestMatchers(
 					"/api/v2/users/register",
 					"/api/v2/auth/login",
 					"/api/v2/auth/reissue",
-					"/api/v2/categories/**"
-				)
-				.permitAll()
+					"/categories/**"
+				).permitAll()
 				.requestMatchers(
 					"/swagger-ui/**",
 					"/v3/api-docs/**"

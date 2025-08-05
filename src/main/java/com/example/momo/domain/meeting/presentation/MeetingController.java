@@ -28,6 +28,7 @@ import com.example.momo.domain.meeting.application.dto.response.MeetingResponseD
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
+import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.global.common.dto.ApiResponse;
 
@@ -38,7 +39,7 @@ import lombok.AllArgsConstructor;
 @Validated
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/v2/meetings")
+@RequestMapping("/meetings")
 public class MeetingController {
 
 	private final MeetingService meetingService;
@@ -76,7 +77,7 @@ public class MeetingController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingResponseDto>>> getMeetings(
+	public ResponseEntity<ApiResponse<MeetingPagingResponseDto<MeetingDocument>>> getMeetings(
 		@RequestParam(defaultValue = "") String title,
 		@RequestParam(required = false) MeetingStatus status,
 		@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime meetingDate,
@@ -85,7 +86,8 @@ public class MeetingController {
 		@RequestParam(defaultValue = "10") @Min(5) int size
 	) {
 
-		MeetingPagingResponseDto<MeetingResponseDto> response = meetingService.getMeetings(title, status, meetingDate,
+		MeetingPagingResponseDto<MeetingDocument> response = meetingService.getMeetings(title, status,
+			meetingDate,
 			categoryId,
 			page,
 			size);

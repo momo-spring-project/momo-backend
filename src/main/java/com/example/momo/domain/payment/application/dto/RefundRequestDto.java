@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RefundRequestDto {
 
-	@NotBlank
+	@NotBlank(message = "환불 사유는 필수입니다")
 	private String reason;
 }
