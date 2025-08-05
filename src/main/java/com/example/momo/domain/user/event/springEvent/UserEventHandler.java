@@ -45,7 +45,6 @@ public class UserEventHandler {
 		} catch (Exception e) {
 			log.error("회원탈퇴 이벤트 처리 실패: userId={}, error={}",
 				event.userId(), e.getMessage(), e);
-			// 실패 시 아웃박스는 published=false로 남아서 스케줄러가 재시도
 		}
 	}
 }

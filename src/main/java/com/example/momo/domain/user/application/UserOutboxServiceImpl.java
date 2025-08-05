@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.UserOutboxEvent;
@@ -26,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserOutboxServiceImpl implements UserOutboxService {
 
-	private final UserOutboxEventRepository outboxEventRepository;
+	private final UserOutboxEventRepository userOutboxEventRepository;
 	private final UserEventPublisher userEventPublisher;
 	private final ObjectMapper objectMapper;
 
@@ -45,7 +46,7 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 				eventData
 			);
 
-			outboxEventRepository.save(outboxEvent);
+			userOutboxEventRepository.save(outboxEvent);
 			log.info("회원탈퇴 아웃박스 이벤트 저장 완료: userId={}", userId);
 
 		} catch (DataAccessException e) {
@@ -61,17 +62,14 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 	}
 
 	@Override
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void markEventAsPublished(Long userId, String eventType) {
 		try {
-			int updatedCount = outboxEventRepository.markAsPublished(userId, eventType);
+			log.info("아웃박스 이벤트 발행 완료 처리 시작: userId={}, eventType={}", userId, eventType);
 
-			if (updatedCount == 0) {
-				log.warn("발행 완료 처리할 아웃박스 이벤트를 찾을 수 없음: userId={}, eventType={}", userId, eventType);
-			} else {
-				log.info("아웃박스 이벤트 발행 완료 처리: userId={}, eventType={}, updatedCount={}",
-					userId, eventType, updatedCount);
-			}
+			userOutboxEventRepository.markAsPublished(userId, eventType);
+
+			log.info("아웃박스 이벤트 발행 완료 처리 완료: userId={}, eventType={}", userId, eventType);
 
 		} catch (DataAccessException e) {
 			log.error("아웃박스 이벤트 발행 완료 처리 중 DB 오류: userId={}, eventType={}, error={}",
@@ -87,7 +85,7 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 	@Transactional(readOnly = true)
 	public List<UserOutboxEvent> getRetryableEvents(int maxRetryCount) {
 		try {
-			return outboxEventRepository.findUnpublishedEventsWithRetryCountLessThan(maxRetryCount);
+			return userOutboxEventRepository.findUnpublishedEventsWithRetryCountLessThan(maxRetryCount);
 		} catch (DataAccessException e) {
 			log.error("재시도 가능한 아웃박스 이벤트 조회 중 DB 오류: maxRetryCount={}, error={}",
 				maxRetryCount, e.getMessage(), e);
@@ -133,7 +131,7 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 
 			log.info("{}일 이전 발행 완료된 아웃박스 이벤트 정리 시작", daysOld);
 
-			int deletedCount = outboxEventRepository.deleteOldPublishedEvents(daysOld);
+			int deletedCount = userOutboxEventRepository.deleteOldPublishedEvents(daysOld);
 
 			log.info("{}일 이전 발행 완료된 아웃박스 이벤트 {}개 삭제 완료", daysOld, deletedCount);
 
@@ -187,7 +185,7 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 
 	private void incrementRetryCountSafely(Long outboxEventId) {
 		try {
-			outboxEventRepository.incrementRetryCount(outboxEventId);
+			userOutboxEventRepository.incrementRetryCount(outboxEventId);
 		} catch (Exception e) {
 			log.error("재시도 횟수 증가 실패: outboxEventId={}, error={}",
 				outboxEventId, e.getMessage(), e);
