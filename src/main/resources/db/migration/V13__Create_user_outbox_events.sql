@@ -7,10 +7,6 @@ CREATE TABLE user_outbox_events
     event_data    TEXT,
     published     BOOLEAN      NOT NULL DEFAULT FALSE,
     published_at  TIMESTAMP    NULL,
-    retry_count   INT          NOT NULL DEFAULT 0,
     last_retry_at TIMESTAMP    NULL,
-    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at    TIMESTAMP    NULL,
-    is_deleted    BOOLEAN      NOT NULL DEFAULT FALSE
+    created_at    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

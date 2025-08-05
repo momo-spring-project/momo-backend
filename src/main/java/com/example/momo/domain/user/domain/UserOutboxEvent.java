@@ -2,7 +2,7 @@ package com.example.momo.domain.user.domain;
 
 import java.time.LocalDateTime;
 
-import com.example.momo.global.common.entity.BaseEntity;
+import com.example.momo.global.common.entity.BaseCreateEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class UserOutboxEvent extends BaseEntity {
+public class UserOutboxEvent extends BaseCreateEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -42,9 +42,6 @@ public class UserOutboxEvent extends BaseEntity {
 
 	@Column(name = "published_at")
 	private LocalDateTime publishedAt;
-
-	@Column(name = "retry_count")
-	private Integer retryCount = 0;
 
 	@Column(name = "last_retry_at")
 	private LocalDateTime lastRetryAt;

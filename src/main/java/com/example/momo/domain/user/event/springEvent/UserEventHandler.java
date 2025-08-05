@@ -22,22 +22,17 @@ public class UserEventHandler {
 	private final UserEventPublisher userEventPublisher;
 	private final UserOutboxService userOutboxService;
 
-	/**
-	 * 회원탈퇴 이벤트 처리
-	 */
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void handleUserWithdrawn(UserEvents.Withdrawn event) {
 		try {
 			log.info("회원탈퇴 이벤트 처리 시작: userId={}", event.userId());
 
-			// 1. RabbitMQ로 메시지 발행
 			userEventPublisher.publishUserWithdrawn(
 				event.userId(),
 				event.email(),
 				event.nickname()
 			);
 
-			// 2. 발행 성공 시 아웃박스 상태 업데이트
 			userOutboxService.markEventAsPublished(event.userId(), "USER_WITHDRAWN");
 
 			log.info("회원탈퇴 이벤트 처리 완료: userId={}", event.userId());

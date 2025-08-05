@@ -25,18 +25,13 @@ public class UserOutboxEventRepositoryImpl implements UserOutboxEventRepository 
 	}
 
 	@Override
-	public int markAsPublished(Long userId, String eventType) {
-		return (int)userOutboxQueryRepository.markAsPublished(userId, eventType);
+	public void markAsPublished(Long userId, String eventType) {
+		userOutboxQueryRepository.markAsPublished(userId, eventType);
 	}
 
 	@Override
-	public List<UserOutboxEvent> findUnpublishedEventsWithRetryCountLessThan(int maxRetryCount) {
-		return userOutboxQueryRepository.findUnpublishedEventsWithRetryCountLessThan(maxRetryCount);
-	}
-
-	@Override
-	public void incrementRetryCount(Long outboxEventId) {
-		userOutboxQueryRepository.incrementRetryCount(outboxEventId);
+	public List<UserOutboxEvent> findUnpublishedEvents() {
+		return userOutboxQueryRepository.findUnpublishedEvents();
 	}
 
 	@Override
