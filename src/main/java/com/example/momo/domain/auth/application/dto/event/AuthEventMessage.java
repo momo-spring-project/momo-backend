@@ -19,33 +19,8 @@ public record AuthEventMessage(
 	) {
 	}
 
-	public record UserRegisteredData(
-		Long userId,
-		String email,
-		String nickname,
-		LocalDateTime registeredAt
-	) {
-	}
-
-	// 향후 Auth 도메인 자체 이벤트들도 여기에 추가 가능
-	public record SocialLoginLinkedData(
-		Long userId,
-		String provider,
-		String providerId,
-		LocalDateTime linkedAt
-	) {
-	}
-
 	// 타입 안전 캐스팅 헬퍼 메서드들
 	public UserWithdrawnData getUserWithdrawnData() {
 		return (UserWithdrawnData)data;
-	}
-
-	public UserRegisteredData getUserRegisteredData() {
-		return (UserRegisteredData)data;
-	}
-
-	public SocialLoginLinkedData getSocialLoginLinkedData() {
-		return (SocialLoginLinkedData)data;
 	}
 }
