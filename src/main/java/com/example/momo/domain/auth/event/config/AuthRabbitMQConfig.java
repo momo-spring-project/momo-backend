@@ -1,4 +1,4 @@
-package com.example.momo.domain.auth.infra.rabbitmq;
+package com.example.momo.domain.auth.event.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

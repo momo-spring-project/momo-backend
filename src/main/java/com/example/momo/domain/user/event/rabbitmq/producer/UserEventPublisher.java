@@ -1,11 +1,12 @@
-package com.example.momo.domain.user.infra.rabbitmq;
+package com.example.momo.domain.user.event.rabbitmq.producer;
 
 import java.util.List;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.user.application.dto.event.UserEventMessage;
+import com.example.momo.domain.user.event.rabbitmq.config.UserRabbitMQConfig;
+import com.example.momo.global.rabbitmq.dto.UserEventMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,4 +1,4 @@
-package com.example.momo.domain.user.application.dto.event;
+package com.example.momo.global.rabbitmq.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.example.momo.domain.user.infra.rabbitmq;
+package com.example.momo.domain.user.event.rabbitmq.config;
 
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;

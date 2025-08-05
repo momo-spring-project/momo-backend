@@ -1,4 +1,4 @@
-package com.example.momo.domain.auth.application;
+package com.example.momo.domain.auth.event.consumer;
 
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
