@@ -23,9 +23,12 @@ import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingElasticsearchProducer;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.springEvent.MeetingEvents;
+import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.springEvent.meeting.RegisterEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.utils.RetryUtil;
@@ -40,12 +43,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MeetingServiceImpl implements MeetingService {
 
+	// TODO : eventPublisher 제거 필요
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final ParticipantService participantService;
 	private final CategoryClient categoryClient;
+	private final MeetingProducer meetingProducer;
+	private final MeetingElasticsearchProducer meetingElasticsearchProducer;
 
 	@Override
 	@Transactional
@@ -56,9 +62,10 @@ public class MeetingServiceImpl implements MeetingService {
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
-		meetingRepository.saveMeetingElastic(meeting);
+		meetingElasticsearchProducer.saveElasticsearch(savedMeeting);
 
-		eventPublisher.publishEvent(new MeetingEvents.Create(
+		// TODO : 기존 DTO 사용중이므로 메세지허브로 보내는 DTO 지운님 PR 병합 이후 수정 예정
+		meetingProducer.createMeetingMQ(new MeetingMessageEvents.Create(
 			meeting.getId(),
 			request.getCategoryId(),
 			category.getName(),
@@ -81,9 +88,9 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.updateMeeting(request);
-		meetingRepository.saveMeetingElastic(meeting);
+		meetingElasticsearchProducer.saveElasticsearch(meeting);
 
-		eventPublisher.publishEvent(new MeetingEvents.Update(
+		meetingProducer.updateMeetingMQ(new MeetingMessageEvents.Update(
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
@@ -113,7 +120,7 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.updateStatus(status);
-		meetingRepository.saveMeetingElastic(meeting);
+		meetingElasticsearchProducer.saveElasticsearch(meeting);
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -148,10 +155,10 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
-		meetingRepository.deleteMeetingElastic(meeting);
+		meetingElasticsearchProducer.deleteElasticsearch(meeting);
 		meeting.delete();
 
-		eventPublisher.publishEvent(new MeetingEvents.Delete(
+		meetingProducer.deleteMeetingMQ(new MeetingMessageEvents.Delete(
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
