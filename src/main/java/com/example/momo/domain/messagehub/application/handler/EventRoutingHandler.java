@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
-import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
-import com.example.momo.global.rabbitMQ.producer.NotificationMessagePublisher;
+import com.example.momo.domain.messagehub.event.rabbitmq.NotificationMessagePublisher;
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 import com.example.momo.global.springEvent.follow.FollowMessageEvents;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.springEvent.payment.PaymentMessageEvents;
@@ -30,7 +30,7 @@ public class EventRoutingHandler {
 
 	private final NotificationMessagePublisher messagePublisher;
 
-	public void handleMessage(HubEvent event) {
+	public void handleMessage(DomainMessageEvent event) {
 		MessageDto dto = createMessageDto(event);
 
 		if (dto == null) {
@@ -40,7 +40,7 @@ public class EventRoutingHandler {
 		publishMessageEvent(dto);
 	}
 
-	private MessageDto createMessageDto(HubEvent event) {
+	private MessageDto createMessageDto(DomainMessageEvent event) {
 		if (event instanceof MeetingMessageEvents.MeetingMessageEvent e) {
 			return messageProvider.processMeetingMessage(e);
 		} else if (event instanceof PaymentMessageEvents.PaymentEvent e) {

@@ -2,8 +2,8 @@ package com.example.momo.global.springEvent.meeting;
 
 import java.util.List;
 
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 public class MeetingMessageEvents {
@@ -11,7 +11,7 @@ public class MeetingMessageEvents {
 	/**
 	 * 모임 이벤트 마커 인터페이스입니다.
 	 */
-	public interface MeetingMessageEvent extends HubEvent {
+	public interface MeetingMessageEvent extends DomainMessageEvent {
 		Long meetingId();
 	}
 

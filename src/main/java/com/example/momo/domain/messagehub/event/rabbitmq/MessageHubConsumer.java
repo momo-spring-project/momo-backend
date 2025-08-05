@@ -1,11 +1,11 @@
-package com.example.momo.domain.messagehub.application.listener;
+package com.example.momo.domain.messagehub.event.rabbitmq;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.handler.EventRoutingHandler;
 import com.example.momo.global.rabbitMQ.config.MessageHubRabbitConfig;
-import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class MessageHubConsumer {
 	@RabbitListener(
 		queues = MessageHubRabbitConfig.HUB_QUEUE,
 		containerFactory = "hubListenerContainerFactory")
-	public void consume(HubEvent event) {
+	public void consume(DomainMessageEvent event) {
 		log.info("메세지 허브 리스너 접근 : {}", event);
 		eventRoutingHandler.handleMessage(event);
 

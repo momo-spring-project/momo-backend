@@ -1,7 +1,7 @@
 package com.example.momo.global.springEvent.payment;
 
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
 import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.HubEvent;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
@@ -12,7 +12,7 @@ public class PaymentMessageEvents {
 	/**
 	 * 결제 이벤트 마커 인터페이스입니다.
 	 */
-	public interface PaymentEvent extends HubEvent {
+	public interface PaymentEvent extends DomainMessageEvent {
 		Long userId();
 
 		Long paymentId();

@@ -1,22 +1,22 @@
-package com.example.momo.domain.notification.application;
+package com.example.momo.domain.notification.event.rabbitmq;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.global.rabbitMQ.config.NotificationRabbitConfig;
-import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
 public class NotificationRetryPublisher {
-	static final String NOTIFICATION_RETRY_HEADER = "x-notification-retry-attempts";
+	public static final String NOTIFICATION_RETRY_HEADER = "x-notification-retry-attempts";
 	public static final int NOTIFICATION_MAX_RETRY = 3;
 
 	private final RabbitTemplate rabbitTemplate;
 
-	public void publishRetry(NotificationQueueEvent message, int nextAttempts) {
+	public void publishRetry(MessageHubNotificationEvent message, int nextAttempts) {
 		rabbitTemplate.convertAndSend(
 			NotificationRabbitConfig.NOTIFICATION_RETRY_EXCHANGE,
 			NotificationRabbitConfig.NOTIFICATION_RETRY_KEY,
@@ -28,7 +28,7 @@ public class NotificationRetryPublisher {
 		);
 	}
 
-	public void publishToDlq(NotificationQueueEvent message) {
+	public void publishToDlq(MessageHubNotificationEvent message) {
 		rabbitTemplate.convertAndSend(
 			NotificationRabbitConfig.NOTIFICATION_DLX,
 			NotificationRabbitConfig.NOTIFICATION_DLX_KEY,

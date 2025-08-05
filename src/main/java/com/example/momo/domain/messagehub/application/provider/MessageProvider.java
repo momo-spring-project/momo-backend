@@ -29,6 +29,7 @@ public class MessageProvider {
 	private final TargetUserProvider targetUserProvider;
 
 	public MessageDto processMeetingMessage(MeetingMessageEvents.MeetingMessageEvent meetingEvent) {
+		//todo : redis 적용
 		if (meetingEvent instanceof MeetingMessageEvents.Create event) {
 			String message = messageUtil.buildCreateMessage(event.categoryName());
 			List<Long> userIdList = targetUserProvider.getUserIdList(event.categoryId(), event.latitude(),

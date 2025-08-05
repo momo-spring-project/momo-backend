@@ -1,12 +1,13 @@
 package com.example.momo.domain.notification.application;
 
-import static com.example.momo.domain.notification.application.NotificationRetryPublisher.*;
+import static com.example.momo.domain.notification.event.rabbitmq.NotificationRetryPublisher.*;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.dto.NotificationMessageDto;
-import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
+import com.example.momo.domain.notification.event.rabbitmq.NotificationRetryPublisher;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class NotificationHandler {
 	private final NotificationProvider notificationProvider;
 
 	@Transactional
-	public void handleNotification(NotificationQueueEvent event, Message raw) {
+	public void handleNotification(MessageHubNotificationEvent event, Message raw) {
 
 		NotificationMessageDto dto = NotificationMessageDto.of(event);
 
@@ -49,7 +50,7 @@ public class NotificationHandler {
 
 	}
 
-	private boolean tryCreateNotificationId(NotificationQueueEvent event, NotificationMessageDto dto) {
+	private boolean tryCreateNotificationId(MessageHubNotificationEvent event, NotificationMessageDto dto) {
 		if (dto.getNotificationId() != null)
 			return true;
 
@@ -62,7 +63,7 @@ public class NotificationHandler {
 		return true;
 	}
 
-	private void handleNotificationRetry(NotificationQueueEvent event, Message raw) {
+	private void handleNotificationRetry(MessageHubNotificationEvent event, Message raw) {
 		//재시도/최종 실패 분기 (헤더에서 시도 횟수 읽기)
 		int attempts = ((Number)raw.getMessageProperties()
 			.getHeaders().getOrDefault(NOTIFICATION_RETRY_HEADER, 0)).intValue() + 1;

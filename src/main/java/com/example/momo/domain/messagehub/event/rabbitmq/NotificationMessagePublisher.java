@@ -1,11 +1,11 @@
-package com.example.momo.global.rabbitMQ.producer;
+package com.example.momo.domain.messagehub.event.rabbitmq;
 
 import static com.example.momo.global.rabbitMQ.config.NotificationRabbitConfig.*;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationMessagePublisher {
 	private final RabbitTemplate rabbitTemplate;
 
-	public void publish(NotificationQueueEvent queueEvent) {
+	public void publish(MessageHubNotificationEvent event) {
 		rabbitTemplate.convertAndSend(
 			NOTIFICATION_EXCHANGE,
 			NOTIFICATION_KEY,
-			queueEvent
+			event
 		);
 	}
 }

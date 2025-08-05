@@ -1,7 +1,7 @@
 package com.example.momo.domain.notification.application.dto;
 
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.rabbitMQ.dto.notification.NotificationQueueEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -26,11 +26,11 @@ public class NotificationMessageDto {
 		this.notificationId = notificationId;
 	}
 
-	public static NotificationMessageDto of(NotificationQueueEvent event) {
+	public static NotificationMessageDto of(MessageHubNotificationEvent event) {
 		return NotificationMessageDto.builder()
 			.userId(event.getUserId())
 			.targetId(event.getTargetId())
-			.type(event.getType())
+			.type(NotificationType.from(event.getType()))
 			.content(event.getContent())
 			.notificationId(event.getNotificationId())
 			.build();
