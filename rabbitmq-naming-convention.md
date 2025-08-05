@@ -191,19 +191,30 @@ public record UserEventMessage(
 	)
 	Object data
 ) {
-	public record UserWithdrawnData(...) {
+	public record UserWithdrawnData(
+		Long userId,
+		String email,
+		String nickname,
+		LocalDateTime withdrawnAt
+	) {
 	}
 
-	public record UserRegisteredData(...) {
+	public record UserRegisteredData(
+		Long userId,
+		String nickname,
+		String email,
+		Double latitude,
+		Double longitude,
+		List<Integer> categoryIds,
+		LocalDateTime registeredAt
+	) {
 	}
 
-	public record UserFollowedData(...) {
+	// 팩토리 메서드 예시 (일부)
+	public static UserEventMessage createWithdrawn(Long userId, String email, String nickname) {
+		// 실제 구현 생략
+		return null;
 	}
-
-	public record UserRatedData(...) {
-	}
-
-	public static UserEventMessage createWithdrawn(...) { ...}
 }
 ```
 
