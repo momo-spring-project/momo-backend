@@ -29,6 +29,7 @@ public class UserEventPublisher {
 		} catch (Exception e) {
 			log.error("User 이벤트 발행 실패: eventType={}, error={}",
 				message.eventType(), e.getMessage(), e);
+			throw new RuntimeException("RabbitMQ 메시지 발행 실패", e);
 		}
 	}
 }
