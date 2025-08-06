@@ -58,7 +58,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return userJpaRepository.deleteUserFollow(followerId, followingId);
 	}
 
-	// === Auth 도메인에서 사용 ===
 	@Override
 	public boolean existsByEmail(String email) {
 		return userJpaRepository.existsByEmail(email);
