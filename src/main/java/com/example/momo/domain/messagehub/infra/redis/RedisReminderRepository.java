@@ -63,7 +63,7 @@ public class RedisReminderRepository {
 	}
 
 	public void deleteSentMessages(Set<String> uniqueKeys) {
-		redisReminderTemplate.opsForZSet().remove(ZSET_KEY, uniqueKeys.toArray());
+		redisTemplate.opsForZSet().remove(ZSET_KEY, uniqueKeys.toArray());
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKeys.toArray());
 	}
 
