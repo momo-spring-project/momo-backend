@@ -73,11 +73,13 @@ public class NotificationHandler {
 		int attempts = ((Number)raw.getMessageProperties()
 			.getHeaders().getOrDefault(NOTIFICATION_RETRY_HEADER, 0)).intValue() + 1;
 
-		if (attempts > NOTIFICATION_MAX_RETRY) {
-			notificationRetryProducer.publishToDlq(event);
+		//재시도 횟수 이하거나 저장 안되어 있을 경우 재시도
+		if (event.getNotificationId() == null || attempts <= NOTIFICATION_MAX_RETRY) {
+			notificationRetryProducer.publishRetry(event, attempts);
 			return;
 		}
-		notificationRetryProducer.publishRetry(event, attempts); // TTL 있는 재시도 큐로
+
+		notificationRetryProducer.publishToDlq(event);
 	}
 
 }

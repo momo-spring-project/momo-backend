@@ -26,6 +26,11 @@ public class MessageHubRabbitConfig {
 
 	public static final int HUB_QUEUE_TTL_MS = 10_000;
 
+	public static final String HUB_RETRY_EXCHANGE = "hub.retry.exchange";
+	public static final String HUB_RETRY_QUEUE = "hub.retry.queue";
+	public static final String HUB_RETRY_KEY = "hub.retry.key";
+	public static final int HUB_RETRY_TTL_MS = 30_000; // 예시, 필요시 조정
+
 	//리스너(Consumer) 동작 규칙 템플릿
 	//메시지를 “받을 때”의 동작 규칙(컨슈머 스레드 수, ACK 모드, prefetch, 메시지 컨버터, 재시도 정책 등)을 묶어둔 설정 묶음
 	@Bean(name = "hubListenerContainerFactory")
@@ -86,4 +91,32 @@ public class MessageHubRabbitConfig {
 			.to(hubExchange)
 			.with(HUB_KEY);
 	}
+
+	// Retry Exchange
+	@Bean(name = "hubRetryExchange")
+	public TopicExchange hubRetryExchange() {
+		return new TopicExchange(HUB_RETRY_EXCHANGE);
+	}
+
+	// Retry Queue
+	@Bean(name = "hubRetryQueue")
+	public Queue hubRetryQueue() {
+		return QueueBuilder.durable(HUB_RETRY_QUEUE)
+			.withArgument("x-dead-letter-exchange", HUB_EXCHANGE)
+			.withArgument("x-dead-letter-routing-key", HUB_KEY)
+			.withArgument("x-message-ttl", HUB_RETRY_TTL_MS)
+			.build();
+	}
+
+	// Retry Binding
+	@Bean(name = "hubRetryBinding")
+	public Binding hubRetryBinding(
+		@Qualifier("hubRetryQueue") Queue retryQueue,
+		@Qualifier("hubRetryExchange") TopicExchange retryExchange
+	) {
+		return BindingBuilder.bind(retryQueue)
+			.to(retryExchange)
+			.with(HUB_RETRY_KEY);
+	}
+
 }

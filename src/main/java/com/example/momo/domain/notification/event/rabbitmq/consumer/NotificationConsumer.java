@@ -24,25 +24,11 @@ public class NotificationConsumer {
 		containerFactory = "notificationFactory"
 	)
 	public void consumeMain(MessageHubNotificationEvent queueEvent, Message message) {
-		log.info("알림 컨슈머 접근 : userId = {}", queueEvent.getUserId());
-		notificationHandler.handleNotification(queueEvent, message);
-
-	}
-
-	@RabbitListener(
-		queues = NotificationRabbitConfig.NOTIFICATION_RETRY_QUEUE,
-		containerFactory = "notificationFactory"
-	)
-	public void consumeRetry(MessageHubNotificationEvent queueEvent, Message message) {
 		int retryCount = calculateRetryCount(message);
-		log.info("알림 컨슈머 재시도 접근 : userId = {}, 시도 횟수 = {}", queueEvent.getUserId(), retryCount);
-		if (queueEvent.getNotificationId() != null && retryCount >= 3) {
-			log.info("알림 DLQ 삭제 : userId = {}, notificationId = {}", queueEvent.getUserId(),
-				queueEvent.getNotificationId());
-			return;
-		}
-		notificationHandler.handleNotification(queueEvent, message);
+		log.info("알림 컨슈머 접근 : userId = {}, 시도 횟수 = {}", queueEvent.getUserId(), retryCount);
 
+		// 정상 처리 시도
+		notificationHandler.handleNotification(queueEvent, message);
 	}
 
 	private static int calculateRetryCount(Message message) {
