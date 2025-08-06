@@ -1,11 +1,10 @@
 package com.example.momo.domain.user.event.rabbitmq.producer;
 
-import java.util.List;
-
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.user.event.rabbitmq.config.UserRabbitMQConfig;
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.UserEventMessage;
 
 import lombok.RequiredArgsConstructor;
@@ -20,37 +19,17 @@ public class UserEventPublisher {
 
 	public void publishUserWithdrawn(Long userId, String email, String nickname) {
 		UserEventMessage message = UserEventMessage.createWithdrawn(userId, email, nickname);
-		publishEvent(message, "user.withdrawn");
-	}
-
-	public void publishUserRegistered(Long userId, String nickname, String email,
-		Double latitude, Double longitude, List<Integer> categoryIds) {
-		UserEventMessage message = UserEventMessage.createRegistered(userId, nickname, email, latitude, longitude,
-			categoryIds);
-		publishEvent(message, "user.registered");
-	}
-
-	public void publishUserFollowed(Long followerId, Long followingId,
-		String followerNickname, String followingNickname) {
-		UserEventMessage message = UserEventMessage.createFollowed(followerId, followingId, followerNickname,
-			followingNickname);
-		publishEvent(message, "user.followed");
-	}
-
-	public void publishUserRated(Long reviewerId, Long targetUserId, Long meetingId,
-		Integer ratingScore, String reviewerNickname, String targetUserNickname) {
-		UserEventMessage message = UserEventMessage.createRated(reviewerId, targetUserId, meetingId,
-			ratingScore, reviewerNickname, targetUserNickname);
-		publishEvent(message, "user.rated");
+		publishEvent(message, RoutingKeys.USER_WITHDRAWN);
 	}
 
 	private void publishEvent(UserEventMessage message, String routingKey) {
 		try {
-			rabbitTemplate.convertAndSend(UserRabbitMQConfig.USER_EVENTS_EXCHANGE, routingKey, message);
+			rabbitTemplate.convertAndSend(RabbitExchangeNames.USER_EVENTS, routingKey, message);
 			log.info("User 이벤트 발행 완료: eventType={}", message.eventType());
 		} catch (Exception e) {
 			log.error("User 이벤트 발행 실패: eventType={}, error={}",
 				message.eventType(), e.getMessage(), e);
+			throw new RuntimeException("RabbitMQ 메시지 발행 실패", e);
 		}
 	}
 }
