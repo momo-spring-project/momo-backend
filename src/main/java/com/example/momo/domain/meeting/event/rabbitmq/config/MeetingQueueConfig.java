@@ -10,35 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MeetingQueueConfig {
 
-	// Payment
-	@Bean
-	public Queue paymentParticipantRegisteredQueue() {
-		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_REGISTER)
-			.build();
-	}
-
-	@Bean
-	public Queue paymentParticipantCanceledQueue() {
-		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_CANCEL)
-			.build();
-	}
-
-	@Bean
-	public Binding paymentParticipantRegisteredBinding() {
-		return BindingBuilder.bind(paymentParticipantRegisteredQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_REGISTER);
-	}
-
-	@Bean
-	public Binding paymentParticipantCanceledBinding() {
-		return BindingBuilder.bind(paymentParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL);
-	}
-
-
-	// Notification
+	// Notification 배달 예정
 	@Bean
 	public Queue notificationParticipantJoinedQueue() {
 		return QueueBuilder.durable(QueueNames.NOTIFICATION_PARTICIPANT_JOIN)
@@ -62,6 +34,6 @@ public class MeetingQueueConfig {
 	public Binding notificationParticipantCanceledBinding() {
 		return BindingBuilder.bind(notificationParticipantCanceledQueue())
 			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL);
+			.with(RoutingKeys.PARTICIPANT_CANCEL_NOTIFICATION);
 	}
 }

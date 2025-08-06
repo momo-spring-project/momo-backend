@@ -1,5 +1,8 @@
 package com.example.momo.domain.payment.event.rabbitmq.config;
 
+import com.example.momo.global.rabbitmq.constant.QueueNames;
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
@@ -54,5 +57,35 @@ public class PaymentQueueConfig {
 		return BindingBuilder.bind(paymentDlq())
 			.to(new DirectExchange(PaymentExchangeConfig.X_DLX_PAYMENT))
 			.with("payment.dlq");
+	}
+
+	/**
+	 *
+	 * Participant 에서 만든 기본 큐 배달
+	 */
+	@Bean
+	public Queue paymentParticipantRegisteredQueue() {
+		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_REGISTER)
+			.build();
+	}
+
+	@Bean
+	public Queue paymentParticipantCanceledQueue() {
+		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_CANCEL)
+			.build();
+	}
+
+	@Bean
+	public Binding paymentParticipantRegisteredBinding() {
+		return BindingBuilder.bind(paymentParticipantRegisteredQueue())
+			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_REGISTER);
+	}
+
+	@Bean
+	public Binding paymentParticipantCanceledBinding() {
+		return BindingBuilder.bind(paymentParticipantCanceledQueue())
+			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_CANCEL_REFUND);
 	}
 }
