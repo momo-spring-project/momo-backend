@@ -1,8 +1,8 @@
 package com.example.momo.domain.notification.event.rabbitmq.config;
 
-import static com.example.momo.global.rabbitMQ.constant.QueueNames.*;
-import static com.example.momo.global.rabbitMQ.constant.RabbitExchangeNames.*;
-import static com.example.momo.global.rabbitMQ.constant.RoutingKeys.*;
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

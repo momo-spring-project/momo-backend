@@ -10,9 +10,9 @@ import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.service.RedisReminderService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.MessageType;
-import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

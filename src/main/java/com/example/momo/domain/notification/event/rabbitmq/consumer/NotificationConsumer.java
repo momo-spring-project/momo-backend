@@ -1,14 +1,14 @@
 package com.example.momo.domain.notification.event.rabbitmq.consumer;
 
 import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
-import static com.example.momo.global.rabbitMQ.constant.QueueNames.*;
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

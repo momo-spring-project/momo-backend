@@ -1,10 +1,10 @@
-package com.example.momo.global.rabbitMQ.dto.meeting;
+package com.example.momo.global.rabbitmq.dto.meeting;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.global.rabbitMQ.dto.messagehub.AlarmMessageType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 public class MeetingAlarmMessages {

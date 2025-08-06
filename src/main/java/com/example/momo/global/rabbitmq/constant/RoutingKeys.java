@@ -1,4 +1,4 @@
-package com.example.momo.global.rabbitMQ.constant;
+package com.example.momo.global.rabbitmq.constant;
 
 public class RoutingKeys {
 	// User 관련 routing key들

@@ -4,9 +4,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentAlarmMessages;
 
 import lombok.extern.slf4j.Slf4j;
 

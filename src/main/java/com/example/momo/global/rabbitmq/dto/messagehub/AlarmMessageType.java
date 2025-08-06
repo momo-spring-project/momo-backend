@@ -1,4 +1,4 @@
-package com.example.momo.global.rabbitMQ.dto.messagehub;
+package com.example.momo.global.rabbitmq.dto.messagehub;
 
 public final class AlarmMessageType {
 

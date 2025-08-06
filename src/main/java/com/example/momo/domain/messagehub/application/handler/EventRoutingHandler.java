@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
-import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

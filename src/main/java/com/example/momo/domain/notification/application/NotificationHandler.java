@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.dto.NotificationMessageDto;
 import com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

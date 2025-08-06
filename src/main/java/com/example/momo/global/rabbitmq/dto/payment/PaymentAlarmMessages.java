@@ -1,7 +1,7 @@
-package com.example.momo.global.rabbitMQ.dto.payment;
+package com.example.momo.global.rabbitmq.dto.payment;
 
-import com.example.momo.global.rabbitMQ.dto.messagehub.AlarmMessageType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**

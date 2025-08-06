@@ -1,7 +1,7 @@
 package com.example.momo.domain.notification.application.dto;
 
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;

@@ -3,7 +3,7 @@ package com.example.momo.domain.messagehub.application.dto;
 import java.time.LocalDateTime;
 
 import com.example.momo.domain.messagehub.enums.AlarmType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;

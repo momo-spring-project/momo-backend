@@ -3,7 +3,7 @@ package com.example.momo.domain.messagehub.application.dto;
 import java.util.List;
 
 import com.example.momo.domain.messagehub.enums.MessageType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
+import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
 /**
  * 메세지 허브에서 발생하는 이벤트를 정의합니다.

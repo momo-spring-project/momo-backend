@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitMQ.producer.HubMessageProducer;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.producer.HubMessageProducer;
 
 import lombok.RequiredArgsConstructor;
 
