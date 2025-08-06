@@ -87,4 +87,9 @@ public class ReminderPollingScheduler {
 			return false;
 		}
 	}
+
+	@Scheduled(cron = "0 0 3 * * *")
+	public void deleteOldRemindersByZSetScore() {
+		redisReminderService.deleteOldRemindersByDate();
+	}
 }

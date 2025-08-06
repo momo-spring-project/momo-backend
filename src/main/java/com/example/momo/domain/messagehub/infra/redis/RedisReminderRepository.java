@@ -76,6 +76,11 @@ public class RedisReminderRepository {
 		redisTemplate.opsForSet().add(sentKey, members);
 		redisTemplate.expire(sentKey, Duration.ofDays(2));
 	}
+
+	public Set<String> getExpiredKeys(Instant from, Instant to) {
+		return redisTemplate.opsForZSet()
+			.rangeByScore(ZSET_KEY, (double)from.toEpochMilli(), (double)to.toEpochMilli());
+	}
 }
 
 

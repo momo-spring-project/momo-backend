@@ -135,4 +135,18 @@ public class RedisReminderService {
 		redisReminderRepository.deleteSentMessage(uniqueKey);
 	}
 
+	public void deleteOldRemindersByDate() {
+		LocalDate today = LocalDate.now();
+		Instant from = today.minusDays(8).atStartOfDay(zone).toInstant();
+		Instant to = today.minusDays(2).atTime(LocalTime.MAX).atZone(zone).toInstant();
+
+		Set<String> expiredKeys = redisReminderRepository.getExpiredKeys(from, to);
+
+		for (String expiredKey : expiredKeys) {
+			redisReminderRepository.deleteSentMessage(expiredKey);
+		}
+		log.info("[알림 만료] {}건 삭제 완료", expiredKeys.size());
+
+	}
+
 }
