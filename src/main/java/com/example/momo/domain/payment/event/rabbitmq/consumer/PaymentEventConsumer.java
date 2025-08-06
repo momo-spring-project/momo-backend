@@ -63,14 +63,14 @@ public class PaymentEventConsumer {
 				event.getMeetingId(), event.getUserId(), ex);
 
 			try {
-				// 재시도 3회 후 DLQ로 보내도록 requeue=false
+				// 1차 실패: DLQ로 보내기 (requeue=false)
 				channel.basicNack(deliveryTag, false, false);
 			} catch (Exception e) {
 				log.error("참가자 생성 이벤트 처리 실패 - meetingId: {}, userId: {}",
 					event.getMeetingId(), event.getUserId(), e);
 
 				try {
-					// 실패시 DLQ로 (재큐잉 안함)
+					// 2차 실패: DLQ 전송조차 실패하면 → 재큐잉으로 fallback (requeue=true)
 					channel.basicNack(deliveryTag, false, true);
 				} catch (IOException io) {
 					log.error("메시지 NACK 실패", io);
