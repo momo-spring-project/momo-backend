@@ -3,6 +3,8 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
+import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,7 @@ public class MeetingServiceImpl implements MeetingService {
 	private final UserClient userClient;
 	private final ParticipantService participantService;
 	private final CategoryClient categoryClient;
+	private final MeetingEventPublisher meetingEventPublisher;
 
 	@Override
 	@Transactional
@@ -169,6 +172,7 @@ public class MeetingServiceImpl implements MeetingService {
 	 * Meeting Participant Service
 	 */
 
+	// 낙관적 락 대신 분산락 고려중, 현재는 흐름만 구현
 	@Override
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
@@ -188,7 +192,25 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		eventPublisher.publishEvent(new RegisterEvents(meetingId, userId));
+		// 참가자 수 확인
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+
+		// 인원 추가
+		meeting.addMeetingParticipant();
+
+		// 참가비 무료일 경우 즉시 참가자 추가
+		if(meeting.getParticipationFee() == 0) {
+			MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
+			meetingRepository.saveParticipant(participant);
+			meetingEventPublisher.publishParticipantEvents(
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
+			);
+			return new ParticipantCreateResponseDto("COMPLETE", "참가 완료");
+		} else {
+			meetingEventPublisher.publishParticipantEvents(new ParticipantEvents.Register(meetingId, userId));
+		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
 		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
@@ -227,8 +249,9 @@ public class MeetingServiceImpl implements MeetingService {
 
 		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
 
-		eventPublisher.publishEvent(
-			new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), userId, user.getNickname()));
+		meetingEventPublisher.publishParticipantEvents(
+			new ParticipantEvents.Cancel(meetingId, meeting.getHostUserId(), userId, user.getNickname())
+		);
 
 		return responseDto;
 	}
@@ -269,12 +292,6 @@ public class MeetingServiceImpl implements MeetingService {
 		Long counts = meetingRepository.countParticipants(userId, meetingId, attendance, createdAt);
 
 		return new ParticipantCountResponseDto(userId, meetingId, counts, attendance, createdAt);
-	}
-
-	// 참가자 추가
-	@Override
-	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
-		return participantService.addParticipant(meetingId, userId);
 	}
 
 	// 참가자 감소

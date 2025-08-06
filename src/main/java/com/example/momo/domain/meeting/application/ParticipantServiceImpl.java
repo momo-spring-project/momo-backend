@@ -23,25 +23,6 @@ public class ParticipantServiceImpl implements ParticipantService {
 
 	@Override
 	@Transactional
-	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
-
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
-		}
-
-		// 참가자 추가
-		MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
-
-		meeting.addMeetingParticipant();
-		MeetingParticipant savedParticipant = meetingRepository.saveParticipant(participant);
-
-		return new ParticipantResponseDto(savedParticipant);
-	}
-
-	@Override
-	@Transactional
 	public ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);

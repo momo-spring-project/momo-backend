@@ -5,7 +5,5 @@ import com.example.momo.domain.meeting.domain.MeetingParticipant;
 
 public interface ParticipantService {
 
-	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
-
 	ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant);
 }
