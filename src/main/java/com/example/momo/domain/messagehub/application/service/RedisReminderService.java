@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -72,6 +73,7 @@ public class RedisReminderService {
 
 	/** 하루 전 알림 전용 — 내일 일정만 조회 */
 	public List<MeetingReminderMessage> getTomorrowMessages(int max) {
+		String today = LocalDate.now(zone).format(DateTimeFormatter.BASIC_ISO_DATE);
 		LocalDate tomorrow = LocalDate.now(zone).plusDays(1);
 		Instant startOfTomorrow = tomorrow.atStartOfDay(zone).toInstant();
 		Instant endOfTom = tomorrow.atTime(LocalTime.MAX).atZone(zone).toInstant();
@@ -98,17 +100,19 @@ public class RedisReminderService {
 			.filter(Objects::nonNull)
 			.filter(msg -> {
 				String uniqueKey = msg.getUserId() + ":" + msg.getMeetingId();
-				return !redisReminderRepository.isSent(uniqueKey, AlarmType.DAY);
+				return !redisReminderRepository.isSent(today, uniqueKey, AlarmType.DAY);
 			})
 			.collect(Collectors.toList());
 	}
 
 	public void updateSentMessages(Collection<String> uniqueKeys, AlarmType alarmType) {
+		String today = LocalDate.now(zone).format(DateTimeFormatter.BASIC_ISO_DATE);
 		// 각 uniqueKey에 해당하는 메시지의 "발송 완료" 상태/플래그를 갱신
-		redisReminderRepository.markAsSent(uniqueKeys, alarmType);
+		redisReminderRepository.markAsSent(uniqueKeys, alarmType, today);
 	}
 
 	public void deleteSentMessages(Set<String> messageSet) {
+
 		redisReminderRepository.deleteSentMessages(messageSet);
 	}
 

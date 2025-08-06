@@ -55,9 +55,11 @@ public class RedisReminderRepository {
 			.collect(Collectors.toList());
 	}
 
-	public boolean isSent(String uniqueKey, AlarmType alarmType) {
-		String sentKey = buildSentKey(uniqueKey, alarmType);
-		return Boolean.TRUE.equals(redisTemplate.hasKey(sentKey));
+	public boolean isSent(String today, String uniqueKey, AlarmType alarmType) {
+		String sentKey = "reminder:sent:" + today;
+		return Boolean.TRUE.equals(
+			redisTemplate.opsForSet().isMember(sentKey, uniqueKey + ":" + alarmType.name())
+		);
 	}
 
 	public void deleteSentMessages(Set<String> uniqueKeys) {
@@ -65,20 +67,14 @@ public class RedisReminderRepository {
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKeys.toArray());
 	}
 
-	public void markAsSent(Collection<String> uniqueKeys, AlarmType alarmType) {
-		for (String key : uniqueKeys) {
-			// type까지 포함한 sentKey를 생성
-			String sentKey = buildSentKey(key, alarmType);
-			// 발송 완료 마킹 (값은 단순히 1, "sent", 타임스탬프 등 자유롭게)
-			redisTemplate.opsForValue().set(sentKey, "1");
-			// 필요시 만료시간도 같이 줄 수 있음
-			redisTemplate.expire(sentKey, Duration.ofDays(2));
-		}
-	}
+	public void markAsSent(Collection<String> uniqueKeys, AlarmType alarmType, String today) {
+		String[] members = uniqueKeys.stream()
+			.map(key -> key + ":" + alarmType.name())
+			.toArray(String[]::new);
+		String sentKey = "reminder:sent:" + today;
 
-	private String buildSentKey(String uniqueKey, AlarmType type) {
-		// uniqueKey가 "userId:meetingId"라고 가정
-		return String.format("reminder:sent:%s:%s", uniqueKey, type.name());
+		redisTemplate.opsForSet().add(sentKey, members);
+		redisTemplate.expire(sentKey, Duration.ofDays(2));
 	}
 }
 

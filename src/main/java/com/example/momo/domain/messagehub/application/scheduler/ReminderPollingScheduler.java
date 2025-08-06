@@ -26,7 +26,7 @@ public class ReminderPollingScheduler {
 	private final NotificationMessageProducer hubPublisher;
 	private final MessageFormatUtil messageFormatUtil;
 
-	//@Scheduled(fixedDelay = 5_000)
+	@Scheduled(fixedDelay = 10_000)
 	public void poll30minBeforeAlarms() {
 
 		List<MeetingReminderMessage> messages =
