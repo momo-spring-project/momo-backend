@@ -49,7 +49,7 @@ import lombok.RequiredArgsConstructor;
  * 6. 내부 API (다른 도메인 연동용)
  */
 @RestController
-@RequestMapping("/api/v2/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
 
