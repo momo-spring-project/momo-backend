@@ -29,7 +29,7 @@ public class RedisReminderService {
 	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 
 	public void saveReminderMessage(MeetingReminderMessage message) {
-		LocalDateTime meetingDate = message.getMeetingStartTime();
+		LocalDateTime meetingDate = message.getMeetingDate();
 		LocalDateTime now = LocalDateTime.now();
 
 		log.debug("[알림 예약 저장] 저장 시도 - userId: {}, meetingId: {}, meetingStartTime: {}",
@@ -111,9 +111,9 @@ public class RedisReminderService {
 		redisReminderRepository.markAsSent(uniqueKeys, alarmType, today);
 	}
 
-	public void deleteSentMessages(Set<String> messageSet) {
-
-		redisReminderRepository.deleteSentMessages(messageSet);
+	public void deleteSentMessage(MeetingReminderMessage message) {
+		String uniqueKey = message.getUserId() + ":" + message.getMeetingId();
+		redisReminderRepository.deleteSentMessage(uniqueKey);
 	}
 
 }

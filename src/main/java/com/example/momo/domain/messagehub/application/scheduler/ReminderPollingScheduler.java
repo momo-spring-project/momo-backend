@@ -34,7 +34,7 @@ public class ReminderPollingScheduler {
 		log.debug("[30분전 알림] 조회된 메시지 수: {}", messages.size());
 
 		//발송 성공한 메시지만 모을 리스트
-		Set<String> succeededKeys = new HashSet<>();
+		Set<MeetingReminderMessage> succeededMessages = new HashSet<>();
 
 		for (MeetingReminderMessage message : messages) {
 			String content = messageFormatUtil.buildUpcomingMessage(message.getMeetingName());
@@ -44,18 +44,17 @@ public class ReminderPollingScheduler {
 				hubPublisher.publish(
 					message.toEvent(content, MessageType.MEETING_UPCOMING.name())
 				);
-				String uniqueKey = message.getUserId() + ":" + message.getMeetingId();
-				succeededKeys.add(uniqueKey);
+				succeededMessages.add(message);
 			} catch (Exception ex) {
 				log.error("[30분전 알림] 발송 실패, 재시도 대상 유지 - message={}, error={}",
 					message, ex.getMessage(), ex);
 			}
 		}
+		log.debug("[30분전 알림] 발송 완료 후 삭제된 메세지 수 : {}", succeededMessages.size());
 
-		//성공한 메시지만 삭제
-		if (!succeededKeys.isEmpty()) {
-			redisReminderService.deleteSentMessages(succeededKeys);
-			log.debug("[30분전 알림] 발송 완료 후 삭제된 메세지 수 : {}", succeededKeys.size());
+		//성공한 메세지만 삭제
+		for (MeetingReminderMessage message : succeededMessages) {
+			redisReminderService.deleteSentMessage(message);
 		}
 	}
 

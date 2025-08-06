@@ -37,7 +37,14 @@ public class MessageProvider {
 			.userId(userId)
 			.meetingId(meetingId)
 			.meetingName(meetingName)
-			.meetingStartTime(meetingDate)
+			.meetingDate(meetingDate)
+			.build());
+	}
+
+	private void deleteReminder(Long userId, Long meetingId) {
+		redisReminderService.deleteSentMessage(MeetingReminderMessage.builder()
+			.userId(userId)
+			.meetingId(meetingId)
 			.build());
 	}
 
@@ -69,6 +76,9 @@ public class MessageProvider {
 
 		}
 		if (meetingEvent instanceof MeetingMessageEvents.Delete event) {
+			for (Long userId : event.userIdList()) {
+				deleteReminder(userId, event.meetingId());
+			}
 			String message = messageUtil.buildDeleteMessage(event.meetingName());
 			return new MessageDto(event.userIdList(), event.meetingId(),
 				MessageType.MEETING_DELETED,
@@ -84,6 +94,7 @@ public class MessageProvider {
 
 		}
 		if (meetingEvent instanceof MeetingMessageEvents.Cancel event) {
+			deleteReminder(event.userId(), event.meetingId());
 			String message = messageUtil.buildCancelMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
 			return new MessageDto(userIdList, event.meetingId(),

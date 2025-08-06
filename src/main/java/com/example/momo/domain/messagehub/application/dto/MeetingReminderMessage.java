@@ -20,7 +20,8 @@ public class MeetingReminderMessage {
 	private Long userId;
 	private Long meetingId;
 	private String meetingName;
-	private LocalDateTime meetingStartTime;
+	@Nullable
+	private LocalDateTime meetingDate;
 	@Nullable
 	private AlarmType alarmType;
 
@@ -31,9 +32,5 @@ public class MeetingReminderMessage {
 			.content(content)
 			.type(type)
 			.build();
-	}
-
-	public void updateAlarmType(AlarmType type) {
-		this.alarmType = type;
 	}
 }

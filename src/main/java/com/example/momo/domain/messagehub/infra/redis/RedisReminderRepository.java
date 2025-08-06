@@ -62,9 +62,9 @@ public class RedisReminderRepository {
 		);
 	}
 
-	public void deleteSentMessages(Set<String> uniqueKeys) {
-		redisTemplate.opsForZSet().remove(ZSET_KEY, uniqueKeys.toArray());
-		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKeys.toArray());
+	public void deleteSentMessage(String uniqueKey) {
+		redisTemplate.opsForZSet().remove(ZSET_KEY, uniqueKey);
+		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKey);
 	}
 
 	public void markAsSent(Collection<String> uniqueKeys, AlarmType alarmType, String today) {
