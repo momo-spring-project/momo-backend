@@ -12,24 +12,24 @@ import com.google.firebase.FirebaseOptions;
 
 import jakarta.annotation.PostConstruct;
 
-@Configuration
-public class FirebaseConfig {
-	@PostConstruct
-	public void init() {
-		try {
-			InputStream serviceAccount =
-				new ClassPathResource("firebase/firebase-service-account.json").getInputStream();
-
-			FirebaseOptions options = FirebaseOptions.builder()
-				.setCredentials(GoogleCredentials.fromStream(serviceAccount))
-				.build();
-
-			if (FirebaseApp.getApps().isEmpty()) {
-				FirebaseApp.initializeApp(options);
-			}
-
-		} catch (IOException e) {
-			throw new RuntimeException("Firebase 초기화 실패", e);
-		}
-	}
-}
+// @Configuration
+// public class FirebaseConfig {
+// 	@PostConstruct
+// 	public void init() {
+// 		try {
+// 			InputStream serviceAccount =
+// 				new ClassPathResource("firebase/firebase-service-account.json").getInputStream();
+//
+// 			FirebaseOptions options = FirebaseOptions.builder()
+// 				.setCredentials(GoogleCredentials.fromStream(serviceAccount))
+// 				.build();
+//
+// 			if (FirebaseApp.getApps().isEmpty()) {
+// 				FirebaseApp.initializeApp(options);
+// 			}
+//
+// 		} catch (IOException e) {
+// 			throw new RuntimeException("Firebase 초기화 실패", e);
+// 		}
+// 	}
+// }

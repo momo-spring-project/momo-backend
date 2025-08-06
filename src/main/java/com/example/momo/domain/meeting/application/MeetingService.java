@@ -56,7 +56,4 @@ public interface MeetingService {
 	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance,
 		LocalDateTime createdAt);
 
-	ParticipantResponseDto addParticipant(Long meetingId, Long userId);
-
-	ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant);
 }
