@@ -14,8 +14,8 @@ import com.example.momo.domain.payment.application.PaymentOutboxService;
 import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.domain.payment.enums.OutboxStatus;
-import com.example.momo.domain.payment.event.rabbitmq.config.PaymentExchangeConfig;
 import com.example.momo.domain.payment.event.rabbitmq.dto.PaymentEventDto;
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -40,7 +40,6 @@ public class PaymentEventProducer {
 	public void handlePaymentCompleted(PaymentEventMessage.Completed event) {
 		log.info("결제 완료 이벤트 처리 시작 - paymentId: {}, outboxId: {}",
 			event.getPaymentId(), event.getOutboxId());
-
 		publishOutboxEvent(event.getOutboxId());
 	}
 
@@ -89,7 +88,7 @@ public class PaymentEventProducer {
 
 			// 메시지 발행
 			rabbitTemplate.convertAndSend(
-				PaymentExchangeConfig.X_PAYMENT_EVENTS,
+				RabbitExchangeNames.PAYMENT_EVENTS,
 				outbox.getRoutingKey(),
 				event,
 				message -> {

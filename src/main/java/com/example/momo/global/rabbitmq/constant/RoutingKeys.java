@@ -8,4 +8,12 @@ public class RoutingKeys {
 	public static final String PARTICIPANT_JOIN = "participant.joined";
 	public static final String PARTICIPANT_CANCEL_NOTIFICATION = "participant.canceled.notification";
 	public static final String PARTICIPANT_CANCEL_REFUND = "participant.canceled.refund";
+
+	// Payment 도메인 이벤트
+	public static final String PAYMENT_COMPLETED = "payment.completed";
+	public static final String PAYMENT_FAILED = "payment.failed";
+	public static final String PAYMENT_REFUNDED = "payment.refunded";
+
+	public static final String PAYMENT_DLQ = "payment.dlq";
+
 }

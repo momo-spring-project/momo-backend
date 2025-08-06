@@ -23,6 +23,7 @@ public enum PaymentErrorCode implements ErrorCode {
 
 	INVALID_PAYMENT_STATUS("결제 상태가 유효하지 않습니다.", HttpStatus.BAD_REQUEST),
 	RETRY_TIME_EXPIRED("재시도 가능 시간이 만료되었습니다.", HttpStatus.BAD_REQUEST),
+	FREE_MEETING_PARTICIPATION_FAILED("무료 모임 참가 처리에 실패했습니다", HttpStatus.BAD_REQUEST),
 
 	// 5xx
 	TOSS_CONFIRM_FAILED("결제 승인 실패", HttpStatus.BAD_GATEWAY),

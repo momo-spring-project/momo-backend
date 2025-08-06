@@ -37,7 +37,8 @@ public class PaymentRabbitConfig {
 	 * - 메시지 발행 성공/실패 여부를 확인할 수 있도록 Confirm/Return 기능 활성화
 	 */
 	@Bean("paymentConnectionFactory")
-	public ConnectionFactory paymentConnectionFactory(CachingConnectionFactory base) {
+	public ConnectionFactory paymentConnectionFactory(
+		@Qualifier("rabbitConnectionFactory") CachingConnectionFactory base) {
 		CachingConnectionFactory factory =
 			new CachingConnectionFactory(base.getRabbitConnectionFactory());
 

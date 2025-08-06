@@ -25,6 +25,7 @@ import com.example.momo.domain.payment.event.rabbitmq.dto.PaymentEventDto;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
 import com.example.momo.global.webclient.meeting.MeetingClient;
 import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
@@ -93,18 +94,11 @@ public class PaymentServiceImpl implements PaymentService {
 			payment = paymentRepository.save(payment);
 		}
 
-		// 4. 무료 모임인 경우 별도 처리
+		// 4. 무료 모임인 경우 결제 차단
 		if (amount == 0) {
-			payment.complete(null, null, LocalDateTime.now());
-
-			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", "payment.completed");
-			eventPublisher.publishEvent(new PaymentEventMessage.Completed(
-				payment.getId(), payment.getUserId(), payment.getMeetingId(),
-				payment.getAmount(), outboxId
-			));
-
-			return PaymentResponseDto.from(payment);
+			log.warn("무료 모임에 대한 결제 요청이 차단되었습니다. meetingId: {}, userId: {}",
+				meeting.getId(), user.getId());
+			throw new PaymentException(PaymentErrorCode.FREE_MEETING_PARTICIPATION_FAILED);
 		}
 
 		// 5. 유료 결제 처리
@@ -124,7 +118,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.complete(result.getPaymentKey(), orderId, approvedAt);
 
 			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", "payment.completed");
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED);
 			eventPublisher.publishEvent(new PaymentEventMessage.Completed(
 				payment.getId(), payment.getUserId(), payment.getMeetingId(),
 				payment.getAmount(), outboxId
@@ -138,7 +132,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.fail(e.getMessage());
 
 			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", "payment.failed");
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", RoutingKeys.PAYMENT_FAILED);
 			eventPublisher.publishEvent(new PaymentEventMessage.Failed(
 				payment.getId(), payment.getUserId(), payment.getMeetingId(),
 				e.getMessage(), outboxId
@@ -167,13 +161,6 @@ public class PaymentServiceImpl implements PaymentService {
 			throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);
 		}
 
-		// 모임 시작 여부 확인(이 부분은 모임 쪽에서 처리하신다고 하셨음)
-		// MeetingClientResponseDto meeting = getMeetingViaClient(payment.getMeetingId());
-		// LocalDateTime now = LocalDateTime.now();
-		// if (meeting.getMeetingDate().isBefore(now)) {
-		// 	throw new PaymentException(PaymentErrorCode.MEETING_ALREADY_STARTED);
-		// }
-
 		// 토스 환불 처리
 		if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
 			try {
@@ -191,7 +178,7 @@ public class PaymentServiceImpl implements PaymentService {
 		PaymentResponseDto response = PaymentResponseDto.from(payment);
 
 		// Outbox 저장 및 도메인 이벤트 발행
-		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", "payment.refunded");
+		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED);
 		eventPublisher.publishEvent(new PaymentEventMessage.Refunded(
 			payment.getId(), payment.getUserId(), payment.getMeetingId(),
 			payment.getAmount(), outboxId
