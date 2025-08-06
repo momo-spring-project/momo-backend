@@ -84,3 +84,8 @@ otel:
 logging:
   level:
     io.opentelemetry.exporter: DEBUG
+
+notification:
+  slack:
+    webhook:
+      url: ${SLACK_WEBHOOK_URL}
