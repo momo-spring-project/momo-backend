@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.infra.rabbitmq.config;
+package com.example.momo.domain.payment.event.rabbitmq.config;
 
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeBuilder;
@@ -13,8 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class PaymentExchangeConfig {
 
 	// Exchange 이름
-	public static final String X_PAYMENT_EVENTS = "x.payment.events";
-	public static final String X_PAYMENT_DELAY = "x.payment.delay";
+	public static final String X_PAYMENT_EVENTS = "momo.payment.events";
 	public static final String X_DLX_PAYMENT = "dlx.payment";
 
 	/**
@@ -31,19 +30,6 @@ public class PaymentExchangeConfig {
 			.build();
 	}
 
-	/**
-	 * 지연 처리용 Exchange
-	 */
-	@Bean
-	public DirectExchange paymentDelayExchange() {
-		return ExchangeBuilder.directExchange(X_PAYMENT_DELAY)
-			.durable(true)
-			.build();
-	}
-
-	/**
-	 * Dead Letter Exchange
-	 */
 	@Bean
 	public DirectExchange paymentDlxExchange() {
 		return ExchangeBuilder.directExchange(X_DLX_PAYMENT)

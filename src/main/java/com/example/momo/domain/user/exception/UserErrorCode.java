@@ -29,7 +29,16 @@ public enum UserErrorCode implements ErrorCode {
 	// 팔로우 관련 예외
 	CANNOT_FOLLOW_SELF("자기 자신을 팔로우할 수 없습니다.", HttpStatus.BAD_REQUEST),
 	ALREADY_FOLLOWING("이미 팔로우한 사용자입니다.", HttpStatus.CONFLICT),
-	NOT_FOLLOWING("팔로우하지 않은 사용자입니다.", HttpStatus.BAD_REQUEST);
+	NOT_FOLLOWING("팔로우하지 않은 사용자입니다.", HttpStatus.BAD_REQUEST),
+
+	// 아웃박스 관련 예외
+	OUTBOX_EVENT_SAVE_FAILED("아웃박스 이벤트 저장에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	OUTBOX_EVENT_PUBLISH_FAILED("아웃박스 이벤트 발행에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	OUTBOX_EVENT_RETRY_FAILED("아웃박스 이벤트 재시도에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	OUTBOX_EVENT_DATA_PARSING_FAILED("아웃박스 이벤트 데이터 파싱에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	OUTBOX_EVENT_CLEANUP_FAILED("아웃박스 이벤트 정리에 실패했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+	OUTBOX_EVENT_UNSUPPORTED_TYPE("지원하지 않는 아웃박스 이벤트 타입입니다.", HttpStatus.BAD_REQUEST),
+	OUTBOX_EVENT_INVALID_PARAMETER("아웃박스 이벤트 처리를 위한 파라미터가 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
 
 	private final String message;
 	private final HttpStatus status;
