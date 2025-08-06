@@ -17,7 +17,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
-import lombok.AllArgsConstructor;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,8 +31,6 @@ import lombok.NoArgsConstructor;
 )
 @Getter
 @NoArgsConstructor(access = PROTECTED)
-@AllArgsConstructor
-@Builder
 public class Payment extends BaseCreateEntity {
 
 	@Id
@@ -79,6 +77,19 @@ public class Payment extends BaseCreateEntity {
 	// 낙관적 잠금을 위한 버전
 	@Version
 	private Long version;
+
+	// Private 생성자 - Builder 전용
+	@Builder(access = AccessLevel.PRIVATE)  // ✅ PRIVATE Builder
+	private Payment(Long userId, Long meetingId, int amount,
+		String paymentMethod, PaymentStatus status,
+		LocalDateTime paidAt) {
+		this.userId = userId;
+		this.meetingId = meetingId;
+		this.amount = amount;
+		this.paymentMethod = paymentMethod;
+		this.status = status;
+		this.paidAt = paidAt;
+	}
 
 	// 무료 결제 생성 (참가비 0원)
 	public static Payment createFree(Long userId, Long meetingId) {
