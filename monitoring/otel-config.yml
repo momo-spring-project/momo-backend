@@ -47,7 +47,7 @@ exporters:
     verbosity: detailed
 
 processors:
-  filter/ottl:
+  filter/ottl: # 노이즈 필터링
     error_mode: ignore
     traces:
       span:
@@ -62,7 +62,7 @@ processors:
         - 'name == "Rollback"'
         - 'name == "Transaction.commit"'
         - 'IsMatch(name, ".*@@session.transaction_.*")'
-  attributes/error_flag:
+  attributes/error_flag: # 에러 라벨 삽입(Grafana 에서 에러 없는 경우 분류)
     actions:
       - action: insert
         key: error

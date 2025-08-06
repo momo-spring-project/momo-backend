@@ -13,4 +13,9 @@ public class RabbitExchangeNames {
 	public static final String NOTIFICATION_EVENTS = "momo.notification.events";
 	public static final String NOTIFICATION_EVENTS_DLX = "momo.notification.events.dlx";
 	public static final String NOTIFICATION_EVENTS_RETRY = "momo.notification.events.retry";
+
+	// Meeting
+	public static final String MEETING_EVENTS = "momo.meeting.events";
+	public static final String PARTICIPANT_EVENTS = "momo.participant.events";
+
 }
