@@ -3,6 +3,9 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
+import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,9 +29,7 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.springEvent.MeetingEvents;
-import com.example.momo.global.springEvent.meeting.RegisterEvents;
 import com.example.momo.global.utils.HaversineUtils;
-import com.example.momo.global.utils.RetryUtil;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
@@ -44,8 +45,9 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingRepository meetingRepository;
 	private final MeetingReader meetingReader;
 	private final UserClient userClient;
-	private final ParticipantService participantService;
 	private final CategoryClient categoryClient;
+	private final MeetingEventPublisher meetingEventPublisher;
+	private final EntityManager entityManager;
 
 	@Override
 	@Transactional
@@ -169,6 +171,7 @@ public class MeetingServiceImpl implements MeetingService {
 	 * Meeting Participant Service
 	 */
 
+	// 낙관적 락 대신 분산락 고려중, 현재는 흐름만 구현
 	@Override
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
@@ -188,7 +191,25 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		eventPublisher.publishEvent(new RegisterEvents(meetingId, userId));
+		// 참가자 수 확인
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+
+		// 인원 추가
+		meeting.addMeetingParticipant();
+
+		// 참가비 무료일 경우 즉시 참가자 추가
+		if (meeting.getParticipationFee() == 0) {
+			MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
+			meetingRepository.saveParticipant(participant);
+			meetingEventPublisher.publishParticipantEvents(
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
+			);
+			return new ParticipantCreateResponseDto("COMPLETE", "참가 완료");
+		} else {
+			meetingEventPublisher.publishParticipantEvents(new ParticipantEvents.Register(meetingId, userId));
+		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
 		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
@@ -221,16 +242,33 @@ public class MeetingServiceImpl implements MeetingService {
 	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		isMeetingOpen(meeting);
+
 		UserClientResponseDto user = userClient.getUser(userId);
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
-		ParticipantResponseDto responseDto = RetryUtil.retry(() -> removeParticipant(meetingId, participant), 5);
+		// 6시간 전이면 취소/환불 불가
+		if(meeting.getMeetingDate().minusHours(6).isAfter(LocalDateTime.now())) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_TIME_FORBIDDEN);
+		}
 
-		eventPublisher.publishEvent(
-			new MeetingEvents.Cancel(meetingId, meeting.getHostUserId(), userId, user.getNickname()));
+		// 인원 감소, 참가자 삭제
+		entityManager.remove(participant);
+		meeting.removeMeetingParticipant();
 
-		return responseDto;
+		// 참가비 있을 경우만 환불 요청 이벤트
+		if(meeting.getParticipationFee() != 0) {
+			meetingEventPublisher.publishParticipantEvents(
+				new ParticipantEvents.CancelRefund(meetingId, meeting.getHostUserId(), userId, user.getNickname())
+			);
+		}
+
+		meetingEventPublisher.publishParticipantEvents(
+			new ParticipantEvents.CancelNotification(meetingId, meeting.getHostUserId(), userId, user.getNickname())
+		);
+
+		return new ParticipantResponseDto(participant);
 	}
 
 	@Override
@@ -269,18 +307,6 @@ public class MeetingServiceImpl implements MeetingService {
 		Long counts = meetingRepository.countParticipants(userId, meetingId, attendance, createdAt);
 
 		return new ParticipantCountResponseDto(userId, meetingId, counts, attendance, createdAt);
-	}
-
-	// 참가자 추가
-	@Override
-	public ParticipantResponseDto addParticipant(Long meetingId, Long userId) {
-		return participantService.addParticipant(meetingId, userId);
-	}
-
-	// 참가자 감소
-	@Override
-	public ParticipantResponseDto removeParticipant(Long meetingId, MeetingParticipant participant) {
-		return participantService.removeParticipant(meetingId, participant);
 	}
 
 	// 모임이 활성화 되어있는 상태인지 확인
