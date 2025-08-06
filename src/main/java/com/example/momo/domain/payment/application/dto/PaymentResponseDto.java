@@ -48,11 +48,10 @@ public class PaymentResponseDto {
 				));
 				break;
 			case FAILED:
-			case CANCELED:
 			case EXPIRED:
 				builder.detail(PaymentDetailDto.failed(
 					payment.getFailReason(),
-					payment.getFailedAt() != null ? payment.getFailedAt() : payment.getCanceledAt()
+					payment.getFailedAt()
 				));
 				break;
 			case REFUNDED:

@@ -29,7 +29,7 @@ public class PaymentEventConsumer {
 	private final PaymentService paymentService;
 
 	@RabbitListener(
-		queues = "payment.participant.created.queue",  // PaymentQueueConfig에 추가 필요
+		queues = "payment.participant.created.queue",
 		containerFactory = "paymentListenerContainerFactory"
 	)
 	public void handleParticipantCreated(MeetingParticipantEventDto event, Channel channel, Message message) {

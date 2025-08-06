@@ -23,21 +23,21 @@ import com.example.momo.global.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v3/payments")
+@RequestMapping("/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
 	private final PaymentService paymentService;
 
-	// 테스트 키인 결제 (카드번호 직접 입력)
-	// @PostMapping("/test/keyin")
-	// public ResponseEntity<ApiResponse<PaymentResponseDto>> createTestKeyInPayment(
-	// 	@RequestBody CardPaymentTestRequestDto request,
-	// 	@AuthenticationPrincipal AuthUser authUser) {
-	//
-	// 	PaymentResponseDto response = paymentService.createTestKeyInPayment(request, authUser.getId());
-	// 	return ResponseEntity.ok(ApiResponse.success("테스트 키인 결제가 완료되었습니다.", response));
-	// }
+	//테스트 키인 결제 (카드번호 직접 입력)
+	@PostMapping("/test/keyin")
+	public ResponseEntity<ApiResponse<PaymentResponseDto>> createTestKeyInPayment(
+		@RequestBody CardPaymentTestRequestDto request,
+		@AuthenticationPrincipal AuthUser authUser) {
+
+		PaymentResponseDto response = paymentService.createTestKeyInPayment(request, authUser.getId());
+		return ResponseEntity.ok(ApiResponse.success("테스트 키인 결제가 완료되었습니다.", response));
+	}
 
 	/**
 	 * 관리자용 다중 조건 검색 ex)

@@ -6,7 +6,6 @@ CREATE TABLE payments
     meeting_id        BIGINT       NOT NULL,
     paid_at           DATETIME     DEFAULT NULL,
     failed_at         DATETIME     DEFAULT NULL,
-    canceled_at       DATETIME     DEFAULT NULL,
     refunded_at       DATETIME     DEFAULT NULL,
     user_id           BIGINT       NOT NULL,
     version           BIGINT       DEFAULT NULL,
