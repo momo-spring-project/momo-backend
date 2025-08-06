@@ -28,7 +28,7 @@ public class RedisReminderService {
 	private final RedisReminderRepository redisReminderRepository;
 	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 
-	public void saveReminderMessage(MeetingReminderMessage message) {
+	private void saveReminderMessage(MeetingReminderMessage message) {
 		LocalDateTime meetingDate = message.getMeetingDate();
 		LocalDateTime now = LocalDateTime.now();
 
@@ -36,7 +36,7 @@ public class RedisReminderService {
 			message.getUserId(), message.getMeetingId(), meetingDate);
 
 		// 이미 시작된 모임이라면 저장하지 않음
-		if (meetingDate.isBefore(now)) {
+		if (meetingDate == null || meetingDate.isBefore(now)) {
 			log.info("[알림 예약 저장] 저장 생략 - 과거 모임, userId: {}, meetingId: {}, meetingStartTime: {}",
 				message.getUserId(), message.getMeetingId(), meetingDate);
 			return;
@@ -48,6 +48,27 @@ public class RedisReminderService {
 		redisReminderRepository.save(message, meetingTime);
 		log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
 			message.getUserId(), message.getMeetingId(), meetingDate);
+	}
+
+	public void trySaveReminderMessage(MeetingReminderMessage message) {
+		int maxAttempts = 3;
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				saveReminderMessage(message);
+				break;
+			} catch (Exception e) {
+				if (attempt == maxAttempts) {
+					log.error("[알림 예약 저장 실패] {}회 시도 - userId: {}, meetingId: {}",
+						attempt, message.getUserId(), message.getMeetingId());
+				} else {
+					try {
+						Thread.sleep(100); // 100ms 대기 후 재시도
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+					}
+				}
+			}
+		}
 	}
 
 	/** 30분 전 알림 (기존 로직 유지) */
@@ -66,9 +87,7 @@ public class RedisReminderService {
 		}
 
 		// Hash에서 uniqueKey로 실제 객체를 한 번에 조회
-		List<MeetingReminderMessage> messages = redisReminderRepository.findMessagesByKeys(uniqueKeys);
-
-		return messages;
+		return redisReminderRepository.findMessagesByKeys(uniqueKeys);
 	}
 
 	/** 하루 전 알림 전용 — 내일 일정만 조회 */

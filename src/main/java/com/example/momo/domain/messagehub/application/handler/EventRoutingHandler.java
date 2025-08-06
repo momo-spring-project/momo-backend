@@ -52,10 +52,32 @@ public class EventRoutingHandler {
 		}
 	}
 
-	//이벤트 발행
 	private void publishMessageEvent(MessageDto messageDto) {
+		int maxAttempts = 3;
 		for (Long userId : messageDto.userIdList()) {
-			messagePublisher.publish(messageDto.toMessage(userId));
+			publishWithRetry(messageDto, userId, maxAttempts);
+		}
+	}
+
+	private void publishWithRetry(MessageDto message, Long userId, int maxAttempts) {
+		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				messagePublisher.publish(message.toMessage(userId));
+				return;
+			} catch (Exception e) {
+				if (attempt == maxAttempts) {
+					log.error("[알림 발행 실패] {}회 시도 - userId={}, targetId={}",
+						attempt,
+						userId,    // Message에 getter 있다고 가정
+						message.targetId());
+				} else {
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException ie) {
+						Thread.currentThread().interrupt();
+					}
+				}
+			}
 		}
 	}
 }
