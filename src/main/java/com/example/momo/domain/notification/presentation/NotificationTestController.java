@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitMQ.producer.HubMessageProducer;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class NotificationTestController {
 
 	@PostMapping
 	public ResponseEntity<Void> testRabbitMQ(@RequestBody MeetingUpdateTestDto req) {
-		publisher.publish(new MeetingMessageEvents.Update(
+		publisher.publish(new MeetingAlarmMessages.Update(
 			req.meetingId,
 			req.meetingName,
 			req.userIdList,
@@ -42,7 +42,7 @@ public class NotificationTestController {
 				i * 100L + 2,
 				i * 100L + 3
 			);
-			publisher.publish(new MeetingMessageEvents.Update(
+			publisher.publish(new MeetingAlarmMessages.Update(
 				(long)i, // userId
 				"테스트 모임 " + i,
 				userIdList,

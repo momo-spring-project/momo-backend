@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
-import com.example.momo.global.rabbitMQ.dto.follow.FollowMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
+import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public class EventRoutingHandler {
 
 	private final NotificationMessageProducer messagePublisher;
 
-	public void handleMessage(DomainMessageEvent event) {
+	public void handleMessage(DomainAlarmMessage event) {
 		MessageDto dto = createMessageDto(event);
 
 		if (dto == null) {
@@ -40,12 +40,12 @@ public class EventRoutingHandler {
 		publishMessageEvent(dto);
 	}
 
-	private MessageDto createMessageDto(DomainMessageEvent event) {
-		if (event instanceof MeetingMessageEvents.MeetingMessageEvent e) {
+	private MessageDto createMessageDto(DomainAlarmMessage event) {
+		if (event instanceof MeetingAlarmMessages.MeetingAlarmMessage e) {
 			return messageProvider.processMeetingMessage(e);
-		} else if (event instanceof PaymentMessageEvents.PaymentEvent e) {
+		} else if (event instanceof PaymentAlarmMessages.PaymentAlarmMessage e) {
 			return messageProvider.processPaymentMessage(e);
-		} else if (event instanceof FollowMessageEvents.FollowEvent e) {
+		} else if (event instanceof FollowAlarmMessages.FollowAlarmMessage e) {
 			return messageProvider.processFollowMessage(e);
 		} else {
 			return null;

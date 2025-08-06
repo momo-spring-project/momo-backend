@@ -1,4 +1,8 @@
-package com.example.momo.global.rabbitMQ.config;
+package com.example.momo.domain.notification.event.rabbitmq.config;
+
+import static com.example.momo.global.rabbitMQ.constant.QueueNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RabbitExchangeNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RoutingKeys.*;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -16,19 +20,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @Configuration
 public class NotificationRabbitConfig {
-	public static final String NOTIFICATION_QUEUE = "notification.queue";
-	public static final String NOTIFICATION_EXCHANGE = "notification.exchange";
-	public static final String NOTIFICATION_KEY = "notification.key";
-
-	public static final String NOTIFICATION_DLX = "notification.dlx";
-	public static final String NOTIFICATION_DLQ = "notification.dlq";
-	public static final String NOTIFICATION_DLX_KEY = "notification.dlx.key";
 
 	public static final int NOTIFICATION_TTL_MS = 10_000;
-
-	public static final String NOTIFICATION_RETRY_EXCHANGE = "notification.retry.exchange";
-	public static final String NOTIFICATION_RETRY_QUEUE = "notification.retry.queue";
-	public static final String NOTIFICATION_RETRY_KEY = "notification.retry.key";
 	public static final int NOTIFICATION_RETRY_TTL_MS = 30_000;
 
 	@Bean(name = "notificationFactory")
@@ -45,27 +38,27 @@ public class NotificationRabbitConfig {
 	@Bean(name = "notificationQueue")
 	public Queue notificationQueue() {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE)
-			.withArgument("x-dead-letter-exchange", NOTIFICATION_DLX)
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_DLX_KEY)
+			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS_DLX)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLX)
 			.withArgument("x-message-ttl", NOTIFICATION_TTL_MS)
 			.build();
 	}
 
 	@Bean(name = "notificationExchange")
 	public TopicExchange notificationExchange() {
-		return new TopicExchange(NOTIFICATION_EXCHANGE);
+		return new TopicExchange(NOTIFICATION_EVENTS);
 	}
 
 	@Bean(name = "notificationDlxExchange")
 	public TopicExchange notificationDlxExchange() {
 
-		return new TopicExchange(NOTIFICATION_DLX);
+		return new TopicExchange(NOTIFICATION_EVENTS_DLX);
 	}
 
 	@Bean(name = "notificationDlq")
 	public Queue notificationDlq() {
 
-		return QueueBuilder.durable(NOTIFICATION_DLQ).build();
+		return QueueBuilder.durable(NOTIFICATION_QUEUE_DLQ).build();
 	}
 
 	@Bean(name = "notificationDlqBinding")
@@ -73,7 +66,7 @@ public class NotificationRabbitConfig {
 		@Qualifier("notificationDlq") Queue dlq,
 		@Qualifier("notificationDlxExchange") TopicExchange dlx
 	) {
-		return BindingBuilder.bind(dlq).to(dlx).with(NOTIFICATION_DLX_KEY);
+		return BindingBuilder.bind(dlq).to(dlx).with(NOTIFICATION_SENT_DLX);
 	}
 
 	@Bean(name = "notificationBinding")
@@ -83,21 +76,21 @@ public class NotificationRabbitConfig {
 	) {
 		return BindingBuilder.bind(notificationQueue)
 			.to(notificationExchange)
-			.with(NOTIFICATION_KEY);
+			.with(NOTIFICATION_SENT);
 	}
 
 	// 재시도 교환기/큐/바인딩
 	@Bean
 	public TopicExchange notificationRetryExchange() {
-		return new TopicExchange(NOTIFICATION_RETRY_EXCHANGE);
+		return new TopicExchange(NOTIFICATION_EVENTS_RETRY);
 	}
 
 	@Bean
 	public Queue notificationRetryQueue() {
-		return QueueBuilder.durable(NOTIFICATION_RETRY_QUEUE)
+		return QueueBuilder.durable(NOTIFICATION_QUEUE_RETRY)
 			.withArgument("x-message-ttl", NOTIFICATION_RETRY_TTL_MS) // 30초 지연 후
-			.withArgument("x-dead-letter-exchange", NOTIFICATION_EXCHANGE)  // 메인으로 복귀
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_KEY) // 메인 라우팅키
+			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS)  // 메인으로 복귀
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT) // 메인 라우팅키
 			.build();
 	}
 
@@ -105,7 +98,7 @@ public class NotificationRabbitConfig {
 	public Binding notificationRetryBinding() {
 		return BindingBuilder.bind(notificationRetryQueue())
 			.to(notificationRetryExchange())
-			.with(NOTIFICATION_RETRY_KEY);
+			.with(NOTIFICATION_SENT_RETRY);
 	}
 
 }

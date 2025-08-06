@@ -3,7 +3,7 @@ package com.example.momo.domain.messagehub.application.dto;
 import java.time.LocalDateTime;
 
 import com.example.momo.domain.messagehub.enums.AlarmType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -25,8 +25,8 @@ public class MeetingReminderMessage {
 	@Nullable
 	private AlarmType alarmType;
 
-	public MessageHubNotificationEvent toEvent(String content, String type) {
-		return MessageHubNotificationEvent.builder()
+	public MessageHubNotificationMessage toEvent(String content, String type) {
+		return MessageHubNotificationMessage.builder()
 			.userId(this.userId)
 			.targetId(this.meetingId)
 			.content(content)

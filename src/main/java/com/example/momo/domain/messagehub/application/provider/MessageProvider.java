@@ -10,9 +10,9 @@ import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.service.RedisReminderService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.MessageType;
-import com.example.momo.global.rabbitMQ.dto.follow.FollowMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,8 +48,8 @@ public class MessageProvider {
 			.build());
 	}
 
-	public MessageDto processMeetingMessage(MeetingMessageEvents.MeetingMessageEvent meetingEvent) {
-		if (meetingEvent instanceof MeetingMessageEvents.Create event) {
+	public MessageDto processMeetingMessage(MeetingAlarmMessages.MeetingAlarmMessage meetingEvent) {
+		if (meetingEvent instanceof MeetingAlarmMessages.Create event) {
 			saveReminder(event.hostUserId(), event.meetingId(), event.meetingName(), event.meetingDate());
 			String message = messageUtil.buildCreateMessage(event.categoryName());
 			List<Long> userIdList = targetUserProvider.getUserIdList(event.categoryId(), event.latitude(),
@@ -64,7 +64,7 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingMessageEvents.Update event) {
+		if (meetingEvent instanceof MeetingAlarmMessages.Update event) {
 			for (Long userId : event.userIdList()) {
 				saveReminder(userId, event.meetingId(), event.meetingName(), event.meetingDate());
 			}
@@ -75,7 +75,7 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingMessageEvents.Delete event) {
+		if (meetingEvent instanceof MeetingAlarmMessages.Delete event) {
 			for (Long userId : event.userIdList()) {
 				deleteReminder(userId, event.meetingId());
 			}
@@ -85,7 +85,7 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingMessageEvents.Join event) {
+		if (meetingEvent instanceof MeetingAlarmMessages.Join event) {
 			saveReminder(event.userId(), event.meetingId(), event.meetingName(), event.meetingDate());
 			String message = messageUtil.buildJoinMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
@@ -93,7 +93,7 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingMessageEvents.Cancel event) {
+		if (meetingEvent instanceof MeetingAlarmMessages.Cancel event) {
 			deleteReminder(event.userId(), event.meetingId());
 			String message = messageUtil.buildCancelMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
@@ -104,8 +104,8 @@ public class MessageProvider {
 		return null;
 	}
 
-	public MessageDto processFollowMessage(FollowMessageEvents.FollowEvent followEvent) {
-		if (followEvent instanceof FollowMessageEvents.Followed event) {
+	public MessageDto processFollowMessage(FollowAlarmMessages.FollowAlarmMessage followEvent) {
+		if (followEvent instanceof FollowAlarmMessages.Followed event) {
 			String message = messageUtil.buildFollowedMessage(event.followerUserNickname());
 			List<Long> userIdList = List.of(event.followedId());
 			return new MessageDto(userIdList, event.followerId(), MessageType.FOLLOWED,
@@ -114,14 +114,14 @@ public class MessageProvider {
 		return null;
 	}
 
-	public MessageDto processPaymentMessage(PaymentMessageEvents.PaymentEvent paymentEvent) {
-		if (paymentEvent instanceof PaymentMessageEvents.Paid event) {
+	public MessageDto processPaymentMessage(PaymentAlarmMessages.PaymentAlarmMessage paymentEvent) {
+		if (paymentEvent instanceof PaymentAlarmMessages.Paid event) {
 			String message = messageUtil.buildPaidMessage();
 			List<Long> userIdList = List.of(event.userId());
 			return new MessageDto(userIdList, event.paymentId(), MessageType.PAID,
 				message);
 		}
-		if (paymentEvent instanceof PaymentMessageEvents.Refunded event) {
+		if (paymentEvent instanceof PaymentAlarmMessages.Refunded event) {
 			String message = messageUtil.buildPaidMessage();
 			List<Long> userIdList = List.of(event.userId());
 			return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,

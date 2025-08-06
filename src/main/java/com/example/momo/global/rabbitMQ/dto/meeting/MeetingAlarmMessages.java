@@ -3,16 +3,16 @@ package com.example.momo.global.rabbitMQ.dto.meeting;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
-import com.example.momo.global.rabbitMQ.dto.messagehub.EventMessageType;
+import com.example.momo.global.rabbitMQ.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
-public class MeetingMessageEvents {
+public class MeetingAlarmMessages {
 
 	/**
 	 * 모임 이벤트 마커 인터페이스입니다.
 	 */
-	public interface MeetingMessageEvent extends DomainMessageEvent {
+	public interface MeetingAlarmMessage extends DomainAlarmMessage {
 		Long meetingId();
 	}
 
@@ -28,7 +28,7 @@ public class MeetingMessageEvents {
 	 * @param longitude 경도
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventMessageType.MEETING_CREATE)
+	@JsonTypeName(AlarmMessageType.MEETING_CREATE)
 	public record Create(
 		Long hostUserId,
 		Long meetingId,
@@ -38,7 +38,7 @@ public class MeetingMessageEvents {
 		Double latitude,
 		Double longitude,
 		LocalDateTime meetingDate
-	) implements MeetingMessageEvent {
+	) implements MeetingAlarmMessage {
 	}
 
 	/**
@@ -49,13 +49,13 @@ public class MeetingMessageEvents {
 	 * @param userIdList 관련 유저 ID 목록(Host 유저 ID 포함)
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventMessageType.MEETING_UPDATE)
+	@JsonTypeName(AlarmMessageType.MEETING_UPDATE)
 	public record Update(
 		Long meetingId,
 		String meetingName,
 		List<Long> userIdList,
 		LocalDateTime meetingDate
-	) implements MeetingMessageEvent {
+	) implements MeetingAlarmMessage {
 	}
 
 	/**
@@ -65,13 +65,13 @@ public class MeetingMessageEvents {
 	 * @param meetingName 삭제된 모임 이름
 	 * @param userIdList 관련 유저 ID 목록(Host 유저 ID 포함)
 	 */
-	@JsonTypeName(EventMessageType.MEETING_DELETE)
+	@JsonTypeName(AlarmMessageType.MEETING_DELETE)
 	public record Delete(
 		Long hostUserId,
 		Long meetingId,
 		String meetingName,
 		List<Long> userIdList
-	) implements MeetingMessageEvent {
+	) implements MeetingAlarmMessage {
 	}
 
 	/**
@@ -84,7 +84,7 @@ public class MeetingMessageEvents {
 	 * @param participantNickname 참여한 유저 닉네임
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventMessageType.MEETING_JOIN)
+	@JsonTypeName(AlarmMessageType.MEETING_JOIN)
 	public record Join(
 		Long meetingId,
 		Long hostUserId,
@@ -92,7 +92,7 @@ public class MeetingMessageEvents {
 		String meetingName,
 		String participantNickname,
 		LocalDateTime meetingDate
-	) implements MeetingMessageEvent {
+	) implements MeetingAlarmMessage {
 	}
 
 	/**
@@ -103,12 +103,12 @@ public class MeetingMessageEvents {
 	 * @param userId 취소한 유저 ID
 	 * @param participantNickname 취소한 유저 닉네임
 	 */
-	@JsonTypeName(EventMessageType.MEETING_CANCEL)
+	@JsonTypeName(AlarmMessageType.MEETING_CANCEL)
 	public record Cancel(
 		Long meetingId,
 		Long hostUserId,
 		Long userId,
 		String participantNickname
-	) implements MeetingMessageEvent {
+	) implements MeetingAlarmMessage {
 	}
 }

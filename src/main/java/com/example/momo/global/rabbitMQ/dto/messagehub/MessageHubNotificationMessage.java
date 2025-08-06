@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-public class MessageHubNotificationEvent {
+public class MessageHubNotificationMessage {
 	private Long userId;
 	private Long targetId;
 	private String content;

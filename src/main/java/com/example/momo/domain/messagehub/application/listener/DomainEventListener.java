@@ -4,9 +4,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.example.momo.global.rabbitMQ.dto.follow.FollowMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.meeting.MeetingMessageEvents;
-import com.example.momo.global.rabbitMQ.dto.payment.PaymentMessageEvents;
+import com.example.momo.global.rabbitMQ.dto.follow.FollowAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitMQ.dto.payment.PaymentAlarmMessages;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,18 +18,18 @@ import lombok.extern.slf4j.Slf4j;
 public class DomainEventListener {
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handleMeetingMessageEvent(MeetingMessageEvents.MeetingMessageEvent event) {
+	public void handleMeetingMessageEvent(MeetingAlarmMessages.MeetingAlarmMessage event) {
 		log.warn("현재 사용되지 않는 이벤트 - RabbitListener 로 변경 필요");
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handleFollowMessageEvent(FollowMessageEvents.FollowEvent event) {
+	public void handleFollowMessageEvent(FollowAlarmMessages.FollowAlarmMessage event) {
 		log.warn("현재 사용되지 않는 이벤트 - RabbitListener 로 변경 필요");
 
 	}
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void handlePaymentMessageEvent(PaymentMessageEvents.PaymentEvent event) {
+	public void handlePaymentMessageEvent(PaymentAlarmMessages.PaymentAlarmMessage event) {
 		log.warn("현재 사용되지 않는 이벤트 - RabbitListener 로 변경 필요");
 	}
 }

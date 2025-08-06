@@ -1,14 +1,14 @@
 package com.example.momo.domain.notification.event.rabbitmq.consumer;
 
 import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
+import static com.example.momo.global.rabbitMQ.constant.QueueNames.*;
 
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
-import com.example.momo.global.rabbitMQ.config.NotificationRabbitConfig;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,10 +20,10 @@ public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
 
 	@RabbitListener(
-		queues = NotificationRabbitConfig.NOTIFICATION_QUEUE,
+		queues = NOTIFICATION_QUEUE,
 		containerFactory = "notificationFactory"
 	)
-	public void consumeMain(MessageHubNotificationEvent queueEvent, Message message) {
+	public void consumeMain(MessageHubNotificationMessage queueEvent, Message message) {
 		int retryCount = calculateRetryCount(message);
 		log.info("알림 컨슈머 접근 : userId = {}, 시도 횟수 = {}", queueEvent.getUserId(), retryCount);
 

@@ -1,4 +1,8 @@
-package com.example.momo.global.rabbitMQ.config;
+package com.example.momo.domain.messagehub.event.rabbitmq.config;
+
+import static com.example.momo.global.rabbitMQ.constant.QueueNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RabbitExchangeNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RoutingKeys.*;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -16,19 +20,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 @Configuration
 public class MessageHubRabbitConfig {
-	public static final String HUB_QUEUE = "hub.queue";
-	public static final String HUB_EXCHANGE = "hub.exchange";
-	public static final String HUB_KEY = "hub.key";
-
-	public static final String HUB_DLX = "hub.dlx";
-	public static final String HUB_DLQ = "hub.dlq";
-	public static final String HUB_DLX_KEY = "hub.dlx.key";
 
 	public static final int HUB_QUEUE_TTL_MS = 10_000;
-
-	public static final String HUB_RETRY_EXCHANGE = "hub.retry.exchange";
-	public static final String HUB_RETRY_QUEUE = "hub.retry.queue";
-	public static final String HUB_RETRY_KEY = "hub.retry.key";
 	public static final int HUB_RETRY_TTL_MS = 30_000; // 예시, 필요시 조정
 
 	//리스너(Consumer) 동작 규칙 템플릿
@@ -46,9 +39,9 @@ public class MessageHubRabbitConfig {
 
 	@Bean(name = "hubQueue")
 	public Queue hubQueue() {
-		return QueueBuilder.durable(HUB_QUEUE)
-			.withArgument("x-dead-letter-exchange", HUB_DLX)
-			.withArgument("x-dead-letter-routing-key", HUB_DLX_KEY)
+		return QueueBuilder.durable(MESSAGE_HUB_QUEUE)
+			.withArgument("x-dead-letter-exchange", MESSAGE_HUB_EVENTS_DLX)
+			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLX)
 			.withArgument("x-message-ttl", HUB_QUEUE_TTL_MS)
 			.build();
 	}
@@ -57,20 +50,20 @@ public class MessageHubRabbitConfig {
 	@Bean(name = "hubDlq")
 	public Queue hubDlq() {
 
-		return new Queue(HUB_DLQ, true);
+		return new Queue(MESSAGE_HUB_QUEUE_DLQ, true);
 	}
 
 	@Bean(name = "hubExchange")
 	public TopicExchange hubExchange() {
 
-		return new TopicExchange(HUB_EXCHANGE);
+		return new TopicExchange(MESSAGE_HUB_EVENTS);
 	}
 
 	//DLX (Dead Letter Exchange)
 	@Bean(name = "hubDlxExchange")
 	public TopicExchange hubDlxExchange() {
 
-		return new TopicExchange(HUB_DLX);
+		return new TopicExchange(MESSAGE_HUB_EVENTS_DLX);
 	}
 
 	//DLQ Binding
@@ -79,7 +72,7 @@ public class MessageHubRabbitConfig {
 		@Qualifier("hubDlq") Queue dlq,
 		@Qualifier("hubDlxExchange") TopicExchange dlx
 	) {
-		return BindingBuilder.bind(dlq).to(dlx).with(HUB_DLX_KEY);
+		return BindingBuilder.bind(dlq).to(dlx).with(MESSAGE_HUB_ASSEMBLE_DLX);
 	}
 
 	@Bean(name = "hubBinding")
@@ -89,21 +82,21 @@ public class MessageHubRabbitConfig {
 	) {
 		return BindingBuilder.bind(hubQueue)
 			.to(hubExchange)
-			.with(HUB_KEY);
+			.with(MESSAGE_HUB_ASSEMBLE);
 	}
 
 	// Retry Exchange
 	@Bean(name = "hubRetryExchange")
 	public TopicExchange hubRetryExchange() {
-		return new TopicExchange(HUB_RETRY_EXCHANGE);
+		return new TopicExchange(MESSAGE_HUB_EVENTS_RETRY);
 	}
 
 	// Retry Queue
 	@Bean(name = "hubRetryQueue")
 	public Queue hubRetryQueue() {
-		return QueueBuilder.durable(HUB_RETRY_QUEUE)
-			.withArgument("x-dead-letter-exchange", HUB_EXCHANGE)
-			.withArgument("x-dead-letter-routing-key", HUB_KEY)
+		return QueueBuilder.durable(MESSAGE_HUB_QUEUE_RETRY)
+			.withArgument("x-dead-letter-exchange", MESSAGE_HUB_EVENTS)
+			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE)
 			.withArgument("x-message-ttl", HUB_RETRY_TTL_MS)
 			.build();
 	}
@@ -116,7 +109,7 @@ public class MessageHubRabbitConfig {
 	) {
 		return BindingBuilder.bind(retryQueue)
 			.to(retryExchange)
-			.with(HUB_RETRY_KEY);
+			.with(MESSAGE_HUB_ASSEMBLE_RETRY);
 	}
 
 }

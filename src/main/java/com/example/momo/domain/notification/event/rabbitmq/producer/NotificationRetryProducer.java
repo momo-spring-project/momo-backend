@@ -1,10 +1,12 @@
 package com.example.momo.domain.notification.event.rabbitmq.producer;
 
+import static com.example.momo.global.rabbitMQ.constant.RabbitExchangeNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RoutingKeys.*;
+
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.global.rabbitMQ.config.NotificationRabbitConfig;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,10 +18,10 @@ public class NotificationRetryProducer {
 
 	private final RabbitTemplate rabbitTemplate;
 
-	public void publishRetry(MessageHubNotificationEvent message, int nextAttempts) {
+	public void publishRetry(MessageHubNotificationMessage message, int nextAttempts) {
 		rabbitTemplate.convertAndSend(
-			NotificationRabbitConfig.NOTIFICATION_RETRY_EXCHANGE,
-			NotificationRabbitConfig.NOTIFICATION_RETRY_KEY,
+			NOTIFICATION_EVENTS_RETRY,
+			NOTIFICATION_SENT_RETRY,
 			message,
 			m -> {
 				m.getMessageProperties().getHeaders().put(NOTIFICATION_RETRY_HEADER, nextAttempts);
@@ -28,10 +30,10 @@ public class NotificationRetryProducer {
 		);
 	}
 
-	public void publishToDlq(MessageHubNotificationEvent message) {
+	public void publishToDlq(MessageHubNotificationMessage message) {
 		rabbitTemplate.convertAndSend(
-			NotificationRabbitConfig.NOTIFICATION_DLX,
-			NotificationRabbitConfig.NOTIFICATION_DLX_KEY,
+			NOTIFICATION_EVENTS_DLX,
+			NOTIFICATION_SENT_DLX,
 			message
 		);
 	}

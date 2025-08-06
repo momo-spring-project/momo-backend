@@ -1,7 +1,7 @@
 package com.example.momo.domain.notification.application.dto;
 
 import com.example.momo.domain.notification.enums.NotificationType;
-import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.MessageHubNotificationMessage;
 
 import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
@@ -26,7 +26,7 @@ public class NotificationMessageDto {
 		this.notificationId = notificationId;
 	}
 
-	public static NotificationMessageDto of(MessageHubNotificationEvent event) {
+	public static NotificationMessageDto of(MessageHubNotificationMessage event) {
 		NotificationType changedType = NotificationType.from(event.getType());
 		if (changedType == null)
 			return null;

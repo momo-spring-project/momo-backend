@@ -1,11 +1,12 @@
 package com.example.momo.global.rabbitMQ.producer;
 
-import static com.example.momo.global.rabbitMQ.config.MessageHubRabbitConfig.*;
+import static com.example.momo.global.rabbitMQ.constant.RabbitExchangeNames.*;
+import static com.example.momo.global.rabbitMQ.constant.RoutingKeys.*;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.global.rabbitMQ.dto.messagehub.DomainMessageEvent;
+import com.example.momo.global.rabbitMQ.dto.messagehub.DomainAlarmMessage;
 
 import lombok.RequiredArgsConstructor;
 
@@ -14,10 +15,10 @@ import lombok.RequiredArgsConstructor;
 public class HubMessageProducer {
 	private final RabbitTemplate rabbitTemplate;
 
-	public void publish(DomainMessageEvent event) {
+	public void publish(DomainAlarmMessage event) {
 		rabbitTemplate.convertAndSend(
-			HUB_EXCHANGE,
-			HUB_KEY,
+			MESSAGE_HUB_EVENTS,
+			MESSAGE_HUB_ASSEMBLE,
 			event
 		);
 	}
