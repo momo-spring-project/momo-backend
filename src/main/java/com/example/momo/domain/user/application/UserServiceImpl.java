@@ -41,6 +41,14 @@ import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDt
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 사용자 서비스 구현체
+ * 주요 특징:
+ * - 도메인 중심 설계: User 애그리거트를 통한 비즈니스 로직 처리
+ * - 이벤트 기반 아키텍처: 아웃박스 패턴 + 스프링 이벤트
+ * - 성능 최적화: Slice 사용, 미리 집계된 카운트 활용
+ * - 안전한 예외 처리: 상세한 에러 메시지와 로깅
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -53,19 +61,26 @@ public class UserServiceImpl implements UserService {
 	private final UserOutboxService userOutboxService;
 	private final ApplicationEventPublisher eventPublisher;
 
+	// ==================== 1. 회원 관리 ====================
+
 	@Override
 	@Transactional
 	public void registerUser(RegisterRequestDto request) {
-		// 닉네임 중복 확인
+		log.info("회원가입 시작: email={}, nickname={}", request.email(), request.nickname());
+
+		// 1. 닉네임 중복 확인
 		if (userRepository.existsByNickname(request.nickname())) {
+			log.warn("닉네임 중복: nickname={}", request.nickname());
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 
-		// 이메일 중복 확인
+		// 2. 이메일 중복 확인
 		if (userRepository.existsByEmail(request.email())) {
+			log.warn("이메일 중복: email={}", request.email());
 			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 
+		// 3. 사용자 생성 및 저장
 		User user = User.createUser(
 			request.nickname(),
 			request.email(),
@@ -75,29 +90,35 @@ public class UserServiceImpl implements UserService {
 		);
 
 		userRepository.save(user);
+		log.info("회원가입 완료: userId={}, email={}", user.getId(), request.email());
 	}
 
 	@Override
 	@Transactional
 	public void withdrawUser(WithdrawRequestDto request, Long userId) {
+		log.info("회원탈퇴 시작: userId={}", userId);
+
+		// 1. 사용자 조회
 		User user = userRepository.findByIdAndIsDeletedFalse(userId)
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-		// 비밀번호가 있는 경우에만 검증 (소셜 로그인 사용자는 비밀번호가 null일 수 있음)
+		// 2. 비밀번호 검증 (소셜 로그인 사용자는 비밀번호가 null일 수 있음)
 		if (user.getPassword() != null && !passwordEncoder.matches(request.password(), user.getPassword())) {
+			log.warn("회원탈퇴 비밀번호 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
+		// 3. 논리 삭제 처리
 		user.delete();
 
-		// 아웃박스 이벤트 저장 (서비스 사용)
+		// 4. 아웃박스 이벤트 저장 (다른 도메인 연동용)
 		userOutboxService.saveUserWithdrawnEvent(
 			user.getId(),
 			user.getEmail(),
 			user.getNickname()
 		);
 
-		// 스프링 이벤트 발행
+		// 5. 스프링 이벤트 발행 (애플리케이션 내부 처리용)
 		eventPublisher.publishEvent(
 			new UserEvents.Withdrawn(
 				user.getId(),
@@ -106,74 +127,7 @@ public class UserServiceImpl implements UserService {
 			)
 		);
 
-		log.info("회원탈퇴 처리 완료: userId={}, email={}", userId, user.getEmail());
-	}
-
-	// === 사용자 정보 조회 ===
-	@Override
-	@Transactional(readOnly = true)
-	public UserResponseDto getUserById(Long userId) {
-		User user = userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
-		return new UserResponseDto(user);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<UserListResponseDto> getUsersByIds(List<Long> userIds) {
-		if (userIds == null || userIds.isEmpty()) {
-			return List.of();
-		}
-
-		List<User> users = userRepository.findAllByIdInAndIsDeletedFalse(userIds);
-
-		return users.stream()
-			.map(UserListResponseDto::new)
-			.toList();
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<Long> getExistingUserIds(List<Long> userIds) {
-		if (userIds == null || userIds.isEmpty()) {
-			return List.of();
-		}
-
-		return userRepository.findExistingUserIds(userIds);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public UserResponseDto getMyProfile(Long currentUserId) {
-		return getUserById(currentUserId);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public UserAuthResponseDto getUserByEmailForAuth(String email) {
-		User user = userRepository.findByEmailAndIsDeletedFalse(email)
-			.orElse(null);
-
-		if (user == null) {
-			return null;
-		}
-
-		// Auth 전용 DTO로 변환 (비밀번호 포함)
-		return new UserAuthResponseDto(user);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public List<UserListResponseDto> getUsersByLocationAndCategory(
-		List<Integer> categoryIds,
-		Double latitude,
-		Double longitude
-	) {
-		List<User> users = userRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
-
-		return users.stream()
-			.map(UserListResponseDto::new)
-			.toList();
+		log.info("회원탈퇴 완료: userId={}, email={}", userId, user.getEmail());
 	}
 
 	@Override
@@ -183,19 +137,113 @@ public class UserServiceImpl implements UserService {
 			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 	}
 
-	// === 사용자 정보 수정 ===
+	// ==================== 2. 사용자 정보 조회 ====================
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserResponseDto getUserById(Long userId) {
+		log.debug("사용자 정보 조회: userId={}", userId);
+
+		User user = userRepository.findByIdAndIsDeletedFalse(userId)
+			.orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
+		return new UserResponseDto(user);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserResponseDto getMyProfile(Long currentUserId) {
+		log.debug("내 프로필 조회: userId={}", currentUserId);
+		return getUserById(currentUserId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserListResponseDto> getUsersByIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			log.debug("사용자 ID 목록이 비어있음");
+			return List.of();
+		}
+
+		log.debug("다중 사용자 조회: userIds={}", userIds);
+
+		List<User> users = userRepository.findAllByIdInAndIsDeletedFalse(userIds);
+
+		log.debug("다중 사용자 조회 결과: 요청={}, 조회={}", userIds.size(), users.size());
+		return users.stream()
+			.map(UserListResponseDto::new)
+			.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<Long> getExistingUserIds(List<Long> userIds) {
+		if (userIds == null || userIds.isEmpty()) {
+			log.debug("확인할 사용자 ID 목록이 비어있음");
+			return List.of();
+		}
+
+		log.debug("사용자 존재 여부 확인: userIds={}", userIds);
+
+		List<Long> existingIds = userRepository.findExistingUserIds(userIds);
+
+		log.debug("존재하는 사용자 ID: 요청={}, 존재={}", userIds.size(), existingIds.size());
+		return existingIds;
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public List<UserListResponseDto> getUsersByLocationAndCategory(
+		List<Integer> categoryIds,
+		Double latitude,
+		Double longitude
+	) {
+		log.debug("사용자 필터링 검색: categoryIds={}, latitude={}, longitude={}",
+			categoryIds, latitude, longitude);
+
+		List<User> users = userRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
+
+		log.debug("필터링 검색 결과: {}명", users.size());
+		return users.stream()
+			.map(UserListResponseDto::new)
+			.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserAuthResponseDto getUserByEmailForAuth(String email) {
+		log.debug("Auth용 이메일로 사용자 조회: email={}", email);
+
+		User user = userRepository.findByEmailAndIsDeletedFalse(email)
+			.orElse(null);
+
+		if (user == null) {
+			log.debug("해당 이메일의 사용자가 존재하지 않음: email={}", email);
+			return null;
+		}
+
+		// Auth 전용 DTO로 변환 (비밀번호 포함)
+		return new UserAuthResponseDto(user);
+	}
+
+	// ==================== 3. 사용자 정보 수정 ====================
+
 	@Override
 	@Transactional
 	public User updateUserCategories(Long userId, List<Integer> categoryIds) {
+		log.info("관심 카테고리 수정: userId={}, categoryIds={}", userId, categoryIds);
+
 		User user = validateAndGetUser(userId);
 
-		// 기존 카테고리 백업
+		// 1. 기존 카테고리 백업 (로깅용)
 		List<Integer> oldCategoryIds = user.getCategories().stream()
 			.map(UserCategory::getCategoryId)
 			.toList();
 
+		// 2. 카테고리 유효성 검증
 		List<CategoryClientResponseDto> allCategories = categoryClient.getCategories();
 		if (allCategories == null || allCategories.isEmpty()) {
+			log.error("카테고리 목록 조회 실패");
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 
@@ -205,10 +253,15 @@ public class UserServiceImpl implements UserService {
 
 		boolean allValid = new HashSet<>(validCategoryIds).containsAll(categoryIds);
 		if (!allValid) {
+			log.warn("유효하지 않은 카테고리 ID 포함: categoryIds={}", categoryIds);
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 
+		// 3. 카테고리 업데이트
 		user.updateCategories(categoryIds);
+
+		log.info("관심 카테고리 수정 완료: userId={}, 이전={}, 변경후={}",
+			userId, oldCategoryIds, categoryIds);
 
 		return user;
 	}
@@ -216,45 +269,203 @@ public class UserServiceImpl implements UserService {
 	@Override
 	@Transactional
 	public void updatePassword(Long userId, UserPasswordUpdateRequestDto request) {
+		log.info("비밀번호 수정: userId={}", userId);
+
 		User user = validateAndGetUser(userId);
 
+		// 1. 현재 비밀번호 확인
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+			log.warn("현재 비밀번호 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
+		// 2. 새 비밀번호 확인
 		if (!request.newPassword().equals(request.confirmPassword())) {
+			log.warn("새 비밀번호 확인 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_CONFIRM_MISMATCH);
 		}
 
+		// 3. 비밀번호 업데이트 (암호화)
 		user.updatePassword(passwordEncoder.encode(request.newPassword()));
+
+		log.info("비밀번호 수정 완료: userId={}", userId);
 	}
 
 	@Override
 	@Transactional
 	public void updateNickname(Long userId, UserNicknameUpdateRequestDto request) {
+		log.info("닉네임 수정: userId={}, newNickname={}", userId, request.nickname());
+
 		User user = validateAndGetUser(userId);
 		String oldNickname = user.getNickname();
 
+		// 중복 검사 (자기 자신 제외)
 		if (userRepository.isDuplicateNickname(request.nickname(), userId)) {
+			log.warn("닉네임 중복: nickname={}", request.nickname());
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
+
+		// 닉네임 업데이트
 		user.updateNickname(request.nickname());
+
+		log.info("닉네임 수정 완료: userId={}, 이전={}, 변경후={}",
+			userId, oldNickname, request.nickname());
 	}
 
 	@Override
 	@Transactional
 	public UserLocationResponseDto updateUserLocation(Long userId, UserLocationUpdateRequestDto request) {
+		log.info("위치 정보 수정: userId={}, latitude={}, longitude={}",
+			userId, request.latitude(), request.longitude());
+
 		User user = validateAndGetUser(userId);
 
+		// 기존 위치 백업 (로깅용)
 		Double oldLatitude = user.getLatitude();
 		Double oldLongitude = user.getLongitude();
 
+		// 위치 업데이트
 		user.updateLocation(request.latitude(), request.longitude());
+
+		log.info("위치 정보 수정 완료: userId={}, 이전=({},{}), 변경후=({},{})",
+			userId, oldLatitude, oldLongitude, request.latitude(), request.longitude());
 
 		return new UserLocationResponseDto(user);
 	}
 
-	// === 사용자 평가 및 점수 집계 로직 ===
+	// ==================== 4. 팔로우 시스템 ====================
+
+	@Override
+	@Transactional
+	public void followUser(Long followerId, Long followingId) {
+		log.info("팔로우 요청: followerId={}, followingId={}", followerId, followingId);
+
+		// 1. 자기 자신 팔로우 방지
+		if (followerId.equals(followingId)) {
+			log.warn("자기 자신 팔로우 시도: userId={}", followerId);
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
+		}
+
+		// 2. 사용자 존재 확인
+		User follower = validateAndGetUser(followerId);
+		User following = validateAndGetUser(followingId);
+
+		// 3. 중복 팔로우 확인
+		boolean alreadyFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+
+		if (alreadyFollowing) {
+			log.warn("이미 팔로우 중: followerId={}, followingId={}", followerId, followingId);
+			throw new UserException(UserErrorCode.ALREADY_FOLLOWING);
+		}
+
+		// 4. 팔로우 관계 생성 및 카운트 증가
+		UserFollow userFollow = new UserFollow(followerId, followingId);
+		follower.getFollowings().add(userFollow);
+
+		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
+		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+
+		log.info("팔로우 완료: followerId={}, followingId={}", followerId, followingId);
+	}
+
+	@Override
+	@Transactional
+	public void unfollowUser(Long followerId, Long followingId) {
+		log.info("언팔로우 요청: followerId={}, followingId={}", followerId, followingId);
+
+		// 1. 자기 자신 언팔로우 방지
+		if (followerId.equals(followingId)) {
+			log.warn("자기 자신 언팔로우 시도: userId={}", followerId);
+			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
+		}
+
+		// 2. 사용자 존재 확인
+		User follower = validateAndGetUser(followerId);
+		User following = validateAndGetUser(followingId);
+
+		// 3. 팔로우 관계 존재 확인
+		boolean isFollowing = follower.getFollowings().stream()
+			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+
+		if (!isFollowing) {
+			log.warn("팔로우하지 않은 사용자: followerId={}, followingId={}", followerId, followingId);
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
+
+		// 4. 팔로우 관계 삭제 및 카운트 감소
+		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
+		if (deletedCount == 0) {
+			log.error("팔로우 관계 삭제 실패: followerId={}, followingId={}", followerId, followingId);
+			throw new UserException(UserErrorCode.NOT_FOLLOWING);
+		}
+
+		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
+		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+
+		log.info("언팔로우 완료: followerId={}, followingId={}", followerId, followingId);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserFollowListResponseDto getFollowings(Long userId, Pageable pageable) {
+		log.debug("팔로잉 목록 조회: userId={}, page={}, size={}",
+			userId, pageable.getPageNumber(), pageable.getPageSize());
+
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowingCount(); // COUNT 쿼리 없이 미리 집계된 값 사용!
+
+		// 2. 팔로잉 목록 조회 (Slice 사용으로 성능 최적화)
+		Slice<User> followingsSlice = userRepository.findFollowingsByUserId(userId, pageable);
+
+		List<UserFollowResponseDto> followingsList = followingsSlice.getContent()
+			.stream()
+			.map(UserFollowResponseDto::new)
+			.toList();
+
+		log.debug("팔로잉 목록 조회 완료: userId={}, 조회개수={}, 전체개수={}",
+			userId, followingsList.size(), totalCount);
+
+		return UserFollowListResponseDto.of(
+			followingsList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public UserFollowListResponseDto getFollowers(Long userId, Pageable pageable) {
+		log.debug("팔로워 목록 조회: userId={}, page={}, size={}",
+			userId, pageable.getPageNumber(), pageable.getPageSize());
+
+		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
+		User user = validateAndGetUser(userId);
+		int totalCount = user.getFollowerCount(); // COUNT 쿼리 없이 미리 집계된 값 사용!
+
+		// 2. 팔로워 목록 조회 (Slice 사용으로 성능 최적화)
+		Slice<User> followersSlice = userRepository.findFollowersByUserId(userId, pageable);
+
+		List<UserFollowResponseDto> followersList = followersSlice.getContent()
+			.stream()
+			.map(UserFollowResponseDto::new)
+			.toList();
+
+		log.debug("팔로워 목록 조회 완료: userId={}, 조회개수={}, 전체개수={}",
+			userId, followersList.size(), totalCount);
+
+		return UserFollowListResponseDto.of(
+			followersList,
+			totalCount,
+			pageable.getPageNumber(),
+			pageable.getPageSize()
+		);
+	}
+
+	// ==================== 5. 평가 시스템 ====================
+
 	@Override
 	@Transactional
 	public void createUserRating(Long reviewerId, Long targetUserId, UserRatingCreateRequestDto request) {
@@ -445,109 +656,5 @@ public class UserServiceImpl implements UserService {
 		} else {
 			return 3.0;  // 월 평균 1회 미만 (0회 포함)
 		}
-	}
-
-	// === 팔로우 기능 ===
-	@Override
-	@Transactional
-	public void followUser(Long followerId, Long followingId) {
-		// 1. 자기 자신 팔로우 방지
-		if (followerId.equals(followingId)) {
-			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
-		}
-
-		// 2. 팔로워(나) 존재 확인
-		User follower = validateAndGetUser(followerId);
-
-		// 3. 팔로잉 대상 존재 확인
-		User following = validateAndGetUser(followingId);
-
-		// 4. 이미 팔로우했는지 확인
-		boolean alreadyFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
-
-		if (alreadyFollowing) {
-			throw new UserException(UserErrorCode.ALREADY_FOLLOWING);
-		}
-
-		// 5. 팔로우 관계 생성 및 추가
-		UserFollow userFollow = new UserFollow(followerId, followingId);
-		follower.getFollowings().add(userFollow);
-
-		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
-		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
-	}
-
-	@Override
-	@Transactional
-	public void unfollowUser(Long followerId, Long followingId) {
-		if (followerId.equals(followingId)) {
-			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
-		}
-
-		User follower = validateAndGetUser(followerId);
-		User following = validateAndGetUser(followingId);
-
-		boolean isFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
-
-		if (!isFollowing) {
-			throw new UserException(UserErrorCode.NOT_FOLLOWING);
-		}
-
-		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
-		if (deletedCount == 0) {
-			throw new UserException(UserErrorCode.NOT_FOLLOWING);
-		}
-
-		follower.decrementFollowingCount();
-		following.decrementFollowerCount();
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public UserFollowListResponseDto getFollowings(Long userId, Pageable pageable) {
-		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
-		User user = validateAndGetUser(userId);
-		int totalCount = user.getFollowingCount(); // 미리 집계된 값 사용!
-
-		// 2. 팔로잉 목록 조회 (COUNT 쿼리 없음)
-		Slice<User> followingsSlice = userRepository.findFollowingsByUserId(userId, pageable);
-
-		List<UserFollowResponseDto> followingsList = followingsSlice.getContent()
-			.stream()
-			.map(UserFollowResponseDto::new)
-			.toList();
-
-		return UserFollowListResponseDto.of(
-			followingsList,
-			totalCount,
-			pageable.getPageNumber(),
-			pageable.getPageSize()
-		);
-	}
-
-	@Override
-	@Transactional(readOnly = true)
-	public UserFollowListResponseDto getFollowers(Long userId, Pageable pageable) {
-		// 1. 사용자 존재 확인 및 미리 집계된 총 개수 획득
-		User user = validateAndGetUser(userId);
-		int totalCount = user.getFollowerCount(); // 미리 집계된 값 사용!
-
-		// 2. 팔로워 목록 조회 (COUNT 쿼리 없음)
-		Slice<User> followersSlice = userRepository.findFollowersByUserId(userId, pageable);
-
-		List<UserFollowResponseDto> followersList = followersSlice.getContent()
-			.stream()
-			.map(UserFollowResponseDto::new)
-			.toList();
-
-		// 3. 정적 팩토리 메서드 사용으로 변경
-		return UserFollowListResponseDto.of(
-			followersList,
-			totalCount,
-			pageable.getPageNumber(),
-			pageable.getPageSize()
-		);
 	}
 }
