@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.infra.rabbitmq.config;
+package com.example.momo.domain.payment.event.rabbitmq.config;
 
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
@@ -18,8 +18,10 @@ import org.springframework.retry.support.RetryTemplate;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * RabbitMQ 설정 (Payment 도메인 전용)
- * - 메시지 신뢰성과 안전한 오류 처리를 위한 Producer/Consumer 구성
+
+ RabbitMQ 설정 (Payment 도메인 전용)
+
+ 메시지 신뢰성과 안전한 오류 처리를 위한 Producer/Consumer 구성
  */
 @Slf4j
 @Configuration
@@ -41,7 +43,6 @@ public class PaymentRabbitConfig {
 
 		factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
 		factory.setPublisherReturns(true);
-		//factory.setChannelCacheSize(25) 채널 캐시 최대 수
 		return factory;
 	}
 
@@ -72,11 +73,11 @@ public class PaymentRabbitConfig {
 		backOff.setMaxInterval(10_000);    // 최대 대기 시간: 10초
 		retry.setBackOffPolicy(backOff);
 		template.setRetryTemplate(retry);
-
-		// --- 메시지 발행 성공/실패 확인 콜백 ---
-		template.setConfirmCallback((corr, ack, cause) -> {
+		// Confirm/Return Callback (로깅용)
+		template.setConfirmCallback((correlationData, ack, cause) -> {
 			if (!ack) {
-				log.error("[Payment] 메시지 발행 실패 - correlationData: {}, cause: {}", corr, cause);
+				log.error("[Payment] Confirm 실패 - correlationId: {}, cause: {}",
+					correlationData != null ? correlationData.getId() : "null", cause);
 			}
 		});
 
@@ -105,25 +106,18 @@ public class PaymentRabbitConfig {
 		factory.setConnectionFactory(connectionFactory);
 		factory.setMessageConverter(messageConverter);
 
-		// // --- 소비 스레드 및 Prefetch 수 ---
-		// factory.setConcurrentConsumers(2);        // 기본 소비 스레드 수
-		// factory.setMaxConcurrentConsumers(5);     // 최대 동시 소비자 수
-		// factory.setPrefetchCount(5);              // 미리 가져올 메시지 수
-
 		// --- 수동 ACK 및 예외 발생 시 DLQ 전송 ---
 		factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);  // 수동 ACK 모드
 		factory.setDefaultRequeueRejected(false);            // 예외 발생 시 재큐잉 금지 -> DLQ로 이동
 
-		// --- 소비자 측 Retry 정책 (3회 시도 후 DLQ) ---
+		// Consumer 재시도 설정
 		RetryOperationsInterceptor retry = RetryInterceptorBuilder.stateless()
-			.maxAttempts(3)                        // 최대 3회 재시도
+			.maxAttempts(3)
 			.backOffOptions(1000, 2.0, 5000)       // 1s -> 2s -> 4s (최대 5초)
 			.recoverer(new RejectAndDontRequeueRecoverer()) // 실패 시 메시지 버림 -> DLQ
 			.build();
-		factory.setAdviceChain(retry);
 
-		// --- 에러 핸들러 (로깅) ---
-		factory.setErrorHandler(t -> log.error("[Payment] 메시지 처리 중 예외 발생", t));
+		factory.setAdviceChain(retry);
 
 		return factory;
 	}

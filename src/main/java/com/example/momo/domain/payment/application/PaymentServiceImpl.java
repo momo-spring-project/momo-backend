@@ -3,7 +3,6 @@ package com.example.momo.domain.payment.application;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -14,21 +13,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
+import com.example.momo.domain.payment.domain.PaymentOutbox;
+import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
+import com.example.momo.domain.payment.event.rabbitmq.dto.PaymentEventDto;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
-import com.example.momo.domain.user.domain.User;
-import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.global.springEvent.payment.PaymentCompletedEvent;
-import com.example.momo.global.springEvent.payment.PaymentRefundedEvent;
+import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
+import com.example.momo.global.webclient.meeting.MeetingClient;
+import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
+import com.example.momo.global.webclient.payment.dto.TossKeyInRequestDto;
+import com.example.momo.global.webclient.payment.dto.TossPaymentResponseDto;
+import com.example.momo.global.webclient.user.UserClient;
+import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,17 +44,20 @@ import lombok.extern.slf4j.Slf4j;
 public class PaymentServiceImpl implements PaymentService {
 
 	private final PaymentRepository paymentRepository;
-	private final MeetingRepository meetingRepository;
-	private final UserRepository userRepository;
+	private final PaymentOutboxRepository outboxRepository;
 	private final PaymentClient paymentClient;
 	private final TossPaymentsConfig tossConfig;
-
 	private final ApplicationEventPublisher eventPublisher;
+	private final ObjectMapper objectMapper;
+
+	private final MeetingClient meetingClient;
+	private final UserClient userClient;
 
 	// ==================== 결제 생성 ====================
 
 	/**
 	 * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
+	 * PENDING 결제가 있으면 재사용, 없으면 새로 생성
 	 */
 	@Override
 	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
@@ -58,46 +65,87 @@ public class PaymentServiceImpl implements PaymentService {
 		validateTestKey();
 
 		// 2. 엔티티 조회
-		Meeting meeting = getMeeting(request.getMeetingId());
-		User user = getUser(userId);
+		MeetingClientResponseDto meeting = getMeetingViaClient(request.getMeetingId());
+		UserClientResponseDto user = getUserViaClient(userId);
 		int amount = meeting.getParticipationFee();
 
-		// 3. 중복 결제 확인
+		// 3. 기존 결제 상태 확인
+		// 3-1. 이미 완료된 결제가 있으면 예외
 		if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
 			meeting.getId(), user.getId(), PaymentStatus.COMPLETED)) {
 			throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
 		}
 
+		// 3-2. PENDING 또는 FAILED 결제 조회
+		Payment payment = paymentRepository.findByMeetingIdAndUserId(
+				meeting.getId(), user.getId())
+			.filter(p -> p.getStatus() == PaymentStatus.PENDING || p.getStatus() == PaymentStatus.FAILED)
+			.orElseGet(() -> {
+				// PENDING이 없으면 새로 생성 (예외 케이스 대비)
+				Payment newPayment = Payment.createPending(user.getId(), meeting.getId(),
+					amount);
+				return paymentRepository.save(newPayment);
+			});
+
+		// FAILED 상태인 경우 PENDING으로 변경
+		if (payment.getStatus() == PaymentStatus.FAILED) {
+			payment = Payment.createPending(userId, meeting.getId(), amount);
+			payment = paymentRepository.save(payment);
+		}
+
 		// 4. 무료 모임인 경우 별도 처리
 		if (amount == 0) {
-			return createFreePayment(user, meeting);
+			payment.complete(null, null, LocalDateTime.now());
+
+			// Outbox 저장 및 도메인 이벤트 발행
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", "payment.completed");
+			eventPublisher.publishEvent(new PaymentEventMessage.Completed(
+				payment.getId(), payment.getUserId(), payment.getMeetingId(),
+				payment.getAmount(), outboxId
+			));
+
+			return PaymentResponseDto.from(payment);
 		}
 
-		// 5. orderId 미리 생성
+		// 5. 유료 결제 처리
 		String orderId = "order-" + UUID.randomUUID();
 
-		// 6. 토스 Key-in API 호출
-		Map<String, Object> payload = buildKeyInPayload(request, meeting, amount, orderId);
-		Map<String, Object> keyInResult;
-
 		try {
-			keyInResult = paymentClient.createTestKeyInPayment(payload, orderId);
-		} catch (HttpClientErrorException e) {
-			log.error("[TOSS] Key-in 결제 생성 실패: {}", e.getResponseBodyAsString());
+			// Key-in API 호출
+			TossKeyInRequestDto tossRequest = buildKeyInRequest(request, meeting, amount, orderId);
+			TossPaymentResponseDto result = paymentClient.createTestKeyInPayment(tossRequest, orderId);
+
+			if (!"DONE".equals(result.getStatus())) {
+				throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
+			}
+
+			// 결제 완료 처리
+			LocalDateTime approvedAt = OffsetDateTime.parse(result.getApprovedAt()).toLocalDateTime();
+			payment.complete(result.getPaymentKey(), orderId, approvedAt);
+
+			// Outbox 저장 및 도메인 이벤트 발행
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", "payment.completed");
+			eventPublisher.publishEvent(new PaymentEventMessage.Completed(
+				payment.getId(), payment.getUserId(), payment.getMeetingId(),
+				payment.getAmount(), outboxId
+			));
+
+			log.info("결제 완료 - paymentId: {}, orderId: {}", payment.getId(), orderId);
+			return PaymentResponseDto.from(payment);
+
+		} catch (Exception e) {
+			// 결제 실패 처리
+			payment.fail(e.getMessage());
+
+			// Outbox 저장 및 도메인 이벤트 발행
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", "payment.failed");
+			eventPublisher.publishEvent(new PaymentEventMessage.Failed(
+				payment.getId(), payment.getUserId(), payment.getMeetingId(),
+				e.getMessage(), outboxId
+			));
+
 			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 		}
-
-		if (!"DONE".equals(keyInResult.get("status"))) {
-			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
-		}
-
-		String paymentKey = (String)keyInResult.get("paymentKey");
-		String approvedAtStr = (String)keyInResult.get("approvedAt");
-		LocalDateTime approvedAt = OffsetDateTime.parse(approvedAtStr).toLocalDateTime();
-
-		// 7. 결제 정보 저장
-		return savePaidPayment(user, meeting, amount, paymentKey, orderId, approvedAt);
-
 	}
 
 	// ==================== 환불 처리 ====================
@@ -113,12 +161,20 @@ public class PaymentServiceImpl implements PaymentService {
 		if (!payment.getUserId().equals(userId)) {
 			throw new PaymentException(PaymentErrorCode.UNAUTHORIZED_REFUND);
 		}
+
 		// 환불 가능 상태 확인
 		if (payment.getStatus() != PaymentStatus.COMPLETED) {
 			throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);
 		}
 
-		// 토스 결제인 경우 토스 API를 통해 환불
+		// 모임 시작 여부 확인(이 부분은 모임 쪽에서 처리하신다고 하셨음)
+		// MeetingClientResponseDto meeting = getMeetingViaClient(payment.getMeetingId());
+		// LocalDateTime now = LocalDateTime.now();
+		// if (meeting.getMeetingDate().isBefore(now)) {
+		// 	throw new PaymentException(PaymentErrorCode.MEETING_ALREADY_STARTED);
+		// }
+
+		// 토스 환불 처리
 		if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
 			try {
 				paymentClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
@@ -127,27 +183,55 @@ public class PaymentServiceImpl implements PaymentService {
 				throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
 			}
 		}
+
 		// 환불 상태로 변경
 		payment.refund();
 
-		// 환불 응답 생성 (삭제 전에 생성)
+		// 환불 응답 생성
 		PaymentResponseDto response = PaymentResponseDto.from(payment);
+
+		// Outbox 저장 및 도메인 이벤트 발행
+		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", "payment.refunded");
+		eventPublisher.publishEvent(new PaymentEventMessage.Refunded(
+			payment.getId(), payment.getUserId(), payment.getMeetingId(),
+			payment.getAmount(), outboxId
+		));
 
 		// 결제 레코드 삭제 (재결제 가능하도록)
 		paymentRepository.delete(payment);
 
-		eventPublisher.publishEvent(
-			new PaymentRefundedEvent(
-				paymentId,
-				userId,
-				payment.getMeetingId(),
-				payment.getAmount(),
-				LocalDateTime.now())
-		);
-
 		return response;
 	}
 
+	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey) {
+		try {
+			PaymentEventDto event = PaymentEventDto.builder()
+				.paymentId(payment.getId())
+				.userId(payment.getUserId())
+				.meetingId(payment.getMeetingId())
+				.amount(payment.getAmount())
+				.eventType(eventType)
+				.occurredAt(LocalDateTime.now())
+				.build();
+
+			String payload = objectMapper.writeValueAsString(event);
+
+			PaymentOutbox outbox = PaymentOutbox.create(
+				eventType,
+				payment.getId() != null ? payment.getId().toString() : "TEMP",
+				routingKey,
+				payload
+			);
+
+			PaymentOutbox saved = outboxRepository.save(outbox);
+			log.debug("Outbox 이벤트 저장 - type: {}, paymentId: {}", eventType, payment.getId());
+
+			return saved.getId();
+		} catch (Exception e) {
+			log.error("Outbox 저장 실패", e);
+			throw new RuntimeException("이벤트 저장 실패", e);
+		}
+	}
 	// ==================== 조회 메서드 ====================
 
 	/**
@@ -170,8 +254,9 @@ public class PaymentServiceImpl implements PaymentService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<PaymentResponseDto> getPaymentsByMeetingId(Long meetingId) {
-		// 모임 존재 여부 확인
-		if (!meetingRepository.existsById(meetingId)) {
+		// 모임 존재 여부 확인 (Client 사용)
+		MeetingClientResponseDto meeting = meetingClient.getMeeting(meetingId);
+		if (meeting == null) {
 			throw new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND);
 		}
 
@@ -187,8 +272,9 @@ public class PaymentServiceImpl implements PaymentService {
 	@Override
 	@Transactional(readOnly = true)
 	public List<PaymentResponseDto> getPaymentsByUserId(Long userId) {
-		// 사용자 존재 여부 확인
-		if (userRepository.findByIdAndIsDeletedFalse(userId).isEmpty()) {
+		// 사용자 존재 여부 확인 (Client 사용)
+		UserClientResponseDto user = userClient.getUser(userId);
+		if (user == null) {
 			throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
 		}
 		return paymentRepository.findByUserId(userId)
@@ -219,83 +305,49 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 
 	/**
-	 * 모임 조회
+	 * 모임 조회 (Client 사용)
 	 */
-	private Meeting getMeeting(Long meetingId) {
-		return meetingRepository.findById(meetingId)
-			.orElseThrow(() -> new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND));
+	private MeetingClientResponseDto getMeetingViaClient(Long meetingId) {
+		MeetingClientResponseDto meeting = meetingClient.getMeeting(meetingId);
+		if (meeting == null) {
+			throw new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND);
+		}
+		return meeting;
 	}
 
 	/**
-	 * 사용자 조회
+	 * 사용자 조회 (Client 사용)
 	 */
-	private User getUser(Long userId) {
-		return userRepository.findByIdAndIsDeletedFalse(userId)
-			.orElseThrow(() -> new PaymentException(PaymentErrorCode.USER_NOT_FOUND));
-	}
-
-	/**
-	 * 무료 결제 생성
-	 */
-	private PaymentResponseDto createFreePayment(User user, Meeting meeting) {
-		Payment payment = Payment.createFree(user.getId(), meeting.getId());
-		Payment saved = paymentRepository.save(payment);
-		log.info("무료 결제 완료 - paymentId: {}", saved.getId());
-		return PaymentResponseDto.from(saved);
+	private UserClientResponseDto getUserViaClient(Long userId) {
+		UserClientResponseDto user = userClient.getUser(userId);
+		if (user == null) {
+			throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
+		}
+		return user;
 	}
 
 	/**
 	 * Key-in API 요청 페이로드 생성
 	 */
-	private Map<String, Object> buildKeyInPayload(CardPaymentTestRequestDto req,
-		Meeting meeting,
+	private TossKeyInRequestDto buildKeyInRequest(CardPaymentTestRequestDto request,
+		MeetingClientResponseDto meeting,
 		int amount, String orderId) {
 
-		String[] exp = (req.getCardExpiry() != null ? req.getCardExpiry() : "12/25").split("/");
+		String[] exp = (request.getCardExpiry() != null ? request.getCardExpiry() : "12/25").split("/");
 		String expMonth = exp[0];   // "12"
 		String expYear = exp[1];   // "25"
 
-		return Map.of(
-			"amount", amount,
-			"orderId", orderId,
-			"orderName", meeting.getTitle() + " 참가비",
-			"cardNumber", req.getCardNumber() != null ? req.getCardNumber() : "4242424242424242",
-			"cardExpirationYear", expYear,
-			"cardExpirationMonth", expMonth,
-			"cardPassword", "12",                      // 카드 비밀번호 앞 2자리
-			"customerIdentityNumber", req.getBirth() != null ? req.getBirth() : "880101",
-			"customerEmail", "test@example.com",
-			"customerName", "테스트"
-		);
-	}
-
-	/**
-	 * 유료 결제 정보 저장
-	 */
-	private PaymentResponseDto savePaidPayment(User user, Meeting meeting, int amount,
-		String paymentKey, String orderId, LocalDateTime paidAt) {
-		Payment payment = Payment.builder()
-			.userId(user.getId())
-			.meetingId(meeting.getId())
+		return TossKeyInRequestDto.builder()
 			.amount(amount)
-			.paymentMethod("TOSS")
-			.pgTransactionId(paymentKey)
 			.orderId(orderId)
-			.status(PaymentStatus.COMPLETED)
-			.paidAt(paidAt) //토스 기준 승인 시간
+			.orderName(meeting.getTitle() + " 참가비")
+			.cardNumber(request.getCardNumber() != null ? request.getCardNumber() : "4242424242424242")
+			.cardExpirationYear(expYear)
+			.cardExpirationMonth(expMonth)
+			.cardPassword("12")
+			.customerIdentityNumber(request.getBirth() != null ? request.getBirth() : "880101")
+			.customerEmail("test@example.com")
+			.customerName("테스트")
 			.build();
-
-		Payment saved = paymentRepository.save(payment);
-
-		eventPublisher.publishEvent(
-			new PaymentCompletedEvent(
-				saved.getId(),
-				user.getId(),
-				meeting.getId(),
-				amount, paidAt)
-		);
-
-		log.info("Key-in 결제 완료 - paymentId: {}, paymentKey: {}", saved.getId(), paymentKey);
-		return PaymentResponseDto.from(saved);
 	}
 }

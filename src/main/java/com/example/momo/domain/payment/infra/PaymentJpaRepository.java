@@ -33,4 +33,6 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 		Long userId,
 		PaymentStatus status);
 
+	Optional<Payment> findByMeetingIdAndUserId(Long meetingId, Long userId);
+
 }
