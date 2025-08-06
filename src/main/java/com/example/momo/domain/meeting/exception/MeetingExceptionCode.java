@@ -12,6 +12,7 @@ public enum MeetingExceptionCode implements ErrorCode {
 	INSUFFICIENT_SCORE(HttpStatus.FORBIDDEN, "Insufficient score"),
 	FAR_FROM_MEETING(HttpStatus.FORBIDDEN, "Far from meeting"),
 	MEETING_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting is forbidden"),
+	MEETING_TIME_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting time forbidden"),
 
 	// 404
 	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),
