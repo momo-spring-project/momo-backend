@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,7 +29,7 @@ import com.example.momo.domain.user.domain.UserCategory;
 import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
-import com.example.momo.domain.user.event.rabbitmq.producer.UserEventPublisher;
+import com.example.momo.domain.user.event.springEvent.UserEvents;
 import com.example.momo.domain.user.exception.UserErrorCode;
 import com.example.momo.domain.user.exception.UserException;
 import com.example.momo.global.webclient.category.CategoryClient;
@@ -49,7 +50,8 @@ public class UserServiceImpl implements UserService {
 	private final CategoryClient categoryClient;
 	private final BCryptPasswordEncoder passwordEncoder;
 	private final MeetingClient meetingClient;
-	private final UserEventPublisher userEventPublisher;
+	private final UserOutboxService userOutboxService;
+	private final ApplicationEventPublisher eventPublisher;
 
 	@Override
 	@Transactional
@@ -73,16 +75,6 @@ public class UserServiceImpl implements UserService {
 		);
 
 		userRepository.save(user);
-
-		// 회원가입 이벤트 발행
-		userEventPublisher.publishUserRegistered(
-			user.getId(),
-			user.getNickname(),
-			user.getEmail(),
-			user.getLatitude(),
-			user.getLongitude(),
-			List.of() // 초기 카테고리는 빈 리스트
-		);
 	}
 
 	@Override
@@ -98,8 +90,23 @@ public class UserServiceImpl implements UserService {
 
 		user.delete();
 
-		// 탈퇴 이벤트 발행
-		userEventPublisher.publishUserWithdrawn(user.getId(), user.getEmail(), user.getNickname());
+		// 아웃박스 이벤트 저장 (서비스 사용)
+		userOutboxService.saveUserWithdrawnEvent(
+			user.getId(),
+			user.getEmail(),
+			user.getNickname()
+		);
+
+		// 스프링 이벤트 발행
+		eventPublisher.publishEvent(
+			new UserEvents.Withdrawn(
+				user.getId(),
+				user.getEmail(),
+				user.getNickname()
+			)
+		);
+
+		log.info("회원탈퇴 처리 완료: userId={}, email={}", userId, user.getEmail());
 	}
 
 	// === 사용자 정보 조회 ===
@@ -288,16 +295,6 @@ public class UserServiceImpl implements UserService {
 		// User 애그리거트를 통해 평가 추가
 		targetUser.getRatings().add(userRating);
 
-		// 평가 생성 이벤트 발행
-		userEventPublisher.publishUserRated(
-			reviewerId,
-			targetUserId,
-			request.meetingId(),
-			request.ratingScore(),
-			reviewer.getNickname(),
-			targetUser.getNickname()
-		);
-
 		recalculateUserScore(targetUserId);
 	}
 
@@ -479,14 +476,6 @@ public class UserServiceImpl implements UserService {
 
 		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
 		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
-
-		// 팔로우 생성 이벤트 발행
-		userEventPublisher.publishUserFollowed(
-			followerId,
-			followingId,
-			follower.getNickname(),
-			following.getNickname()
-		);
 	}
 
 	@Override

@@ -23,7 +23,7 @@ import com.example.momo.global.common.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v2/payments")
+@RequestMapping("/api/v3/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
