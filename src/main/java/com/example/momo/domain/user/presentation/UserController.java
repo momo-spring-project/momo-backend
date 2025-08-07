@@ -59,7 +59,7 @@ public class UserController {
 
 	/**
 	 * 회원가입
-	 * POST /api/v2/users/register
+	 * POST /users/register
 	 */
 	@PostMapping("/register")
 	public ResponseEntity<ApiResponse<Void>> register(
@@ -72,7 +72,7 @@ public class UserController {
 
 	/**
 	 * 회원탈퇴
-	 * DELETE /api/v2/users/me/withdraw
+	 * DELETE /users/me/withdraw
 	 */
 	@DeleteMapping("/me/withdraw")
 	public ResponseEntity<ApiResponse<Void>> withdraw(
@@ -88,7 +88,7 @@ public class UserController {
 
 	/**
 	 * 내 프로필 조회
-	 * GET /api/v2/users/me
+	 * GET /users/me
 	 */
 	@GetMapping("/me")
 	public ResponseEntity<ApiResponse<UserResponseDto>> getMyProfile(
@@ -100,7 +100,7 @@ public class UserController {
 
 	/**
 	 * 내 관심 카테고리 수정
-	 * PATCH /api/v2/users/me/categories
+	 * PATCH /users/me/categories
 	 */
 	@PatchMapping("/me/categories")
 	public ResponseEntity<ApiResponse<UserCategoryUpdateResponseDto>> updateMyCategories(
@@ -114,7 +114,7 @@ public class UserController {
 
 	/**
 	 * 내 위치 정보 수정
-	 * PATCH /api/v2/users/me/location
+	 * PATCH /users/me/location
 	 */
 	@PatchMapping("/me/location")
 	public ResponseEntity<ApiResponse<UserLocationResponseDto>> updateMyLocation(
@@ -127,7 +127,7 @@ public class UserController {
 
 	/**
 	 * 내 닉네임 수정
-	 * PATCH /api/v2/users/me/nickname
+	 * PATCH /users/me/nickname
 	 */
 	@PatchMapping("/me/nickname")
 	public ResponseEntity<ApiResponse<Void>> updateMyNickname(
@@ -140,7 +140,7 @@ public class UserController {
 
 	/**
 	 * 내 비밀번호 수정
-	 * PATCH /api/v2/users/me/password
+	 * PATCH /users/me/password
 	 */
 	@PatchMapping("/me/password")
 	public ResponseEntity<ApiResponse<Void>> updateMyPassword(
@@ -155,7 +155,7 @@ public class UserController {
 
 	/**
 	 * 특정 사용자 정보 조회
-	 * GET /api/v2/users/{userId}
+	 * GET /users/{userId}
 	 */
 	@GetMapping("/{userId}")
 	public ResponseEntity<ApiResponse<UserResponseDto>> getUser(
@@ -167,7 +167,7 @@ public class UserController {
 
 	/**
 	 * 다중 사용자 정보 조회 (쿼리 파라미터 방식)
-	 * GET /api/v2/users?ids=1,2,3
+	 * GET /users?ids=1,2,3
 	 */
 	@GetMapping
 	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsers(
@@ -183,7 +183,7 @@ public class UserController {
 
 	/**
 	 * 사용자 존재 여부 확인 (존재하는 ID만 반환)
-	 * GET /api/v2/users/exists?ids=1,2,3
+	 * GET /users/exists?ids=1,2,3
 	 */
 	@GetMapping("/exists")
 	public ResponseEntity<ApiResponse<List<Long>>> checkUsersExist(
@@ -199,7 +199,7 @@ public class UserController {
 
 	/**
 	 * 사용자 필터링 조회 (카테고리, 위치 기반)
-	 * GET /api/v2/users/filter?categoryIds=1,2&latitude=37.123&longitude=127.456
+	 * GET /users/filter?categoryIds=1,2&latitude=37.123&longitude=127.456
 	 */
 	@GetMapping("/filter")
 	public ResponseEntity<ApiResponse<List<UserListResponseDto>>> getUsersByLocationAndCategory(
@@ -216,7 +216,7 @@ public class UserController {
 
 	/**
 	 * 사용자 팔로우
-	 * POST /api/v2/users/{followingId}/followings
+	 * POST /users/{followingId}/followings
 	 */
 	@PostMapping("/{followingId}/followings")
 	public ResponseEntity<ApiResponse<Void>> followUser(
@@ -230,7 +230,7 @@ public class UserController {
 
 	/**
 	 * 사용자 언팔로우
-	 * DELETE /api/v2/users/{followingId}/followings
+	 * DELETE /users/{followingId}/followings
 	 */
 	@DeleteMapping("/{followingId}/followings")
 	public ResponseEntity<ApiResponse<Void>> unfollowUser(
@@ -244,7 +244,7 @@ public class UserController {
 
 	/**
 	 * 내 팔로잉 목록 조회
-	 * GET /api/v2/users/me/followings?page=0&size=20
+	 * GET /users/me/followings?page=0&size=20
 	 */
 	@GetMapping("/me/followings")
 	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getMyFollowings(
@@ -259,7 +259,7 @@ public class UserController {
 
 	/**
 	 * 내 팔로워 목록 조회
-	 * GET /api/v2/users/me/followers?page=0&size=20
+	 * GET /users/me/followers?page=0&size=20
 	 */
 	@GetMapping("/me/followers")
 	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getMyFollowers(
@@ -274,7 +274,7 @@ public class UserController {
 
 	/**
 	 * 특정 사용자의 팔로잉 목록 조회
-	 * GET /api/v2/users/{userId}/followings?page=0&size=20
+	 * GET /users/{userId}/followings?page=0&size=20
 	 */
 	@GetMapping("/{userId}/followings")
 	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getUserFollowings(
@@ -289,7 +289,7 @@ public class UserController {
 
 	/**
 	 * 특정 사용자의 팔로워 목록 조회
-	 * GET /api/v2/users/{userId}/followers?page=0&size=20
+	 * GET /users/{userId}/followers?page=0&size=20
 	 */
 	@GetMapping("/{userId}/followers")
 	public ResponseEntity<ApiResponse<UserFollowListResponseDto>> getUserFollowers(
@@ -306,7 +306,7 @@ public class UserController {
 
 	/**
 	 * 특정 사용자 평가하기
-	 * POST /api/v2/users/{targetUserId}/ratings
+	 * POST /users/{targetUserId}/ratings
 	 */
 	@PostMapping("/{targetUserId}/ratings")
 	public ResponseEntity<ApiResponse<Void>> createUserRating(
@@ -323,7 +323,7 @@ public class UserController {
 
 	/**
 	 * Auth 도메인 전용 - 이메일로 사용자 조회 (비밀번호 포함)
-	 * GET /api/v2/users/internal/by-email?email=user@example.com
+	 * GET /users/internal/by-email?email=user@example.com
 	 * ⚠️ 주의: 이 API는 Auth 도메인에서만 사용하며, 외부에 노출되지 않도록 주의
 	 */
 	@GetMapping("/internal/by-email")

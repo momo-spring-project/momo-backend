@@ -70,13 +70,11 @@ public class UserServiceImpl implements UserService {
 
 		// 1. 닉네임 중복 확인
 		if (userRepository.existsByNickname(request.nickname())) {
-			log.warn("닉네임 중복: nickname={}", request.nickname());
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 
 		// 2. 이메일 중복 확인
 		if (userRepository.existsByEmail(request.email())) {
-			log.warn("이메일 중복: email={}", request.email());
 			throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
 		}
 
@@ -104,7 +102,6 @@ public class UserServiceImpl implements UserService {
 
 		// 2. 비밀번호 검증 (소셜 로그인 사용자는 비밀번호가 null일 수 있음)
 		if (user.getPassword() != null && !passwordEncoder.matches(request.password(), user.getPassword())) {
-			log.warn("회원탈퇴 비밀번호 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 

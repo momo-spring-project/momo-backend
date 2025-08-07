@@ -86,7 +86,7 @@ public class SecurityConfig {
 				.requestMatchers("/firebase/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**")
 				.permitAll()
 				.requestMatchers(
-					"/api/v2/users/register",
+					"/users/register",
 					"/api/v2/auth/login",
 					"/api/v2/auth/reissue",
 					"/categories/**"

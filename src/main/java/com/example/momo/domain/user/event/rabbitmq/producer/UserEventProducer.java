@@ -13,12 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-public class UserEventPublisher {
+public class UserEventProducer {
 
 	private final RabbitTemplate userRabbitTemplate;
 
 	// 수동으로 생성자 작성 - @Qualifier가 제대로 동작함
-	public UserEventPublisher(@Qualifier("userRabbitTemplate") RabbitTemplate userRabbitTemplate) {
+	public UserEventProducer(@Qualifier("userRabbitTemplate") RabbitTemplate userRabbitTemplate) {
 		this.userRabbitTemplate = userRabbitTemplate;
 	}
 
@@ -62,7 +62,6 @@ public class UserEventPublisher {
 		} catch (Exception e) {
 			log.error("[User] 이벤트 발행 실패 - eventType: {}, correlationId: {}, error: {}",
 				message.eventType(), correlationId, e.getMessage(), e);
-			throw new RuntimeException("RabbitMQ 메시지 발행 실패", e);
 		}
 	}
 }

@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.UserOutboxEvent;
 import com.example.momo.domain.user.domain.UserOutboxEventRepository;
-import com.example.momo.domain.user.event.rabbitmq.producer.UserEventPublisher;
+import com.example.momo.domain.user.event.rabbitmq.producer.UserEventProducer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserOutboxServiceImpl implements UserOutboxService {
 
 	private final UserOutboxEventRepository userOutboxEventRepository;
-	private final UserEventPublisher userEventPublisher;
+	private final UserEventProducer userEventPublisher;
 	private final ObjectMapper objectMapper;
 
 	@Override

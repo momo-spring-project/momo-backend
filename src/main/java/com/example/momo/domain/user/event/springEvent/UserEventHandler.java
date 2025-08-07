@@ -5,7 +5,7 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.example.momo.domain.user.application.UserOutboxService;
-import com.example.momo.domain.user.event.rabbitmq.producer.UserEventPublisher;
+import com.example.momo.domain.user.event.rabbitmq.producer.UserEventProducer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class UserEventHandler {
 
-	private final UserEventPublisher userEventPublisher;
+	private final UserEventProducer userEventProducer;
 	private final UserOutboxService userOutboxService;
 
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -27,7 +27,7 @@ public class UserEventHandler {
 		try {
 			log.info("회원탈퇴 이벤트 처리 시작: userId={}", event.userId());
 
-			userEventPublisher.publishUserWithdrawn(
+			userEventProducer.publishUserWithdrawn(
 				event.userId(),
 				event.email(),
 				event.nickname()
