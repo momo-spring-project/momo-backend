@@ -45,16 +45,15 @@ public class FcmServiceImpl implements FcmService {
 	}
 
 	@Override
-	public void processFcmIfTokenExists(FcmMessageDto messageDto) {
+	public boolean processFcmIfTokenExists(FcmMessageDto messageDto) {
 
 		//userId 로 토큰 리스트 생성 -> 유저가 가지고 있는 모든 토큰에 전송
 		List<FcmToken> tokens = fcmTokenRepository.findValidTokens(messageDto.getUserId());
 
 		//token 이 없을경우 메세지큐 저장
 		if (tokens.isEmpty()) {
-			//todo : 메세지큐에 전송 실패 메세지 저장
 			log.warn("유효한 토큰이 없습니다.: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
-			return;
+			return false;
 		}
 
 		//전송 실패 리스트 생성 -> 실패한 토큰 삭제 예정
@@ -88,9 +87,10 @@ public class FcmServiceImpl implements FcmService {
 
 		//토큰은 있지만 모든 토큰에 전송 실패했을 경우 메세지큐 저장
 		if (!successAtLeastOnce) {
-			//todo : 메세지큐에 전송 실패 메세지 저장
 			log.warn("FCM 전송 모두 실패: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
+			return false;
 		}
+		return true;
 	}
 
 	@Override

@@ -57,16 +57,18 @@ public class PaymentRepositoryImpl implements PaymentRepository {
 	}
 
 	@Override
-	public Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId,
-		Long userId,
+	public Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId,
 		PaymentStatus status) {
-		return paymentJpaRepository.findByMeetingIdAndUserIdAndStatus(meetingId,
-			userId,
-			status);
+		return paymentJpaRepository.findByMeetingIdAndUserIdAndStatus(meetingId, userId, status);
 	}
 
 	@Override
 	public Optional<Payment> findByMeetingIdAndUserId(Long meetingId, Long userId) {
 		return paymentJpaRepository.findByMeetingIdAndUserId(meetingId, userId);
+	}
+
+	@Override
+	public List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status) {
+		return paymentJpaRepository.findByMeetingIdAndStatus(meetingId, status);
 	}
 }

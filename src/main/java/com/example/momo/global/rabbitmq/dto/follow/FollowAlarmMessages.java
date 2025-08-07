@@ -1,14 +1,18 @@
-package com.example.momo.global.springEvent.follow;
+package com.example.momo.global.rabbitmq.dto.follow;
+
+import com.example.momo.global.rabbitmq.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * 팔로우 도메인에서 발생하는 메세지 이벤트를 정의합니다.
  */
-public class FollowMessageEvents {
+public class FollowAlarmMessages {
 
 	/**
 	 * 팔로우 이벤트 마커 인터페이스입니다.
 	 */
-	public interface FollowEvent {
+	public interface FollowAlarmMessage extends DomainAlarmMessage {
 	}
 
 	/**
@@ -18,10 +22,11 @@ public class FollowMessageEvents {
 	 * @param followerId 팔로우한 유저 ID
 	 * @param followerUserNickname 팔로우한 유저 닉네임
 	 */
+	@JsonTypeName(AlarmMessageType.FOLLOWED)
 	public record Followed(
 		Long followedId,
 		Long followerId,
 		String followerUserNickname
-	) implements FollowEvent {
+	) implements FollowAlarmMessage {
 	}
 }

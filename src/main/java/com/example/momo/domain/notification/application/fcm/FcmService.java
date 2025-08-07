@@ -27,8 +27,9 @@ public interface FcmService {
 	 * </ul>
 	 *
 	 * @param messageDto 전송할 알림 엔티티 객체
+	 * @return 결과 반환
 	 */
-	void processFcmIfTokenExists(FcmMessageDto messageDto);
+	boolean processFcmIfTokenExists(FcmMessageDto messageDto);
 
 	/**
 	 * 전달받은 deviceId 와 userId 로 토큰을 삭제합니다.

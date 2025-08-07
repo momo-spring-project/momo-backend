@@ -14,6 +14,8 @@ public enum MessageKey {
 	MEETING_DELETED("meeting.deleted"),
 	MEETING_JOINED("meeting.joined"),
 	MEETING_CANCELED("meeting.canceled"),
+	MEETING_UPCOMING("meeting.upcoming"),
+	MEETING_TOMORROW("meeting.tomorrow"),
 
 	// Follow
 	FOLLOWED("follow.followed"),
