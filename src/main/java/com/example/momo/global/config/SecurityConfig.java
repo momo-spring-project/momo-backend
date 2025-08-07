@@ -87,8 +87,7 @@ public class SecurityConfig {
 				.permitAll()
 				.requestMatchers(
 					"/api/v2/users/register",
-					"/api/v2/auth/login",
-					"/api/v2/auth/reissue",
+					"/auth/**",
 					"/categories/**"
 				).permitAll()
 				.requestMatchers(

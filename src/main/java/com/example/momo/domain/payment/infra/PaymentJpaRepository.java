@@ -29,10 +29,11 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 		@Param("status") PaymentStatus status,
 		Pageable pageable);
 
-	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId,
-		Long userId,
-		PaymentStatus status);
+	// 단일 조회 (unique constraint 때문에 Optional)
+	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
 
 	Optional<Payment> findByMeetingIdAndUserId(Long meetingId, Long userId);
 
+	// 모임의 특정 상태 결제 목록 조회
+	List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status);
 }

@@ -48,6 +48,13 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	}
 
 	@Override
+	public Page<Meeting> getMeetingsForDatabase(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Integer categoryId, Pageable pageable) {
+		
+		return meetingQueryRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
+	}
+
+	@Override
 	public void saveMeetingElastic(Meeting meeting) {
 
 		meetingElasticRepository.save(MeetingDocument.from(meeting));

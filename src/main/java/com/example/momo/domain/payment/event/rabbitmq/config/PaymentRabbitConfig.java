@@ -37,7 +37,8 @@ public class PaymentRabbitConfig {
 	 * - 메시지 발행 성공/실패 여부를 확인할 수 있도록 Confirm/Return 기능 활성화
 	 */
 	@Bean("paymentConnectionFactory")
-	public ConnectionFactory paymentConnectionFactory(CachingConnectionFactory base) {
+	public ConnectionFactory paymentConnectionFactory(
+		@Qualifier("rabbitConnectionFactory") CachingConnectionFactory base) {
 		CachingConnectionFactory factory =
 			new CachingConnectionFactory(base.getRabbitConnectionFactory());
 
@@ -75,9 +76,10 @@ public class PaymentRabbitConfig {
 		template.setRetryTemplate(retry);
 		// Confirm/Return Callback (로깅용)
 		template.setConfirmCallback((correlationData, ack, cause) -> {
-			if (!ack) {
-				log.error("[Payment] Confirm 실패 - correlationId: {}, cause: {}",
-					correlationData != null ? correlationData.getId() : "null", cause);
+			if (ack) {
+				log.info("Confirm 성공 - correlationId={}", correlationData.getId());
+			} else {
+				log.error("Confirm 실패 - correlationId={}, cause={}", correlationData.getId(), cause);
 			}
 		});
 

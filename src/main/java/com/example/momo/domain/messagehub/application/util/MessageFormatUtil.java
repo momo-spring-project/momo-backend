@@ -43,6 +43,14 @@ public class MessageFormatUtil {
 		return getMessage(MessageKey.MEETING_CANCELED.key(), participantNickname);
 	}
 
+	public String buildUpcomingMessage(String meetingName) {
+		return getMessage(MessageKey.MEETING_UPCOMING.key(), meetingName);
+	}
+
+	public String buildTomorrowMessage(String meetingName) {
+		return getMessage(MessageKey.MEETING_TOMORROW.key(), meetingName);
+	}
+
 	public String buildFollowedMessage(String nickname) {
 		return getMessage(MessageKey.FOLLOWED.key(), nickname);
 	}

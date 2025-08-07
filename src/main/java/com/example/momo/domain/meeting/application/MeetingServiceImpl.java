@@ -3,9 +3,6 @@ package com.example.momo.domain.meeting.application;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
-import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,18 +20,25 @@ import com.example.momo.domain.meeting.application.dto.response.ParticipantCreat
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
+import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
+import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.global.springEvent.MeetingEvents;
+import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -46,8 +50,16 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final CategoryClient categoryClient;
+	private final MeetingProducer meetingProducer;
+	private final MeetingOutboxService meetingOutboxService;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final EntityManager entityManager;
+
+	@Override
+	public Meeting getMeetingEntity(Long meetingId) {
+		return meetingRepository.findById(meetingId).orElseThrow(() ->
+			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+	}
 
 	@Override
 	@Transactional
@@ -56,15 +68,19 @@ public class MeetingServiceImpl implements MeetingService {
 		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
 
 		Meeting meeting = request.toMeeting(userId);
-
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
-		meetingRepository.saveMeetingElastic(meeting);
+		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(savedMeeting.getId(),
+			ElasticsearchEventType.SAVE);
+		meetingOutboxService.saveMeetingOutbox(outbox);
 
 		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
 		meeting.getParticipants().add(participant);
 
-		eventPublisher.publishEvent(new MeetingEvents.Create(
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
+
+		// TODO : 기존 DTO 사용중이므로 메세지허브로 보내는 DTO 지운님 PR 병합 이후 수정 예정
+		meetingProducer.createMeetingMQ(new MeetingMessageEvents.Create(
 			meeting.getId(),
 			request.getCategoryId(),
 			category.getName(),
@@ -86,10 +102,14 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
-		meeting.updateMeeting(request);
-		meetingRepository.saveMeetingElastic(meeting);
+		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.SAVE);
+		meetingOutboxService.saveMeetingOutbox(outbox);
 
-		eventPublisher.publishEvent(new MeetingEvents.Update(
+		meeting.updateMeeting(request);
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+
+		meetingProducer.updateMeetingMQ(new MeetingMessageEvents.Update(
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
@@ -118,8 +138,12 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
+		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.SAVE);
+		meetingOutboxService.saveMeetingOutbox(outbox);
+
 		meeting.updateStatus(status);
-		meetingRepository.saveMeetingElastic(meeting);
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -131,15 +155,24 @@ public class MeetingServiceImpl implements MeetingService {
 		Pageable pageable = PageRequest
 			.of(page - 1, size, Sort.Direction.DESC, "createdAt");
 
-		Page<MeetingDocument> mt = meetingRepository.getMeetings(title, meetingDate, status, categoryId,
-			pageable);
-		List<MeetingDocument> response = mt.stream().toList();
+		Page<MeetingDocument> meetings;
+
+		try {
+			meetings = meetingRepository.getMeetings(title, meetingDate, status, categoryId,
+				pageable);
+		} catch (Exception e) {
+			Page<Meeting> meetingPage = meetingRepository.getMeetingsForDatabase(title, meetingDate, status, categoryId,
+				pageable);
+			meetings = meetingPage.map(MeetingDocument::from);
+		}
+
+		List<MeetingDocument> response = meetings.stream().toList();
 
 		return new MeetingPagingResponseDto<>(
 			response,
-			mt.getTotalElements(),
-			mt.getTotalPages(),
-			mt.getNumber() + 1
+			meetings.getTotalElements(),
+			meetings.getTotalPages(),
+			meetings.getNumber() + 1
 		);
 	}
 
@@ -154,14 +187,19 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
-		meetingRepository.deleteMeetingElastic(meeting);
 		meeting.delete();
 
-		eventPublisher.publishEvent(new MeetingEvents.Delete(
+		meetingProducer.deleteMeetingMQ(new MeetingMessageEvents.Delete(
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
 		));
+
+		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.DELETE);
+		meetingOutboxService.saveMeetingOutbox(outbox);
+
+		eventPublisher.publishEvent(new MeetingElasticEvents.Delete(meeting, outbox.getId()));
 	}
 
 	@Override
@@ -169,6 +207,22 @@ public class MeetingServiceImpl implements MeetingService {
 		List<Meeting> meetings = meetingRepository.findMeetingsByUserId(userId);
 
 		return meetings.stream().map(MeetingResponseDto::new).toList();
+	}
+
+	/**
+	 * 스케줄러 es 저장 메서드
+	 */
+	@Override
+	public void createElasticMeeting(Meeting meeting) {
+		meetingRepository.saveMeetingElastic(meeting);
+	}
+
+	/**
+	 * 스케줄러 es 삭제 메서드
+	 */
+	@Override
+	public void deleteElasticMeeting(Meeting meeting) {
+		meetingRepository.deleteMeetingElastic(meeting);
 	}
 
 	/**
@@ -262,7 +316,7 @@ public class MeetingServiceImpl implements MeetingService {
 		System.out.println("participant: " + participant.getId() + ", userId: " + userId + ", meetingId: " + meetingId);
 
 		// 6시간 전이면 취소/환불 불가
-		if (meeting.getMeetingDate().minusHours(6).isBefore(LocalDateTime.now())) {
+		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_TIME_FORBIDDEN);
 		}
 

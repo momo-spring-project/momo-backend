@@ -20,6 +20,10 @@ public interface MeetingRepository {
 	Page<MeetingDocument> getMeetings(String title, LocalDateTime meetingDate, MeetingStatus status,
 		Integer categoryId, Pageable pageable);
 
+	Page<Meeting> getMeetingsForDatabase(String title, LocalDateTime meetingDate, MeetingStatus status,
+		Integer categoryId,
+		Pageable pageable);
+
 	List<Meeting> findMeetingsByUserId(Long userId);
 
 	void saveMeetingElastic(Meeting meeting);
