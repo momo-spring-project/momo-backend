@@ -26,9 +26,6 @@ spring:
       leak-detection-threshold: 30000 # 30초 (커넥션 누수 감지)
       validation-timeout: 3000      # 3초 (커넥션 검증 시간)
 
-      # MySQL 8.0 호환 초기화 SQL (NO_AUTO_CREATE_USER 제거)
-      connection-init-sql: "SET SESSION sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
-
       # MySQL 최적화 설정
       data-source-properties:
         # PreparedStatement 캐시 최적화
@@ -66,11 +63,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none                # Flyway 사용으로 인한 DDL 비활성화
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
     properties:
       hibernate:
-        # MySQL Dialect 명시적 설정 (에러 해결)
+        # MySQL Dialect 명시적 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
         # SQL 로깅 (개발환경용)
