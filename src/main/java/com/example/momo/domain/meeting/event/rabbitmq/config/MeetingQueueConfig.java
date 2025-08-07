@@ -13,23 +13,23 @@ public class MeetingQueueConfig {
 	@Bean
 	public Queue participantPaymentSuccessQueue() {
 		return QueueBuilder.durable(QueueNames.PARTICIPANT_PAYMENT_SUCCESS)
-			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.X_DLX_PARTICIPANT)
-			.withArgument("x-dead-letter-routing-key", QueueNames.X_DLQ_PARTICIPANT)
+			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", QueueNames.DLQ_PARTICIPANT)
 			.build();
 	}
 
 	@Bean
 	public Queue participantPaymentFailQueue() {
 		return QueueBuilder.durable(QueueNames.PARTICIPANT_PAYMENT_FAIL)
-			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.X_DLX_PARTICIPANT)
-			.withArgument("x-dead-letter-routing-key", QueueNames.X_DLQ_PARTICIPANT)
+			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", QueueNames.DLQ_PARTICIPANT)
 			.build();
 	}
 
 	// 참가자 DLQ
 	@Bean
 	public Queue participantDlq() {
-		return QueueBuilder.durable(QueueNames.X_DLQ_PARTICIPANT)
+		return QueueBuilder.durable(QueueNames.DLQ_PARTICIPANT)
 			.build();
 	}
 
@@ -52,7 +52,7 @@ public class MeetingQueueConfig {
 	@Bean
 	public Binding participantDlqBinding()  {
 		return BindingBuilder.bind(participantDlq())
-			.to(new  DirectExchange(RabbitExchangeNames.X_DLX_PARTICIPANT))
-			.with(QueueNames.X_DLQ_PARTICIPANT);
+			.to(new  DirectExchange(RabbitExchangeNames.DLX_PARTICIPANT))
+			.with(QueueNames.DLQ_PARTICIPANT);
 	}
 }

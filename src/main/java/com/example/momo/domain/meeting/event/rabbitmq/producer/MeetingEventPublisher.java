@@ -21,6 +21,17 @@ public class MeetingEventPublisher {
 	@Qualifier("participantRabbitTemplate")
 	private final RabbitTemplate rabbitTemplate;
 
+	/**
+	 * 발행하는 이벤트 목록 ( 앞의 ParticipantEvents 생략 )
+	 * : Register, Join, CancelRefund, CancelNotification
+	 * RoutingKeys 상수
+	 * : 카멜 케이스 -> 대문자 스네이크 케이스 (예시: PARTICIPANT_CANCEL_REFUND)
+	 * <p>
+	 * 일반 발행 -> 유실 가능
+	 * 정상 전달 확인 발행 -> 유실되면 false 리턴, 유저 재시도
+	 */
+
+	// 일반 발행
 	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event) {
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.PARTICIPANT_EVENTS,
@@ -29,6 +40,7 @@ public class MeetingEventPublisher {
 		);
 	}
 
+	// 정상 전달 확인 발행
 	public boolean publishWithConfirmParticipantEvents(ParticipantEvents.ParticipantEvent event) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 

@@ -30,16 +30,8 @@ public interface MeetingRepository {
 
 	/* Meeting Participant Repository */
 
-	boolean existsByMeetingIdAndUserId(Long meetingId, Long userId);
-
-	MeetingParticipant saveParticipant(MeetingParticipant meetingParticipant);
-
-	List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId);
-
-	Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId);
-
-	Optional<MeetingParticipant> findParticipantById(Long participantId);
-
 	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
+
+	void removeParticipant(Long participantId);
 
 }

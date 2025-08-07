@@ -8,6 +8,6 @@ public class QueueNames {
 
 	public static final String PARTICIPANT_PAYMENT_SUCCESS = "participant.payment.success.queue";
 	public static final String PARTICIPANT_PAYMENT_FAIL = "participant.payment.fail.queue";
-	public static final String X_DLQ_PARTICIPANT = "participant.dlq";
+	public static final String DLQ_PARTICIPANT = "participant.dlq";
 
 }

@@ -6,5 +6,5 @@ public class RabbitExchangeNames {
 	// Meeting
 	public static final String MEETING_EVENTS = "momo.meeting.events";
 	public static final String PARTICIPANT_EVENTS = "momo.participant.events";
-	public static final String X_DLX_PARTICIPANT = "participant.dlx";
+	public static final String DLX_PARTICIPANT = "participant.dlx";
 }

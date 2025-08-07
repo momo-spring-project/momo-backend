@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.infra.meeting;
+package com.example.momo.domain.meeting.infra;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,10 +10,8 @@ import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.infra.participant.MeetingParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +23,10 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 
 	private final MeetingJpaRepository meetingJpaRepository;
 	private final MeetingQueryRepository meetingQueryRepository;
-	private final MeetingParticipantRepository meetingParticipantRepository;
 	private final MeetingElasticCustomRepository meetingElasticCustomRepository;
 	private final MeetingElasticRepository meetingElasticRepository;
+	private final MeetingParticipantJpaRepository meetingParticipantJpaRepository;
+
 	/* Meeting Repository */
 
 	@Override
@@ -65,41 +64,20 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 		return meetingJpaRepository.existsById(id);
 	}
 
-	/* Meeting Participant Repository */
-
-	@Override
-	public boolean existsByMeetingIdAndUserId(Long meetingId, Long userId) {
-		return meetingParticipantRepository.existsByMeetingIdAndUserId(meetingId, userId);
-	}
-
-	@Override
-	public MeetingParticipant saveParticipant(MeetingParticipant meetingParticipant) {
-		return meetingParticipantRepository.save(meetingParticipant);
-	}
-
-	@Override
-	public List<MeetingParticipant> findAllParticipantsByMeetingId(Long meetingId) {
-		return meetingParticipantRepository.findAllParticipantsByMeetingId(meetingId);
-	}
-
-	@Override
-	public Optional<MeetingParticipant> findByMeetingIdAndUserId(Long meetingId, Long userId) {
-		return meetingParticipantRepository.findByMeetingIdAndUserId(meetingId, userId);
-	}
-
-	@Override
-	public Optional<MeetingParticipant> findParticipantById(Long participantId) {
-		return meetingParticipantRepository.findById(participantId);
-	}
-
-	@Override
-	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
-		return meetingParticipantRepository.countParticipants(userId, meetingId, attendance, createdAt);
-	}
-
 	@Override
 	public List<Meeting> findMeetingsByUserId(Long userId) {
 		return meetingQueryRepository.findMeetingsByUserId(userId);
 	}
 
+	/* Meeting Participant Repository */
+
+	@Override
+	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+		return meetingQueryRepository.countParticipants(userId, meetingId, attendance, createdAt);
+	}
+
+	@Override
+	public void removeParticipant(Long participantId) {
+		meetingParticipantJpaRepository.removeMeetingParticipantById(participantId);
+	}
 }

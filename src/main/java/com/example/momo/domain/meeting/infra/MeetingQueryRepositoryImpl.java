@@ -1,18 +1,35 @@
-package com.example.momo.domain.meeting.infra.participant;
+package com.example.momo.domain.meeting.infra;
+
+import static com.example.momo.domain.meeting.domain.QMeeting.*;
+import static com.example.momo.domain.meeting.domain.QMeetingParticipant.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 import com.example.momo.domain.meeting.domain.QMeetingParticipant;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.jpa.impl.JPAQueryFactory;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import com.example.momo.domain.meeting.domain.Meeting;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+import lombok.RequiredArgsConstructor;
 
 @Repository
 @RequiredArgsConstructor
-public class MeetingParticipantQueryRepositoryImpl implements MeetingParticipantQueryRepository {
+public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 
 	private final JPAQueryFactory queryFactory;
+
+	@Override
+	public List<Meeting> findMeetingsByUserId(Long userId) {
+
+		return queryFactory
+			.selectFrom(meeting)
+			.join(meeting.participants, meetingParticipant)
+			.where(meetingParticipant.userId.eq(userId), meeting.isDeleted.isFalse())
+			.fetch();
+	}
 
 	@Override
 	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {

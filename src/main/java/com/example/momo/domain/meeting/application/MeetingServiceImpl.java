@@ -62,7 +62,7 @@ public class MeetingServiceImpl implements MeetingService {
 		meetingRepository.saveMeetingElastic(meeting);
 
 		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
-		meetingRepository.saveParticipant(participant);
+		meeting.getParticipants().add(participant);
 
 		eventPublisher.publishEvent(new MeetingEvents.Create(
 			meeting.getId(),
@@ -180,13 +180,17 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
 
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+;
 		// 이미 참가했으면 예외처리
-		if (meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+		if (meeting.getParticipants()
+			.stream()
+			.anyMatch(p -> p.getUserId().equals(userId))
+		) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
 
 		// 모임 활성화 확인
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		isMeetingOpen(meeting);
 
 		// 유저 자격 확인
@@ -200,36 +204,33 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
-		String status = "PENDING";
-		String message = "결제 진행 중...";
+		String status;
+		String message;
+		boolean success;
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
 
 			meeting.addMeetingParticipant();
-			meetingRepository.saveParticipant(participant);
+			meeting.getParticipants().add(participant);
 
-			boolean success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
+
 			status = success ? "COMPLETED" : "FAILED";
 			message = success ? "참가 완료" : "요청 실패";
-
-			return new ParticipantCreateResponseDto(status, message);
 		} else {
-			meetingEventPublisher.publishParticipantEvents(new ParticipantEvents.Register(meetingId, userId));
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+				new ParticipantEvents.Register(meetingId, userId)
+			);
+
+			status = success ? "PENDING" : "FAILED";
+			message = success ? "결제 대기" : "요청 실패";
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
 		return new ParticipantCreateResponseDto(status, message);
-	}
-
-	@Override
-	public ParticipantResponseDto getParticipant(Long participantId) {
-
-		MeetingParticipant participant = meetingReader.getParticipantById(participantId);
-
-		return new ParticipantResponseDto(participant);
 	}
 
 	@Override
@@ -239,7 +240,9 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
 		}
 
-		List<MeetingParticipant> participants = meetingRepository.findAllParticipantsByMeetingId(meetingId);
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+
+		List<MeetingParticipant> participants = meeting.getParticipants();
 
 		return participants.stream()
 			.map(ParticipantResponseDto::new)
@@ -256,18 +259,19 @@ public class MeetingServiceImpl implements MeetingService {
 		UserClientResponseDto user = userClient.getUser(userId);
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		System.out.println("participant: " + participant.getId() + ", userId: " + userId + ", meetingId: " + meetingId);
 
 		// 6시간 전이면 취소/환불 불가
-		if(meeting.getMeetingDate().minusHours(6).isBefore(LocalDateTime.now())) {
+		if (meeting.getMeetingDate().minusHours(6).isBefore(LocalDateTime.now())) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_TIME_FORBIDDEN);
 		}
 
 		// 인원 감소, 참가자 삭제
-		entityManager.remove(participant);
 		meeting.removeMeetingParticipant();
+		meetingRepository.removeParticipant(participant.getId());
 
 		// 참가비 있을 경우만 환불 요청 이벤트
-		if(meeting.getParticipationFee() != 0) {
+		if (meeting.getParticipationFee() != 0) {
 			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.CancelRefund(meetingId, meeting.getHostUserId(), userId, user.getNickname())
 			);

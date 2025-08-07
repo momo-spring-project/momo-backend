@@ -46,7 +46,7 @@ public class MeetingEventConsumer {
 	 * DTO: PaymentEventDto
 	 * 분기판단: String eventType
 	 */
-	@RabbitListener(queues = QueueNames.X_DLQ_PARTICIPANT)
+	@RabbitListener(queues = QueueNames.DLQ_PARTICIPANT)
 	public void handleParticipantDlq(String message) {
 		try {
 			JsonNode json = objectMapper.readTree(message);
@@ -78,7 +78,7 @@ public class MeetingEventConsumer {
 
 			// 참가자 추가
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
-			meetingRepository.saveParticipant(participant);
+			meeting.getParticipants().add(participant);
 
 			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(

@@ -26,7 +26,7 @@ public class MeetingExchangeConfig {
 
 	@Bean
 	public DirectExchange participantDlxExchange() {
-		return ExchangeBuilder.directExchange(RabbitExchangeNames.X_DLX_PARTICIPANT)
+		return ExchangeBuilder.directExchange(RabbitExchangeNames.DLX_PARTICIPANT)
 			.durable(true)
 			.build();
 	}
