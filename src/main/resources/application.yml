@@ -93,4 +93,7 @@ logging:
     com.example.momo: DEBUG
     io.opentelemetry.exporter: DEBUG
 
-
+notification:
+  slack:
+    webhook:
+      url: ${SLACK_WEBHOOK_URL}

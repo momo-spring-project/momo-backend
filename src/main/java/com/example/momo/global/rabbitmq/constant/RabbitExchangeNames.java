@@ -19,3 +19,4 @@ public class RabbitExchangeNames {
 	public static final String PARTICIPANT_EVENTS = "momo.participant.events";
 
 }
+
