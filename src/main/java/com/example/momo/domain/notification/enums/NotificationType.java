@@ -1,5 +1,8 @@
 package com.example.momo.domain.notification.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import lombok.Getter;
 
 @Getter
@@ -10,6 +13,8 @@ public enum NotificationType {
 	MEETING_UPDATED("모임 정보 변경"),
 	MEETING_DELETED("모임 삭제"),
 	MEETING_RECOMMENDED("추천 모임"),
+	MEETING_UPCOMING("모임 예정"),
+	MEETING_TOMORROW("내일 모임 예정"),
 
 	// 팔로우
 	FOLLOWED("팔로우"),
@@ -24,4 +29,17 @@ public enum NotificationType {
 		this.label = label;
 	}
 
+	@JsonCreator
+	public static NotificationType from(String name) {
+		if (name == null) {
+			return null;
+		}
+		return NotificationType.valueOf(name.trim().toUpperCase());
+
+	}
+
+	@JsonValue
+	public String toJson() {
+		return name();
+	}
 }

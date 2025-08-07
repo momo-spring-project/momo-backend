@@ -1,14 +1,18 @@
-package com.example.momo.global.springEvent.payment;
+package com.example.momo.global.rabbitmq.dto.payment;
+
+import com.example.momo.global.rabbitmq.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 
 /**
  * 결제 도메인에서 발생하는 메세지 이벤트를 정의합니다.
  */
-public class PaymentMessageEvents {
+public class PaymentAlarmMessages {
 
 	/**
 	 * 결제 이벤트 마커 인터페이스입니다.
 	 */
-	public interface PaymentEvent {
+	public interface PaymentAlarmMessage extends DomainAlarmMessage {
 		Long userId();
 
 		Long paymentId();
@@ -20,10 +24,11 @@ public class PaymentMessageEvents {
 	 * @param userId 결제한 유저 ID
 	 * @param paymentId 결제 ID
 	 */
+	@JsonTypeName(AlarmMessageType.PAID)
 	public record Paid(
 		Long userId,
 		Long paymentId
-	) implements PaymentEvent {
+	) implements PaymentAlarmMessage {
 	}
 
 	/**
@@ -32,9 +37,10 @@ public class PaymentMessageEvents {
 	 * @param userId 환불받은 유저 ID
 	 * @param paymentId 결제 ID
 	 */
+	@JsonTypeName(AlarmMessageType.REFUNDED)
 	public record Refunded(
 		Long userId,
 		Long paymentId
-	) implements PaymentEvent {
+	) implements PaymentAlarmMessage {
 	}
 }
