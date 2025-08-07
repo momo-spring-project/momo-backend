@@ -10,6 +10,7 @@ import com.example.momo.domain.meeting.application.dto.response.MeetingResponseD
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
+import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
@@ -17,6 +18,8 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 public interface MeetingService {
 
 	/** Meeting Service */
+
+	Meeting getMeetingEntity(Long meetingId);
 
 	MeetingResponseDto createMeeting(MeetingCreateRequestDto request, Long userId);
 
@@ -33,6 +36,10 @@ public interface MeetingService {
 	void deleteMeeting(Long meetingId, Long userId);
 
 	List<MeetingResponseDto> getMeetingsByUserId(Long userId);
+
+	void createElasticMeeting(Meeting meeting);
+
+	void deleteElasticMeeting(Meeting meeting);
 
 	/** Meeting Participant Service */
 

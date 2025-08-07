@@ -40,6 +40,12 @@ spring:
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
 
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      database: 0
+
 toss:
   payments:
     secret-key: ${TOSS_SECRET_KEY}
@@ -83,4 +89,8 @@ otel:
 
 logging:
   level:
+    root: INFO
+    com.example.momo: DEBUG
     io.opentelemetry.exporter: DEBUG
+
+
