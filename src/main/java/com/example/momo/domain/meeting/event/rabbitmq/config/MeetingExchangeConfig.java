@@ -11,6 +11,13 @@ import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 public class MeetingExchangeConfig {
 
 	@Bean
+	public DirectExchange meetingDlxExchange() {
+		return ExchangeBuilder.directExchange("momo.dlx.meeting")
+			.durable(true)
+			.build();
+	}
+
+	@Bean
 	public DirectExchange meetingEventsExchange() {
 		return ExchangeBuilder.directExchange(RabbitExchangeNames.MEETING_EVENTS)
 			.durable(true)

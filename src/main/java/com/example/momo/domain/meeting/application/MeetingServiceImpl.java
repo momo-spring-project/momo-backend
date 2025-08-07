@@ -304,7 +304,7 @@ public class MeetingServiceImpl implements MeetingService {
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		// 6시간 전이면 취소/환불 불가
-		if (meeting.getMeetingDate().minusHours(6).isAfter(LocalDateTime.now())) {
+		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_TIME_FORBIDDEN);
 		}
 
