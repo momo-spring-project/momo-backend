@@ -37,7 +37,7 @@ public class PaymentOutboxScheduler {
 	 * - FAILED → 3회 미만 실패 이벤트 재시도
 	 * - 3회 이상 실패한 이벤트는 DEAD_LETTERED 상태로 전환
 	 */
-	@Scheduled(fixedDelay = 10000)
+	@Scheduled(fixedDelay = 100000000)
 	public void publishUnsentMessages() {
 		// PENDING 상태 메시지 (초기 발행 실패)
 		List<PaymentOutbox> pendingEvents = outboxRepository

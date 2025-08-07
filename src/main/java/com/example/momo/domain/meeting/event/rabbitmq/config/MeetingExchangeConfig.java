@@ -10,17 +10,24 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MeetingExchangeConfig {
 
-		@Bean
-		public DirectExchange meetingEventsExchange() {
-			return ExchangeBuilder.directExchange(RabbitExchangeNames.MEETING_EVENTS)
-				.durable(true)
-				.build();
-		}
+	@Bean
+	public TopicExchange meetingEventsExchange() {
+		return ExchangeBuilder.topicExchange(RabbitExchangeNames.MEETING_EVENTS)
+			.durable(true)
+			.build();
+	}
 
-		@Bean
-		public DirectExchange participantEventsExchange() {
-			return ExchangeBuilder.directExchange(RabbitExchangeNames.PARTICIPANT_EVENTS)
-				.durable(true)
-				.build();
-		}
+	@Bean
+	public TopicExchange participantEventsExchange() {
+		return ExchangeBuilder.topicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS)
+			.durable(true)
+			.build();
+	}
+
+	@Bean
+	public DirectExchange participantDlxExchange() {
+		return ExchangeBuilder.directExchange(RabbitExchangeNames.X_DLX_PARTICIPANT)
+			.durable(true)
+			.build();
+	}
 }

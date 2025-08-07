@@ -56,9 +56,13 @@ public class MeetingServiceImpl implements MeetingService {
 		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
 
 		Meeting meeting = request.toMeeting(userId);
+
 		Meeting savedMeeting = meetingRepository.save(meeting);
 
 		meetingRepository.saveMeetingElastic(meeting);
+
+		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+		meetingRepository.saveParticipant(participant);
 
 		eventPublisher.publishEvent(new MeetingEvents.Create(
 			meeting.getId(),
@@ -196,23 +200,28 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
-		// 인원 추가
-		meeting.addMeetingParticipant();
-
+		String status = "PENDING";
+		String message = "결제 진행 중...";
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
-			MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
+			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+
+			meeting.addMeetingParticipant();
 			meetingRepository.saveParticipant(participant);
-			meetingEventPublisher.publishParticipantEvents(
+
+			boolean success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
-			return new ParticipantCreateResponseDto("COMPLETE", "참가 완료");
+			status = success ? "COMPLETED" : "FAILED";
+			message = success ? "참가 완료" : "요청 실패";
+
+			return new ParticipantCreateResponseDto(status, message);
 		} else {
 			meetingEventPublisher.publishParticipantEvents(new ParticipantEvents.Register(meetingId, userId));
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
-		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
+		return new ParticipantCreateResponseDto(status, message);
 	}
 
 	@Override
@@ -249,7 +258,7 @@ public class MeetingServiceImpl implements MeetingService {
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		// 6시간 전이면 취소/환불 불가
-		if(meeting.getMeetingDate().minusHours(6).isAfter(LocalDateTime.now())) {
+		if(meeting.getMeetingDate().minusHours(6).isBefore(LocalDateTime.now())) {
 			throw new MeetingException(MeetingExceptionCode.MEETING_TIME_FORBIDDEN);
 		}
 

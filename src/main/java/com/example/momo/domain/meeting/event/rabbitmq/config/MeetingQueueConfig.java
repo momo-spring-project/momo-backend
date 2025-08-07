@@ -2,7 +2,6 @@ package com.example.momo.domain.meeting.event.rabbitmq.config;
 
 import com.example.momo.global.rabbitmq.constant.QueueNames;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
-import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,30 +9,50 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MeetingQueueConfig {
 
-	// Notification 배달 예정
+	// 참가자 Queue
 	@Bean
-	public Queue notificationParticipantJoinedQueue() {
-		return QueueBuilder.durable(QueueNames.NOTIFICATION_PARTICIPANT_JOIN)
+	public Queue participantPaymentSuccessQueue() {
+		return QueueBuilder.durable(QueueNames.PARTICIPANT_PAYMENT_SUCCESS)
+			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.X_DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", QueueNames.X_DLQ_PARTICIPANT)
 			.build();
 	}
 
 	@Bean
-	public Queue notificationParticipantCanceledQueue() {
-		return QueueBuilder.durable(QueueNames.NOTIFICATION_PARTICIPANT_CANCEL)
+	public Queue participantPaymentFailQueue() {
+		return QueueBuilder.durable(QueueNames.PARTICIPANT_PAYMENT_FAIL)
+			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.X_DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", QueueNames.X_DLQ_PARTICIPANT)
 			.build();
 	}
 
+	// 참가자 DLQ
 	@Bean
-	public Binding notificationParticipantJoinedBinding() {
-		return BindingBuilder.bind(notificationParticipantJoinedQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_JOIN);
+	public Queue participantDlq() {
+		return QueueBuilder.durable(QueueNames.X_DLQ_PARTICIPANT)
+			.build();
+	}
+
+	// 참가자 Binding
+	@Bean
+	public Binding participantPaymentSuccessBinding() {
+		return BindingBuilder.bind(participantPaymentSuccessQueue())
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with("payment.completed"); // 이후에 글로벌 상수로 변경
 	}
 
 	@Bean
-	public Binding notificationParticipantCanceledBinding() {
-		return BindingBuilder.bind(notificationParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL_NOTIFICATION);
+	public Binding participantPaymentFailBinding() {
+		return BindingBuilder.bind(participantPaymentFailQueue())
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with("payment.failed"); // 이후에 글로벌 상수로 변경
+	}
+
+	// 참가자 DLQ 바인딩
+	@Bean
+	public Binding participantDlqBinding()  {
+		return BindingBuilder.bind(participantDlq())
+			.to(new  DirectExchange(RabbitExchangeNames.X_DLX_PARTICIPANT))
+			.with(QueueNames.X_DLQ_PARTICIPANT);
 	}
 }
