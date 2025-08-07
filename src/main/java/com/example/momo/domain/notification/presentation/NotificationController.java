@@ -38,4 +38,5 @@ public class NotificationController {
 		@RequestBody NotificationRequestDto dto) {
 		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", notificationService.createNotification(dto)));
 	}
+	
 }
