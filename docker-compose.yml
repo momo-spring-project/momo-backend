@@ -114,6 +114,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
+      - ./monitoring/datasources:/etc/grafana/provisioning/datasources
     restart: unless-stopped
 
 volumes:
