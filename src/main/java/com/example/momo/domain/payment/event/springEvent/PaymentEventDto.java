@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.event.rabbitmq.dto;
+package com.example.momo.domain.payment.event.springEvent;
 
 import java.time.LocalDateTime;
 
@@ -11,11 +11,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MeetingParticipantEventDto {
-	private Long participantId;
+public class PaymentEventDto {
+	private Long paymentId;
 	private Long userId;
 	private Long meetingId;
-	private Integer amount;  // 참가비
-	private String eventType;  // PARTICIPANT_CREATED, PARTICIPANT_REMOVED 등
+	private Integer amount;
+	private String eventType; // PAYMENT_COMPLETED
 	private LocalDateTime occurredAt;
+	private String failReason;  // 실패 시에만 사용
 }
