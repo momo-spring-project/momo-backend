@@ -76,9 +76,10 @@ public class PaymentRabbitConfig {
 		template.setRetryTemplate(retry);
 		// Confirm/Return Callback (로깅용)
 		template.setConfirmCallback((correlationData, ack, cause) -> {
-			if (!ack) {
-				log.error("[Payment] Confirm 실패 - correlationId: {}, cause: {}",
-					correlationData != null ? correlationData.getId() : "null", cause);
+			if (ack) {
+				log.info("Confirm 성공 - correlationId={}", correlationData.getId());
+			} else {
+				log.error("Confirm 실패 - correlationId={}, cause={}", correlationData.getId(), cause);
 			}
 		});
 

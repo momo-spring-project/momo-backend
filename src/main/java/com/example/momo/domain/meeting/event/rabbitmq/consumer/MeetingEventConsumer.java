@@ -1,5 +1,8 @@
 package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
 import com.example.momo.domain.meeting.application.MeetingReader;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
@@ -9,10 +12,9 @@ import com.example.momo.domain.payment.event.rabbitmq.dto.PaymentEventDto;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component

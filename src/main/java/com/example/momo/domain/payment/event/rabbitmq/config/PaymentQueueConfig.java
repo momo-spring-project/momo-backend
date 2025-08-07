@@ -5,9 +5,11 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.example.momo.domain.meeting.event.rabbitmq.config.RabbitMQMeetingConfig;
 import com.example.momo.global.rabbitmq.constant.QueueNames;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
@@ -32,7 +34,7 @@ public class PaymentQueueConfig {
 	public Queue paymentParticipantRegisteredQueue() {
 		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_REGISTER)
 			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PAYMENT)
-			.withArgument("x-dead-letter-routing-key", "payment.dlq")
+			.withArgument("x-dead-letter-routing-key", RoutingKeys.PAYMENT_DLQ)
 			.build();
 	}
 
@@ -45,7 +47,15 @@ public class PaymentQueueConfig {
 	public Queue paymentParticipantCanceledQueue() {
 		return QueueBuilder.durable(QueueNames.PAYMENT_PARTICIPANT_CANCEL)
 			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PAYMENT)
-			.withArgument("x-dead-letter-routing-key", "payment.dlq")
+			.withArgument("x-dead-letter-routing-key", RoutingKeys.PAYMENT_DLQ)
+			.build();
+	}
+
+	@Bean
+	public Queue paymentMeetingDeletedQueue() {
+		return QueueBuilder.durable("payment.meeting.deleted.queue")
+			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PAYMENT)
+			.withArgument("x-dead-letter-routing-key", RoutingKeys.PAYMENT_DLQ)
 			.build();
 	}
 
@@ -89,6 +99,14 @@ public class PaymentQueueConfig {
 			.bind(paymentParticipantCanceledQueue())
 			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
 			.with(RoutingKeys.PARTICIPANT_CANCEL_REFUND);
+	}
+
+	@Bean
+	public Binding meetingDeletedBinding() {
+		return BindingBuilder
+			.bind(paymentMeetingDeletedQueue())
+			.to(new TopicExchange(RabbitMQMeetingConfig.EXCHANGE_NAME))       // meeting.exchange
+			.with(RabbitMQMeetingConfig.DELETED_ROUTING_KEY);                 // meeting.deleted
 	}
 
 	/**
