@@ -21,7 +21,7 @@ import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
-import com.example.momo.domain.payment.event.rabbitmq.dto.PaymentEventDto;
+import com.example.momo.domain.payment.event.springEvent.PaymentEventDto;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;

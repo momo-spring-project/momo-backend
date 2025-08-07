@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.event.rabbitmq.dto;
+package com.example.momo.domain.payment.event.springEvent;
 
 import java.time.LocalDateTime;
 
