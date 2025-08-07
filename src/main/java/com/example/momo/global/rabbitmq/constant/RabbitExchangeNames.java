@@ -22,3 +22,4 @@ public class RabbitExchangeNames {
 	public static final String PAYMENT_EVENTS = "momo.payment.events";
 	public static final String DLX_PAYMENT = "momo.dlx.payment";
 }
+
