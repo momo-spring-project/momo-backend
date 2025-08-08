@@ -6,6 +6,8 @@ version: "3.8"
 # environment -{변수}={값} -> 환경변수 설정
 
 services:
+
+  # Redis
   redis:
     image: redis:7
     container_name: redis
@@ -122,14 +124,6 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./monitoring/datasources:/etc/grafana/provisioning/datasources
-    restart: unless-stopped
-
-  # Redis
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    ports:
-      - "6379:6379"
     restart: unless-stopped
 
 volumes:
