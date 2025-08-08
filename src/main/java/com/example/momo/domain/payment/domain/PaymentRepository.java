@@ -27,9 +27,11 @@ public interface PaymentRepository {
 		PaymentStatus status,
 		Pageable pageable);
 
-	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId,
-		Long userId,
-		PaymentStatus status);
-	
+	// 단일 결제 조회 (unique constraint: meeting_id + user_id)
+	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
+
 	Optional<Payment> findByMeetingIdAndUserId(Long meetingId, Long userId);
+
+	// 모임별 특정 상태의 모든 결제 조회 (모임 삭제 시 전체 환불용)
+	List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status);
 }

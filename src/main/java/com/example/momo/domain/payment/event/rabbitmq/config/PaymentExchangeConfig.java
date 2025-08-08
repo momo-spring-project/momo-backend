@@ -6,15 +6,13 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+
 /**
  * Payment 도메인이 발행하는 Exchange 정의
  */
 @Configuration
 public class PaymentExchangeConfig {
-
-	// Exchange 이름
-	public static final String X_PAYMENT_EVENTS = "momo.payment.events";
-	public static final String X_DLX_PAYMENT = "dlx.payment";
 
 	/**
 	 * Payment 이벤트 Exchange (Topic)
@@ -25,14 +23,20 @@ public class PaymentExchangeConfig {
 	 */
 	@Bean
 	public TopicExchange paymentEventsExchange() {
-		return ExchangeBuilder.topicExchange(X_PAYMENT_EVENTS)
+		return ExchangeBuilder.topicExchange(RabbitExchangeNames.PAYMENT_EVENTS)
 			.durable(true)
 			.build();
 	}
 
+	/**
+	 * Payment Dead Letter Exchange
+	 *
+	 * 처리 실패한 메시지들이 모이는 곳
+	 * 재시도 3회 초과 시 이동
+	 */
 	@Bean
 	public DirectExchange paymentDlxExchange() {
-		return ExchangeBuilder.directExchange(X_DLX_PAYMENT)
+		return ExchangeBuilder.directExchange(RabbitExchangeNames.DLX_PAYMENT)
 			.durable(true)
 			.build();
 	}

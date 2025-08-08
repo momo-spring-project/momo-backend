@@ -65,9 +65,6 @@ public class Payment extends BaseCreateEntity {
 	@Column(name = "failed_at")
 	private LocalDateTime failedAt;
 
-	@Column(name = "canceled_at")
-	private LocalDateTime canceledAt;
-
 	@Column(name = "refunded_at")
 	private LocalDateTime refundedAt;
 
@@ -79,7 +76,7 @@ public class Payment extends BaseCreateEntity {
 	private Long version;
 
 	// Private 생성자 - Builder 전용
-	@Builder(access = AccessLevel.PRIVATE)  // ✅ PRIVATE Builder
+	@Builder(access = AccessLevel.PRIVATE)  //  PRIVATE Builder
 	private Payment(Long userId, Long meetingId, int amount,
 		String paymentMethod, PaymentStatus status,
 		LocalDateTime paidAt) {
@@ -89,18 +86,6 @@ public class Payment extends BaseCreateEntity {
 		this.paymentMethod = paymentMethod;
 		this.status = status;
 		this.paidAt = paidAt;
-	}
-
-	// 무료 결제 생성 (참가비 0원)
-	public static Payment createFree(Long userId, Long meetingId) {
-		return Payment.builder()
-			.userId(userId)
-			.meetingId(meetingId)
-			.amount(0)
-			.paymentMethod("FREE")
-			.status(PaymentStatus.COMPLETED)
-			.paidAt(LocalDateTime.now())
-			.build();
 	}
 
 	// PENDING 결제 생성 (결제 시작)
@@ -132,16 +117,6 @@ public class Payment extends BaseCreateEntity {
 		}
 		this.status = PaymentStatus.FAILED;
 		this.failedAt = LocalDateTime.now();
-		this.failReason = reason;
-	}
-
-	// 결제 취소 처리 (사용자가 결제 진행 중 취소)
-	public void cancel(String reason) {
-		if (this.status != PaymentStatus.PENDING) {
-			throw new IllegalStateException("PENDING 상태에서만 취소 가능합니다.");
-		}
-		this.status = PaymentStatus.CANCELED;
-		this.canceledAt = LocalDateTime.now();
 		this.failReason = reason;
 	}
 
