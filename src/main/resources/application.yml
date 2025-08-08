@@ -28,6 +28,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        session_factory:
+          statement_inspector: com.example.momo.global.monitoring.query.inspector.QueryCountInspector
     show-sql: true
 
   messages:
@@ -39,6 +41,7 @@ spring:
     port: 5672
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
+    publisher-confirm-type: correlated
 
   data:
     redis:

@@ -6,10 +6,8 @@ import org.springframework.stereotype.Component;
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
-import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
-import com.example.momo.global.rabbitmq.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,11 +41,14 @@ public class EventRoutingHandler {
 	private MessageDto createMessageDto(DomainAlarmMessage event) {
 		if (event instanceof MeetingAlarmMessages.MeetingAlarmMessage e) {
 			return messageProvider.processMeetingMessage(e);
-		} else if (event instanceof PaymentAlarmMessages.PaymentAlarmMessage e) {
-			return messageProvider.processPaymentMessage(e);
-		} else if (event instanceof FollowAlarmMessages.FollowAlarmMessage e) {
-			return messageProvider.processFollowMessage(e);
-		} else {
+		}
+		// else if (event instanceof PaymentAlarmMessages.PaymentAlarmMessage e) {
+		// 	return messageProvider.processPaymentMessage(e);
+		// } else if (event instanceof FollowAlarmMessages.FollowAlarmMessage e) {
+		// 	return messageProvider.processFollowMessage(e);
+		// }
+
+		else {
 			return null;
 		}
 	}

@@ -1,21 +1,27 @@
 package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.example.momo.domain.meeting.application.MeetingReader;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.domain.payment.event.springEvent.PaymentEventDto;
+import com.example.momo.global.rabbitmq.constant.QueueNames;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+import com.rabbitmq.client.Channel;
+
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+
+// Dto 수정해야함
 
 @Slf4j
 @Component
@@ -26,89 +32,91 @@ public class MeetingEventConsumer {
 	private final UserClient userClient;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final MeetingRepository meetingRepository;
+	private final ObjectMapper objectMapper;
+
+	// 전체적으로 예외처리 어떻게할지
+
+	// 결제 완료 -> 참가자 추가
+	@Transactional
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCESS, containerFactory = "participantListenerContainerFactory")
+	public void handlePaymentSuccessEvent(PaymentEventMessage.Completed event, Channel channel, Message message) {
+		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		log.info("[결제 완료 이벤트 수신] message: {}", event);
+		try {
+			processPaymentSuccessEvent(event);
+			channel.basicAck(deliveryTag, false);
+			log.info("[결제 완료 이벤트 처리 완료] message: {}", event);
+		} catch (Exception e) {
+			log.error("[결제 완료 이벤트 처리 실패] message: {}", event, e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	// 결제 실패 -> 인원 감소
+	@Transactional
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAIL, containerFactory = "participantListenerContainerFactory")
+	public void handlePaymentFailureEvent(PaymentEventMessage.Failed event, Channel channel, Message message) {
+		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		log.info("[결제 실패 이벤트 수신] event: {}", event);
+		try {
+			processPaymentFailureEvent(event);
+			channel.basicAck(deliveryTag, false);
+			log.info("[결제 실패 이벤트 처리 완료] message: {}", event);
+		} catch (Exception e) {
+			log.error("[결제 실패 이벤트 처리 실패] event: {}", event, e);
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
-	 * 결제 완료 이벤트 처리
-	 * Queue: meeting.payment.completed.queue
-	 *
-	 * 결제가 완료되면 참가자를 실제로 등록하고 알림 이벤트 발행
+	 * 현재 DLQ 들어오는 목록
+	 * 큐: PARTICIPANT_PAYMENT_SUCCESS, PARTICIPANT_PAYMENT_FAIL
+	 * 작동하는지 확인 불가
 	 */
-	@RabbitListener(queues = "meeting.payment.completed.queue")
 	@Transactional
-	public void handlePaymentCompleted(PaymentEventDto event) {
-		log.info("[결제 완료 수신] meetingId: {}, userId: {}, amount: {}원",
-			event.getMeetingId(), event.getUserId(), event.getAmount());
+	@RabbitListener(queues = DLQ_PARTICIPANT)
+	public void handleParticipantDlq(PaymentEventMessage message) {
+		try {
+			if (message instanceof PaymentEventMessage.Completed completed) {
+				processPaymentSuccessEvent(completed);
+			} else if (message instanceof PaymentEventMessage.Failed failed) {
+				processPaymentFailureEvent(failed);
+			}
+		} catch (Exception e) {
+			log.error("[Dlq 처리 실패] : message: {}", message);
+			throw e;
+		}
+	}
 
+	protected void processPaymentSuccessEvent(PaymentEventMessage.Completed event) {
 		try {
 			Long meetingId = event.getMeetingId();
 			Long userId = event.getUserId();
-
-			// 이미 참가자로 등록되어 있는지 확인 (중복 방지)
-			if (meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
-				log.warn("이미 참가자로 등록됨 - meetingId: {}, userId: {}", meetingId, userId);
-				return;
-			}
 
 			Meeting meeting = meetingReader.getMeetingById(meetingId);
 			UserClientResponseDto user = userClient.getUser(userId);
 
 			// 참가자 추가
-			MeetingParticipant participant = new MeetingParticipant(meetingId, userId);
-			meetingRepository.saveParticipant(participant);
+			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+			meeting.getParticipants().add(participant);
 
-			log.info("[참가자 등록 완료] meetingId: {}, userId: {}, participantId: {}",
-				meetingId, userId, participant.getId());
-
-			// 참가 완료 알림 이벤트 발행 (Notification 서비스용)
+			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Join(
-					meetingId,
-					userId,
-					meeting.getHostUserId(),
-					user.getNickname()
-				)
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
-
-			log.info("[참가 완료 이벤트 발행] meetingId: {}, userId: {}", meetingId, userId);
-
 		} catch (Exception e) {
-			log.error("[결제 완료 처리 실패] meetingId: {}, userId: {}, error: {}",
-				event.getMeetingId(), event.getUserId(), e.getMessage(), e);
-			throw e; // 트랜잭션 롤백 및 메시지 재처리
+			log.error(e.getMessage(), e);
+			throw e;
 		}
 	}
 
-	/**
-	 * 결제 실패 이벤트 처리
-	 * Queue: meeting.payment.failed.queue
-	 *
-	 * 결제가 실패하면 예약했던 자리를 복구
-	 */
-	@RabbitListener(queues = "meeting.payment.failed.queue")
-	@Transactional
-	public void handlePaymentFailed(PaymentEventDto event) {
-		log.info("[결제 실패 수신] meetingId: {}, userId: {}, failReason: {}",
-			event.getMeetingId(), event.getUserId(), event.getFailReason());
-
+	protected void processPaymentFailureEvent(PaymentEventMessage.Failed event) {
 		try {
-			Long meetingId = event.getMeetingId();
-
-			Meeting meeting = meetingReader.getMeetingById(meetingId);
-
-			// 인원수 복구 (결제 시작할 때 증가시켰던 인원 감소)
+			Meeting meeting = meetingReader.getMeetingById(event.getMeetingId());
 			meeting.removeMeetingParticipant();
-
-			log.info("[인원수 복구 완료] meetingId: {}, 현재 인원: {}/{}",
-				meetingId,
-				meeting.getCurrentParticipantsCount(),
-				meeting.getMaxParticipantsCount());
-			
 		} catch (Exception e) {
-			log.error("[결제 실패 처리 중 오류] meetingId: {}, userId: {}, error: {}",
-				event.getMeetingId(), event.getUserId(), e.getMessage(), e);
-			throw e; // 트랜잭션 롤백 및 메시지 재처리
+			log.error(e.getMessage(), e);
+			throw e;
 		}
 	}
-
 }
-

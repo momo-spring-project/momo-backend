@@ -30,13 +30,9 @@ public class MeetingReader {
 
 	// 참가자 조회
 	public MeetingParticipant getParticipantByMeetingIdAndUserId(Long meetingId, Long userId) {
+		Meeting meeting = getMeetingById(meetingId);
 
-		return meetingRepository.findByMeetingIdAndUserId(meetingId, userId)
-			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
-	}
-
-	public MeetingParticipant getParticipantById(Long participantId) {
-		return meetingRepository.findParticipantById(participantId)
+		return meeting.getParticipants().stream().filter(p -> p.getUserId().equals(userId)).findFirst()
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
 	}
 }
