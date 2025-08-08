@@ -31,7 +31,7 @@ import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
@@ -76,13 +76,15 @@ public class MeetingServiceImpl implements MeetingService {
 
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
 
-		// TODO : 기존 DTO 사용중이므로 메세지허브로 보내는 DTO 지운님 PR 병합 이후 수정 예정
-		meetingProducer.createMeetingMQ(new MeetingMessageEvents.Create(
+		meetingProducer.createMeetingMQ(new MeetingAlarmMessages.Create(
+			meeting.getHostUserId(),
 			meeting.getId(),
-			request.getCategoryId(),
+			meeting.getTitle(),
+			meeting.getCategoryId(),
 			category.getName(),
 			meeting.getLatitude(),
-			meeting.getLongitude()
+			meeting.getLongitude(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(savedMeeting);
@@ -106,10 +108,11 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.updateMeeting(request);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-		meetingProducer.updateMeetingMQ(new MeetingMessageEvents.Update(
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
 			meeting.getId(),
 			meeting.getTitle(),
-			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(meeting);
@@ -141,6 +144,13 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.updateStatus(status);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
+		));
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -186,7 +196,8 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.delete();
 
-		meetingProducer.deleteMeetingMQ(new MeetingMessageEvents.Delete(
+		meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
+			meeting.getHostUserId(),
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()

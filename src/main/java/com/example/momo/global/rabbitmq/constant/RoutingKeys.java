@@ -25,4 +25,5 @@ public class RoutingKeys {
 	public static final String PAYMENT_FAILED = "payment.failed";
 	public static final String PAYMENT_REFUNDED = "payment.refunded";
 	public static final String PAYMENT_DLQ = "payment.dlq";
+
 }
