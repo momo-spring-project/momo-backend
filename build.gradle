@@ -79,6 +79,11 @@ dependencies {
 
     // OpenTelemetry
     implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+    implementation("io.opentelemetry.proto:opentelemetry-proto:1.7.0-alpha")
+
+    // Spring Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-otlp'
 
     // RabbitMQ 지원 (spring-amqp + spring-rabbit)
     implementation 'org.springframework.boot:spring-boot-starter-amqp'
@@ -92,6 +97,7 @@ dependencies {
 
     // Redis
     implementation "org.springframework.boot:spring-boot-starter-data-redis"
+
 }
 
 dependencyManagement {
