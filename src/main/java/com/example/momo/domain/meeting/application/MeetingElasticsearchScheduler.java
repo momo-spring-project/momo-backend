@@ -41,7 +41,8 @@ public class MeetingElasticsearchScheduler {
 				meetingOutboxService.markEventAsPublished(outbox.getId());
 			} catch (Exception e) {
 
-				log.error("스케줄러 es event 에러");
+				log.error(
+					"[Meeting] : MeetingElasticsearchScheduler.retryUnpublishedEvents - Elasticsearch 아웃박스 재시도 스케줄러 내부 오류");
 				throw new RuntimeException(e);
 			}
 		}
