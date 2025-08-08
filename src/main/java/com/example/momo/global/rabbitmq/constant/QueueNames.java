@@ -18,4 +18,6 @@ public class QueueNames {
 	public static final String NOTIFICATION_PARTICIPANT_CANCEL = "notification.participant.canceled.queue";
 
 	public static final String PAYMENT_DLQ = "payment.dlq.queue";
+
+	public static final String MEETING_DELETE_QUEUE = "meeting.delete.queue";
 }
