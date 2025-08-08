@@ -37,6 +37,7 @@ public class MeetingQueueConfig {
 	@Bean
 	public Queue participantDlq() {
 		return QueueBuilder.durable(QueueNames.DLQ_PARTICIPANT)
+			.withArgument("x-message-ttl", 604800000)  // 7일 후 자동 삭제
 			.build();
 	}
 
@@ -44,14 +45,14 @@ public class MeetingQueueConfig {
 	@Bean
 	public Binding participantPaymentSuccessBinding() {
 		return BindingBuilder.bind(participantPaymentSuccessQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
 			.with("payment.completed"); // 이후에 글로벌 상수로 변경
 	}
 
 	@Bean
 	public Binding participantPaymentFailBinding() {
 		return BindingBuilder.bind(participantPaymentFailQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
 			.with("payment.failed"); // 이후에 글로벌 상수로 변경
 	}
 
@@ -59,76 +60,7 @@ public class MeetingQueueConfig {
 	@Bean
 	public Binding participantDlqBinding()  {
 		return BindingBuilder.bind(participantDlq())
-			.to(new  DirectExchange(RabbitExchangeNames.DLX_PARTICIPANT))
+			.to(new DirectExchange(RabbitExchangeNames.DLX_PARTICIPANT))
 			.with(QueueNames.DLQ_PARTICIPANT);
-	}
-
-
-	// ===========================
-	// Payment 이벤트 수신 Queue
-	// ===========================
-
-	/**
-	 * 결제 완료 이벤트 Queue
-	 * Payment에서 결제가 완료되면 참가자를 실제로 등록
-	 */
-	@Bean
-	public Queue meetingPaymentCompletedQueue() {
-		return QueueBuilder.durable("meeting.payment.completed.queue")
-			.withArgument("x-dead-letter-exchange", "momo.dlx.meeting")
-			.withArgument("x-dead-letter-routing-key", "meeting.dlq")
-			.build();
-	}
-
-	/**
-	 * 결제 실패 이벤트 Queue
-	 * Payment에서 결제가 실패하면 예약한 자리를 복구
-	 */
-	@Bean
-	public Queue meetingPaymentFailedQueue() {
-		return QueueBuilder.durable("meeting.payment.failed.queue")
-			.withArgument("x-dead-letter-exchange", "momo.dlx.meeting")
-			.withArgument("x-dead-letter-routing-key", "meeting.dlq")
-			.build();
-	}
-
-	/**
-	 * Meeting DLQ (Dead Letter Queue)
-	 */
-	@Bean
-	public Queue meetingDlq() {
-		return QueueBuilder.durable("meeting.dlq.queue")
-			.withArgument("x-message-ttl", 604800000)  // 7일 후 자동 삭제
-			.build();
-	}
-
-	// ===========================
-	// Payment 이벤트 Bindings
-	// ===========================
-
-	/**
-	 * 결제 완료 이벤트 바인딩
-	 * Exchange: momo.payment.events (TopicExchange)
-	 * RoutingKey: payment.completed
-	 */
-	@Bean
-	public Binding meetingPaymentCompletedBinding() {
-		return BindingBuilder
-			.bind(meetingPaymentCompletedQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
-			.with(RoutingKeys.PAYMENT_COMPLETED);
-	}
-
-	/**
-	 * 결제 실패 이벤트 바인딩
-	 * Exchange: momo.payment.events (TopicExchange)
-	 * RoutingKey: payment.failed
-	 */
-	@Bean
-	public Binding meetingPaymentFailedBinding() {
-		return BindingBuilder
-			.bind(meetingPaymentFailedQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
-			.with(RoutingKeys.PAYMENT_FAILED);
 	}
 }
