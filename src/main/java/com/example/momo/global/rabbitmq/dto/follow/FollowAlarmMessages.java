@@ -1,6 +1,6 @@
 package com.example.momo.global.rabbitmq.dto.follow;
 
-import com.example.momo.global.rabbitmq.dto.messagehub.AlarmMessageType;
+import com.example.momo.global.rabbitmq.constant.EventTypeNames;
 import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 
@@ -22,7 +22,7 @@ public class FollowAlarmMessages {
 	 * @param followerId 팔로우한 유저 ID
 	 * @param followerUserNickname 팔로우한 유저 닉네임
 	 */
-	@JsonTypeName(AlarmMessageType.FOLLOWED)
+	@JsonTypeName(EventTypeNames.FOLLOWED)
 	public record Followed(
 		Long followedId,
 		Long followerId,

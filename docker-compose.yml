@@ -6,6 +6,8 @@ version: "3.8"
 # environment -{변수}={값} -> 환경변수 설정
 
 services:
+
+  # Redis
   redis:
     image: redis:7
     container_name: redis
@@ -25,7 +27,7 @@ services:
     volumes:
       - /:/hostfs:ro  # hostmetrics
       - ./monitoring/otel-config.yml:/etc/otel/config.yaml
-    command: ["--config=/etc/otel/config.yaml"]
+    command: [ "--config=/etc/otel/config.yaml" ]
     depends_on:
       - jaeger-collector
 

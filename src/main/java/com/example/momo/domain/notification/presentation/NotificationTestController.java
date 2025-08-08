@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitmq.producer.HubMessageProducer;
 
 import lombok.RequiredArgsConstructor;
 
+//todo : 테스트 전용 컨트롤러. 삭제 예정
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/test/notification")
@@ -21,18 +23,16 @@ public class NotificationTestController {
 
 	private final HubMessageProducer publisher;
 
-	@PostMapping
-	public ResponseEntity<Void> testRabbitMQ(@RequestBody MeetingUpdateTestDto req) {
-		publisher.publish(new MeetingAlarmMessages.Update(
-			req.meetingId,
-			req.meetingName,
-			req.userIdList,
-			LocalDateTime.now()
-		));
-		return ResponseEntity.accepted().build(); // 202
+	@PostMapping("/test-message")
+	public ResponseEntity<Void> testRabbitMQ(@RequestBody MessageTestDto req) {
+
+		EventWrapper<MessageTestDto> eventWrapper = EventWrapper.of("payment.paid", req);
+
+		publisher.publishWrappper(eventWrapper);
+		return ResponseEntity.accepted().build();
 	}
 
-	@PostMapping("/redis-test")
+	@PostMapping("/test-redis")
 	public ResponseEntity<Void> testRedisAlarms(@RequestBody RedisTestDto dto) {
 		LocalDateTime baseTime = LocalDateTime.now().plusMinutes(dto.minute); // 10초 후 알림
 
@@ -59,11 +59,9 @@ public class NotificationTestController {
 	) {
 	}
 
-	public record MeetingUpdateTestDto(
-		Long meetingId,
-		String meetingName,
-		List<Long> userIdList,
-		LocalDateTime meetingDate
+	public record MessageTestDto(
+		Long userId,
+		Long paymentId
 	) {
 	}
 }
