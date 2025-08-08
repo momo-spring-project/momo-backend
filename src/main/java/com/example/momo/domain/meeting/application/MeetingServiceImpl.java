@@ -289,10 +289,22 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional(readOnly = true)
+	public ParticipantResponseDto getParticipant(Long meetingId, Long userId) {
+
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+
+		MeetingParticipant participant = meeting.getParticipants()
+			.stream()
+			.filter(p -> p.getUserId().equals(userId))
+			.findFirst()
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
+
+		return new ParticipantResponseDto(participant);
+	}
+
+	@Override
+	@Transactional(readOnly = true)
 	public List<ParticipantResponseDto> getParticipants(Long meetingId) {
-		if (!meetingRepository.existsById(meetingId)) {
-			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
-		}
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 
@@ -308,12 +320,14 @@ public class MeetingServiceImpl implements MeetingService {
 	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		if (meeting.getHostUserId().equals(userId)) {
+			throw new MeetingException(MeetingExceptionCode.HOST_CANCEL_FORBIDDEN);
+		}
 		isMeetingOpen(meeting);
 
 		UserClientResponseDto user = userClient.getUser(userId);
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
-		System.out.println("participant: " + participant.getId() + ", userId: " + userId + ", meetingId: " + meetingId);
 
 		// 6시간 전이면 취소/환불 불가
 		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
@@ -327,12 +341,12 @@ public class MeetingServiceImpl implements MeetingService {
 		// 참가비 있을 경우만 환불 요청 이벤트
 		if (meeting.getParticipationFee() != 0) {
 			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.CancelRefund(meetingId, meeting.getHostUserId(), userId, user.getNickname())
+				new ParticipantEvents.CancelRefund(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
 		}
 
 		meetingEventPublisher.publishParticipantEvents(
-			new ParticipantEvents.CancelNotification(meetingId, meeting.getHostUserId(), userId, user.getNickname())
+			new ParticipantEvents.CancelNotification(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 		);
 
 		return new ParticipantResponseDto(participant);
@@ -356,6 +370,10 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+
+		if (participant.getAttendanceStatus()) {
+			throw new MeetingException(MeetingExceptionCode.ALREADY_ATTENDED);
+		}
 
 		participant.updateAttendanceStatus();
 

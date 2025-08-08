@@ -5,7 +5,6 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.global.rabbitmq.constant.QueueNames;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
 import com.example.momo.global.webclient.user.UserClient;
