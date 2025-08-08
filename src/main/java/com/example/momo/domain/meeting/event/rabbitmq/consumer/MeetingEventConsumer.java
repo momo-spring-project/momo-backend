@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import com.rabbitmq.client.Channel;
 
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+
 // Dto 수정해야함
 
 @Slf4j
@@ -36,7 +38,7 @@ public class MeetingEventConsumer {
 
 	// 결제 완료 -> 참가자 추가
 	@Transactional
-	@RabbitListener(queues = QueueNames.PARTICIPANT_PAYMENT_SUCCESS, containerFactory = "participantListenerContainerFactory")
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCESS, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentSuccessEvent(PaymentEventMessage.Completed event, Channel channel, Message message) {
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 		log.info("[결제 완료 이벤트 수신] message: {}", event);
@@ -52,7 +54,7 @@ public class MeetingEventConsumer {
 
 	// 결제 실패 -> 인원 감소
 	@Transactional
-	@RabbitListener(queues = QueueNames.PARTICIPANT_PAYMENT_FAIL, containerFactory = "participantListenerContainerFactory")
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAIL, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentFailureEvent(PaymentEventMessage.Failed event, Channel channel, Message message) {
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 		log.info("[결제 실패 이벤트 수신] event: {}", event);
@@ -72,7 +74,7 @@ public class MeetingEventConsumer {
 	 * 작동하는지 확인 불가
 	 */
 	@Transactional
-	@RabbitListener(queues = QueueNames.DLQ_PARTICIPANT)
+	@RabbitListener(queues = DLQ_PARTICIPANT)
 	public void handleParticipantDlq(PaymentEventMessage message) {
 		try {
 			if (message instanceof PaymentEventMessage.Completed completed) {

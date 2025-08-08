@@ -1,6 +1,5 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +11,8 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
 @Slf4j
 @Component
@@ -34,7 +35,7 @@ public class MeetingEventPublisher {
 	// 일반 발행
 	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event) {
 		rabbitTemplate.convertAndSend(
-			RabbitExchangeNames.PARTICIPANT_EVENTS,
+			PARTICIPANT_EVENTS,
 			event.routingKey(),
 			event
 		);
@@ -54,7 +55,7 @@ public class MeetingEventPublisher {
 		});
 
 		rabbitTemplate.convertAndSend(
-			RabbitExchangeNames.PARTICIPANT_EVENTS,
+			PARTICIPANT_EVENTS,
 			event.routingKey(),
 			event,
 			correlationData
