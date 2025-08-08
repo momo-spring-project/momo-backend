@@ -2,31 +2,32 @@ package com.example.momo.domain.meeting.event.rabbitmq.config;
 
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.ExchangeBuilder;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 
 @Configuration
 public class MeetingExchangeConfig {
 
 	@Bean
-	public DirectExchange meetingDlxExchange() {
-		return ExchangeBuilder.directExchange("momo.dlx.meeting")
+	public TopicExchange meetingEventsExchange() {
+		return ExchangeBuilder.topicExchange(MEETING_EVENTS)
 			.durable(true)
 			.build();
 	}
 
 	@Bean
-	public DirectExchange meetingEventsExchange() {
-		return ExchangeBuilder.directExchange(RabbitExchangeNames.MEETING_EVENTS)
+	public TopicExchange participantEventsExchange() {
+		return ExchangeBuilder.topicExchange(PARTICIPANT_EVENTS)
 			.durable(true)
 			.build();
 	}
 
 	@Bean
-	public DirectExchange participantEventsExchange() {
-		return ExchangeBuilder.directExchange(RabbitExchangeNames.PARTICIPANT_EVENTS)
+	public DirectExchange participantDlxExchange() {
+		return ExchangeBuilder.directExchange(DLX_PARTICIPANT)
 			.durable(true)
 			.build();
 	}

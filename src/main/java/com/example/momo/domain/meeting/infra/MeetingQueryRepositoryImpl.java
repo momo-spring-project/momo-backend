@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.infra.meeting;
+package com.example.momo.domain.meeting.infra;
 
 import static com.example.momo.domain.meeting.domain.QMeeting.*;
 import static com.example.momo.domain.meeting.domain.QMeetingParticipant.*;
@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.example.momo.domain.meeting.domain.QMeetingParticipant;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -79,5 +80,31 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 			.join(meeting.participants, meetingParticipant)
 			.where(meetingParticipant.userId.eq(userId), meeting.isDeleted.isFalse())
 			.fetch();
+	}
+
+	@Override
+	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
+
+		QMeetingParticipant participant = QMeetingParticipant.meetingParticipant;
+
+		BooleanBuilder builder = new BooleanBuilder();
+
+		// meetingId 0이면 전체 조회
+		if(meetingId != 0L) {
+			builder.and(participant.meetingId.eq(meetingId));
+		}
+		// attendance null 이면 전체 조회
+		if(attendance != null) {
+			builder.and(participant.attendanceStatus.eq(attendance));
+		}
+
+		builder.and(participant.userId.eq(userId));
+		builder.and(participant.createdAt.after(createdAt));
+
+		return queryFactory
+			.select(participant.count())
+			.from(participant)
+			.where(builder)
+			.fetchOne();
 	}
 }

@@ -39,6 +39,7 @@ spring:
     port: 5672
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
+    publisher-confirm-type: correlated
 
   data:
     redis:
