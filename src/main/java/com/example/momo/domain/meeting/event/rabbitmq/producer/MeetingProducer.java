@@ -3,40 +3,73 @@ package com.example.momo.domain.meeting.event.rabbitmq.producer;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.meeting.event.rabbitmq.config.RabbitMQMeetingConfig;
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeetingProducer {
 
 	private final RabbitTemplate rabbitTemplate;
 
-	public void createMeetingMQ(MeetingMessageEvents.Create event) {
+	/**
+	 * 모임 생성 메세지 발행 메서드
+	 */
+	public void createMeetingMQ(MeetingAlarmMessages.Create event) {
+
+		log.info("[Meeting] - MeetingProducer.createMeetingMQ : Meeting Create 메세지 발행");
 
 		rabbitTemplate.convertAndSend(
-			RabbitMQMeetingConfig.EXCHANGE_NAME,
-			RabbitMQMeetingConfig.CREATED_ROUTING_KEY,
+			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
 			event
 		);
 	}
 
-	public void updateMeetingMQ(MeetingMessageEvents.Update event) {
+	/**
+	 * 모임 수정 메세지 발행 메서드
+	 */
+	public void updateMeetingMQ(MeetingAlarmMessages.Update event) {
+
+		log.info("[Meeting] - MeetingProducer.updateMeetingMQ : Meeting Update 메세지 발행");
 
 		rabbitTemplate.convertAndSend(
-			RabbitMQMeetingConfig.EXCHANGE_NAME,
-			RabbitMQMeetingConfig.UPDATED_ROUTING_KEY,
+			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
 			event
 		);
 	}
 
-	public void deleteMeetingMQ(MeetingMessageEvents.Delete event) {
+	/**
+	 * 모임 삭제 메세지 발행 메서드
+	 */
+	public void deleteMeetingMQ(MeetingAlarmMessages.Delete event) {
+
+		log.info("[Meeting] - MeetingProducer.deleteMeetingMQ : Meeting Delete 메세지 발행");
 
 		rabbitTemplate.convertAndSend(
-			RabbitMQMeetingConfig.EXCHANGE_NAME,
-			RabbitMQMeetingConfig.DELETED_ROUTING_KEY,
+			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
+			event
+		);
+	}
+
+	/**
+	 * 모임 삭제 시 참가자들 환불 메세지 발행 메서드
+	 */
+	public void deleteMeetingWithRefundsMQ(MeetingMessageEvents.Delete event) {
+
+		log.info("[Meeting] - MeetingProducer.deleteMeetingWithRefundsMQ : Meeting Delete 시 참가자 환불 메세지 발행");
+
+		rabbitTemplate.convertAndSend(
+			RabbitExchangeNames.MEETING_EVENTS,
+			RoutingKeys.MEETING_DELETE,
 			event
 		);
 	}

@@ -20,9 +20,14 @@ public class RoutingKeys {
 	public static final String PARTICIPANT_CANCEL_NOTIFICATION = "participant.canceled.notification";
 	public static final String PARTICIPANT_CANCEL_REFUND = "participant.canceled.refund";
 
+	public static final String MEETING_CREATE = "meeting.created";
+	public static final String MEETING_UPDATE = "meeting.updated";
+	public static final String MEETING_DELETE = "meeting.deleted";
+
 	// Payment 도메인 이벤트
 	public static final String PAYMENT_COMPLETED = "payment.completed";
 	public static final String PAYMENT_FAILED = "payment.failed";
 	public static final String PAYMENT_REFUNDED = "payment.refunded";
 	public static final String PAYMENT_DLQ = "payment.dlq";
+
 }
