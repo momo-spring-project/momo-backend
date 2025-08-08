@@ -28,7 +28,7 @@ public class RedisReminderService {
 	private final RedisReminderRepository redisReminderRepository;
 	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 
-	private void saveReminderMessage(MeetingReminderMessage message) {
+	public void saveReminderMessage(MeetingReminderMessage message) {
 		LocalDateTime meetingDate = message.getMeetingDate();
 		LocalDateTime now = LocalDateTime.now();
 
@@ -45,16 +45,16 @@ public class RedisReminderService {
 		// ZSET 에 score = meetingStartTime
 		Instant meetingTime = meetingDate.atZone(ZoneId.systemDefault()).toInstant();
 
-		redisReminderRepository.save(message, meetingTime);
+		trySaveReminderMessage(message, meetingTime);
 		log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
 			message.getUserId(), message.getMeetingId(), meetingDate);
 	}
 
-	public void trySaveReminderMessage(MeetingReminderMessage message) {
+	private void trySaveReminderMessage(MeetingReminderMessage message, Instant meetingTime) {
 		int maxAttempts = 3;
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				saveReminderMessage(message);
+				redisReminderRepository.save(message, meetingTime);
 				break;
 			} catch (Exception e) {
 				if (attempt == maxAttempts) {

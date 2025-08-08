@@ -31,9 +31,13 @@ public class MeetingParticipant extends BaseCreateEntity {
 	@Column(name = "attendance_status")
 	private Boolean attendanceStatus = false;
 
-	public MeetingParticipant(Long meetingId, Long userId) {
+	private MeetingParticipant(Long meetingId, Long userId) {
 		this.meetingId = meetingId;
 		this.userId = userId;
+	}
+
+	public static MeetingParticipant createParticipant(Long meetingId, Long userId) {
+		return new MeetingParticipant(meetingId, userId);
 	}
 
 	public void updateAttendanceStatus() {

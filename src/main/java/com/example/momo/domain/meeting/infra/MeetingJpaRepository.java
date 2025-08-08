@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.infra.meeting;
+package com.example.momo.domain.meeting.infra;
 
 import java.util.Optional;
 

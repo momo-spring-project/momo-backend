@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.infra.meeting;
+package com.example.momo.domain.meeting.infra;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,4 +15,6 @@ public interface MeetingQueryRepository {
 		Pageable pageable);
 
 	List<Meeting> findMeetingsByUserId(Long userId);
+
+	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
 }
