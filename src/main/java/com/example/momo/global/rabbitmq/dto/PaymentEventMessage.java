@@ -3,11 +3,11 @@ package com.example.momo.global.rabbitmq.dto;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-public class PaymentEventMessage {
+public interface PaymentEventMessage {
 
 	@Getter
 	@RequiredArgsConstructor
-	public static class Completed {
+	class Completed implements PaymentEventMessage {
 		private final Long paymentId;
 		private final Long userId;
 		private final Long meetingId;
@@ -17,7 +17,7 @@ public class PaymentEventMessage {
 
 	@Getter
 	@RequiredArgsConstructor
-	public static class Failed {
+	class Failed implements PaymentEventMessage {
 		private final Long paymentId;
 		private final Long userId;
 		private final Long meetingId;
@@ -27,7 +27,7 @@ public class PaymentEventMessage {
 
 	@Getter
 	@RequiredArgsConstructor
-	public static class Refunded {
+	class Refunded implements PaymentEventMessage {
 		private final Long paymentId;
 		private final Long userId;
 		private final Long meetingId;
