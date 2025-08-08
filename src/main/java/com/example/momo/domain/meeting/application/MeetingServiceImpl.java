@@ -44,6 +44,9 @@ import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -264,48 +267,72 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
-		String status;
-		String message;
-		boolean success;
+		String status = "";
+		String message = "";
+		boolean success = false;
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
 
 			boolean locked = false;
 			try {
+				// 락 획득
 				locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
 
 				if (locked) {
 					log.info("Lock acquired");
 					meeting.addMeetingParticipant();
-					entityManager.flush();
+
+					// 트랜잭션 커밋 이후에 락 해제
+					TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+						@Override
+						public void afterCommit() {
+							lock.unlock();
+						}
+
+						// 롤백, 커밋 실패한 경우 락 해제
+						@Override
+						public void afterCompletion(int status) {
+							if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
+								lock.unlock();
+							}
+						}
+					}
+					);
+					meeting.getParticipants().add(participant);
+					success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+						new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
+					);
 				} else {
 					log.info("Lock acquire failed");
 				}
 			} catch (InterruptedException e) {
+				// 인터럽트 발생 시 예외 발생 명시
 				Thread.currentThread().interrupt();
 				throw new RuntimeException("Thread interrupted while acquiring lock", e);
-			} finally {
+			} catch (Exception e) {
+				// 예외 발생 시 락 직접 해제
 				if (locked && lock.isHeldByCurrentThread()) {
 					lock.unlock();
 					log.info("Unlocked");
 				}
 			}
-			meeting.getParticipants().add(participant);
-
-			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
-			);
-
-			status = success ? "COMPLETED" : "FAILED";
-			message = success ? "참가 완료" : "요청 실패";
+			if (success) {
+				status = "COMPLETED";
+				message = "참가 완료";
+			}
 		} else {
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Register(meetingId, userId)
 			);
+			if (success) {
+				status = "PENDING";
+				message = "결제 요청 완료";
+			}
+		}
 
-			status = success ? "PENDING" : "FAILED";
-			message = success ? "결제 대기" : "요청 실패";
+		if (!success) {
+			throw new RuntimeException("Message publishing failed");
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
@@ -364,8 +391,9 @@ public class MeetingServiceImpl implements MeetingService {
 		meetingRepository.removeParticipant(participant.getId());
 
 		// 참가비 있을 경우만 환불 요청 이벤트
+		boolean success;
 		if (meeting.getParticipationFee() == 0) {
-			meetingEventPublisher.publishParticipantEvents(
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Cancel(
 					meetingId,
 					userId,
@@ -375,7 +403,7 @@ public class MeetingServiceImpl implements MeetingService {
 					0)
 			);
 		} else {
-			meetingEventPublisher.publishParticipantEvents(
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Cancel(
 					meetingId,
 					userId,
@@ -385,6 +413,9 @@ public class MeetingServiceImpl implements MeetingService {
 					meeting.getParticipationFee()
 				)
 			);
+		}
+		if (!success) {
+			throw new RuntimeException("Message publishing failed");
 		}
 
 		return new ParticipantResponseDto(participant);
