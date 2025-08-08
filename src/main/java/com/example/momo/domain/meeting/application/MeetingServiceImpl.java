@@ -2,7 +2,12 @@ package com.example.momo.domain.meeting.application;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import jakarta.persistence.EntityManager;
+import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,9 +43,9 @@ import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MeetingServiceImpl implements MeetingService {
@@ -54,6 +59,7 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingOutboxService meetingOutboxService;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final EntityManager entityManager;
+	private final RedissonClient redissonClient;
 
 	@Override
 	public Meeting getMeetingEntity(Long meetingId) {
@@ -229,10 +235,10 @@ public class MeetingServiceImpl implements MeetingService {
 	 * Meeting Participant Service
 	 */
 
-	// 낙관적 락 대신 분산락 고려중, 현재는 흐름만 구현
 	@Override
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
+		RLock lock = redissonClient.getLock("lock:meeting:free:" + meetingId);
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
 ;
@@ -265,7 +271,26 @@ public class MeetingServiceImpl implements MeetingService {
 		if (meeting.getParticipationFee() == 0) {
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
 
-			meeting.addMeetingParticipant();
+			boolean locked = false;
+			try {
+				locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+
+				if (locked) {
+					log.info("Lock acquired");
+					meeting.addMeetingParticipant();
+					entityManager.flush();
+				} else {
+					log.info("Lock acquire failed");
+				}
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new RuntimeException("Thread interrupted while acquiring lock", e);
+			} finally {
+				if (locked && lock.isHeldByCurrentThread()) {
+					lock.unlock();
+					log.info("Unlocked");
+				}
+			}
 			meeting.getParticipants().add(participant);
 
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(

@@ -3,20 +3,23 @@ package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 import com.example.momo.domain.meeting.application.MeetingReader;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import com.rabbitmq.client.Channel;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 
@@ -30,8 +33,8 @@ public class MeetingEventConsumer {
 	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final MeetingEventPublisher meetingEventPublisher;
-	private final MeetingRepository meetingRepository;
-	private final ObjectMapper objectMapper;
+	private final RedissonClient redissonClient;
+	private final EntityManager entityManager;
 
 	// 전체적으로 예외처리 어떻게할지
 
@@ -88,7 +91,14 @@ public class MeetingEventConsumer {
 	}
 
 	protected void processPaymentSuccessEvent(PaymentEventMessage.Completed event) {
+		RLock lock = redissonClient.getLock("lock:meeting:paid:" + event.getMeetingId());
+		boolean locked = false;
+
 		try {
+			locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+			if (!locked) {
+				throw new IllegalStateException("Lock acquire failed");
+			}
 			Long meetingId = event.getMeetingId();
 			Long userId = event.getUserId();
 
@@ -103,9 +113,17 @@ public class MeetingEventConsumer {
 			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
-		} catch (Exception e) {
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Thread interrupted while acquiring lock", e);
+		}
+		catch (Exception e) {
 			log.error(e.getMessage(), e);
 			throw e;
+		} finally {
+			if (locked && lock.isHeldByCurrentThread()) {
+				lock.unlock();
+			}
 		}
 	}
 

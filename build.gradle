@@ -92,6 +92,7 @@ dependencies {
 
     // Redis
     implementation "org.springframework.boot:spring-boot-starter-data-redis"
+    implementation("org.redisson:redisson:3.50.0")
 
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
