@@ -9,7 +9,6 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.example.momo.domain.meeting.event.rabbitmq.config.RabbitMQMeetingConfig;
 import com.example.momo.global.rabbitmq.constant.QueueNames;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
@@ -118,8 +117,8 @@ public class PaymentQueueConfig {
 	public Binding meetingDeletedBinding() {
 		return BindingBuilder
 			.bind(paymentMeetingDeletedQueue())
-			.to(new TopicExchange(RabbitMQMeetingConfig.EXCHANGE_NAME))       // meeting.exchange
-			.with(RabbitMQMeetingConfig.DELETED_ROUTING_KEY);                 // meeting.deleted
+			.to(new TopicExchange(RabbitExchangeNames.MEETING_EVENTS))       // meeting.exchange
+			.with(RoutingKeys.MEETING_DELETE);                 // meeting.deleted
 	}
 
 	/**

@@ -12,14 +12,13 @@ public class QueueNames {
 	public static final String NOTIFICATION_QUEUE_DLQ = "notification.queue.dlq";
 	public static final String NOTIFICATION_QUEUE_RETRY = "notification.queue.retry";
 
-	// Payment 관련 큐
 	public static final String PAYMENT_PARTICIPANT_REGISTER = "payment.participant.registered.queue";
 	public static final String PAYMENT_PARTICIPANT_CANCEL = "payment.participant.canceled.queue";
-	public static final String PAYMENT_MEETING_DELETED = "payment.meeting.deleted.queue";
-	public static final String PAYMENT_DLQ = "payment.dlq.queue";
 
 	public static final String PARTICIPANT_PAYMENT_SUCCESS = "participant.payment.success.queue";
 	public static final String PARTICIPANT_PAYMENT_FAIL = "participant.payment.fail.queue";
 	public static final String DLQ_PARTICIPANT = "participant.dlq";
-
+	public static final String PAYMENT_MEETING_DELETED = "payment.meeting.deleted.queue";
+	public static final String PAYMENT_DLQ = "payment.dlq.queue";
+	
 }
