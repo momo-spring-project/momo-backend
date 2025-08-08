@@ -19,10 +19,29 @@ public class UserRepositoryImpl implements UserRepository {
 	private final UserJpaRepository userJpaRepository;
 	private final UserQueryRepository userQueryRepository;
 
+	// ==================== 사용자 중복 및 존재 확인 ====================
+
 	@Override
 	public boolean isDuplicateNickname(String nickname, Long id) {
 		return userJpaRepository.existsByNicknameAndIdNot(nickname, id);
 	}
+
+	@Override
+	public boolean existsByEmail(String email) {
+		return userJpaRepository.existsByEmail(email);
+	}
+
+	@Override
+	public boolean existsByNickname(String nickname) {
+		return userJpaRepository.existsByNickname(nickname);
+	}
+
+	@Override
+	public List<Long> findExistingUserIds(List<Long> userIds) {
+		return userJpaRepository.findExistingUserIds(userIds);
+	}
+
+	// ==================== 사용자 조회 ====================
 
 	@Override
 	public List<User> findAllByIdInAndIsDeletedFalse(List<Long> userIds) {
@@ -30,8 +49,13 @@ public class UserRepositoryImpl implements UserRepository {
 	}
 
 	@Override
-	public List<Long> findExistingUserIds(List<Long> userIds) {
-		return userJpaRepository.findExistingUserIds(userIds);
+	public Optional<User> findByEmailAndIsDeletedFalse(String email) {
+		return userJpaRepository.findByEmailAndIsDeletedFalse(email);
+	}
+
+	@Override
+	public Optional<User> findByIdAndIsDeletedFalse(Long id) {
+		return userJpaRepository.findByIdAndIsDeletedFalse(id);
 	}
 
 	@Override
@@ -42,6 +66,8 @@ public class UserRepositoryImpl implements UserRepository {
 	) {
 		return userQueryRepository.getUsersByLocationAndCategory(categoryIds, latitude, longitude);
 	}
+
+	// ==================== 팔로우 기능 ====================
 
 	@Override
 	public Slice<User> findFollowingsByUserId(Long userId, Pageable pageable) {
@@ -58,29 +84,10 @@ public class UserRepositoryImpl implements UserRepository {
 		return userJpaRepository.deleteUserFollow(followerId, followingId);
 	}
 
-	// === Auth 도메인에서 사용 ===
-	@Override
-	public boolean existsByEmail(String email) {
-		return userJpaRepository.existsByEmail(email);
-	}
-
-	@Override
-	public boolean existsByNickname(String nickname) {
-		return userJpaRepository.existsByNickname(nickname);
-	}
+	// ==================== 저장 ====================
 
 	@Override
 	public void save(User user) {
 		userJpaRepository.save(user);
-	}
-
-	@Override
-	public Optional<User> findByEmailAndIsDeletedFalse(String email) {
-		return userJpaRepository.findByEmailAndIsDeletedFalse(email);
-	}
-
-	@Override
-	public Optional<User> findByIdAndIsDeletedFalse(Long id) {
-		return userJpaRepository.findByIdAndIsDeletedFalse(id);
 	}
 }

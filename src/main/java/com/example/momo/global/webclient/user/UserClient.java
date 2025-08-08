@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserClient {
 
 	private final WebClient webClient;
-	private static final String USER_SERVICE_BASE_URL = "/api/v2/users";
+	private static final String USER_SERVICE_BASE_URL = "/users";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 
 	/**
