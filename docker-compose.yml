@@ -18,7 +18,7 @@ services:
     volumes:
       - /:/hostfs:ro  # hostmetrics
       - ./monitoring/otel-config.yml:/etc/otel/config.yaml
-    command: ["--config=/etc/otel/config.yaml"]
+    command: [ "--config=/etc/otel/config.yaml" ]
     depends_on:
       - jaeger-collector
 
@@ -114,6 +114,14 @@ services:
       - "3000:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
     restart: unless-stopped
 
 volumes:

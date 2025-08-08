@@ -33,7 +33,7 @@ public class MessageProvider {
 	private final RedisReminderService redisReminderService;
 
 	private void saveReminder(Long userId, Long meetingId, String meetingName, LocalDateTime meetingDate) {
-		redisReminderService.trySaveReminderMessage(MeetingReminderMessage.builder()
+		redisReminderService.saveReminderMessage(MeetingReminderMessage.builder()
 			.userId(userId)
 			.meetingId(meetingId)
 			.meetingName(meetingName)
