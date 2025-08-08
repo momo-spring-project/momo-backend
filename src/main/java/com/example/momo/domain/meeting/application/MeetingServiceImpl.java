@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -27,25 +26,28 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.enums.PaymentEventType;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
@@ -61,8 +63,9 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingProducer meetingProducer;
 	private final MeetingOutboxService meetingOutboxService;
 	private final MeetingEventPublisher meetingEventPublisher;
-	private final EntityManager entityManager;
 	private final RedissonClient redissonClient;
+	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
+	private final ObjectMapper objectMapper;
 
 	@Override
 	public Meeting getMeetingEntity(Long meetingId) {
@@ -88,13 +91,15 @@ public class MeetingServiceImpl implements MeetingService {
 
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
 
-		// TODO : 기존 DTO 사용중이므로 메세지허브로 보내는 DTO 지운님 PR 병합 이후 수정 예정
-		meetingProducer.createMeetingMQ(new MeetingMessageEvents.Create(
+		meetingProducer.createMeetingMQ(new MeetingAlarmMessages.Create(
+			meeting.getHostUserId(),
 			meeting.getId(),
-			request.getCategoryId(),
+			meeting.getTitle(),
+			meeting.getCategoryId(),
 			category.getName(),
 			meeting.getLatitude(),
-			meeting.getLongitude()
+			meeting.getLongitude(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(savedMeeting);
@@ -118,10 +123,11 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.updateMeeting(request);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-		meetingProducer.updateMeetingMQ(new MeetingMessageEvents.Update(
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
 			meeting.getId(),
 			meeting.getTitle(),
-			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(meeting);
@@ -153,6 +159,13 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.updateStatus(status);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
+		));
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -197,18 +210,45 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.delete();
+		List<Long> participants = meeting.getParticipants().stream().map(MeetingParticipant::getId).toList();
 
-		meetingProducer.deleteMeetingMQ(new MeetingMessageEvents.Delete(
+		// 모임 삭제 메세지 mq 발행
+		meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
+			meeting.getHostUserId(),
 			meeting.getId(),
 			meeting.getTitle(),
-			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+			participants
 		));
 
-		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
-			ElasticsearchEventType.DELETE);
-		meetingOutboxService.saveMeetingOutbox(outbox);
+		// 모임 삭제시 참가자들 환불 mq 발행
+		// 상태가 아직 진행중, 참가자가 존재 시 환불 이벤트 발행
+		if (!meeting.getParticipants().isEmpty() &&
+			meeting.getStatus().equals(MeetingStatus.IN_PROGRESS)) {
 
-		eventPublisher.publishEvent(new MeetingElasticEvents.Delete(meeting, outbox.getId()));
+			MeetingMessageEvents.Delete deleteEvent = new MeetingMessageEvents.Delete(
+				meeting.getId(),
+				meeting.getTitle(),
+				participants
+			);
+
+			try {
+				String eventPayload = objectMapper.writeValueAsString(deleteEvent);
+
+				MeetingPaymentOutbox paymentOutbox =
+					MeetingPaymentOutbox.create(PaymentEventType.MEETING_DELETE, meetingId, eventPayload);
+				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
+			} catch (Exception e) {
+				throw new MeetingException(MeetingExceptionCode.JSON_SERIALIZATION_ERROR);
+			}
+
+			eventPublisher.publishEvent(deleteEvent);
+		}
+
+		MeetingElasticsearchOutbox elasticsearchOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.DELETE);
+		meetingOutboxService.saveMeetingOutbox(elasticsearchOutbox);
+
+		eventPublisher.publishEvent(new MeetingElasticEvents.Delete(meeting, elasticsearchOutbox.getId()));
 	}
 
 	@Override

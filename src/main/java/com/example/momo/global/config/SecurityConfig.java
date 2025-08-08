@@ -83,7 +83,7 @@ public class SecurityConfig {
 				// 인증이 필요없는 공개 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/categories").hasRole("ADMIN")
 				.requestMatchers(HttpMethod.PATCH, "/categories/**").hasRole("ADMIN")
-				.requestMatchers("/firebase/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**")
+				.requestMatchers("/firebase/**", "/favicon.ico", "/css/**", "/js/**", "/images/**", "/.well-known/**","/actuator/**")
 				.permitAll()
 				.requestMatchers(
 					"/users/register",

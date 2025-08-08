@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import com.example.momo.global.exception.ErrorCode;
 
 public enum MeetingExceptionCode implements ErrorCode {
+	// 500
+	JSON_SERIALIZATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "JSON serialization failed"),
 	// 400
 	MEETING_IS_UNAVAILABLE(HttpStatus.BAD_REQUEST, "Meeting is unavailable"),
 
