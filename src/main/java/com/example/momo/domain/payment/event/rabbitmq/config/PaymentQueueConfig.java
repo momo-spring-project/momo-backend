@@ -98,7 +98,7 @@ public class PaymentQueueConfig {
 		return BindingBuilder
 			.bind(paymentParticipantCanceledQueue())
 			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL_REFUND);
+			.with(RoutingKeys.PARTICIPANT_CANCEL);
 	}
 
 	@Bean

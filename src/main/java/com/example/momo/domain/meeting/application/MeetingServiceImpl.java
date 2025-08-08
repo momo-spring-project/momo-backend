@@ -364,15 +364,28 @@ public class MeetingServiceImpl implements MeetingService {
 		meetingRepository.removeParticipant(participant.getId());
 
 		// 참가비 있을 경우만 환불 요청 이벤트
-		if (meeting.getParticipationFee() != 0) {
+		if (meeting.getParticipationFee() == 0) {
 			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.CancelRefund(meetingId, userId, meeting.getHostUserId(), user.getNickname())
+				new ParticipantEvents.Cancel(
+					meetingId,
+					userId,
+					meeting.getHostUserId(),
+					user.getNickname(),
+					false,
+					0)
+			);
+		} else {
+			meetingEventPublisher.publishParticipantEvents(
+				new ParticipantEvents.Cancel(
+					meetingId,
+					userId,
+					meeting.getHostUserId(),
+					user.getNickname(),
+					true,
+					meeting.getParticipationFee()
+				)
 			);
 		}
-
-		meetingEventPublisher.publishParticipantEvents(
-			new ParticipantEvents.CancelNotification(meetingId, userId, meeting.getHostUserId(), user.getNickname())
-		);
 
 		return new ParticipantResponseDto(participant);
 	}

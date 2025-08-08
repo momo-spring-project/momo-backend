@@ -31,27 +31,17 @@ public class ParticipantEvents {
 		}
 	}
 
-	public record CancelRefund(
+	public record Cancel(
 		Long meetingId,
 		Long userId,
 		Long hostUserId,
-		String participantNickname
+		String participantNickname,
+		Boolean refundRequired,
+		Integer amount
 	) implements ParticipantEvent {
 		@Override
 		public String routingKey() {
-			return RoutingKeys.PARTICIPANT_CANCEL_REFUND;
-		}
-	}
-
-	public record CancelNotification(
-		Long meetingId,
-		Long userId,
-		Long hostUserId,
-		String participantNickname
-	) implements ParticipantEvent {
-		@Override
-		public String routingKey() {
-			return RoutingKeys.PARTICIPANT_CANCEL_NOTIFICATION;
+			return RoutingKeys.PARTICIPANT_CANCEL;
 		}
 	}
 }

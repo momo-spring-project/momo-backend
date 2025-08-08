@@ -89,7 +89,8 @@ public class PaymentEventConsumer {
 	/**
 	 * ② 참가자 취소 이벤트 처리 - 개별 환불
 	 * Queue: payment.participant.canceled.queue
-	 * Event: ParticipantEvents.CancelRefund (meetingId, userId, hostUserId, participantNickname)
+	 * Event: ParticipantEvents.Cancel
+	 * (meetingId, userId, hostUserId, participantNickname, refundRequired, amount)
 	 *
 	 * Meeting에서 참가 취소 시 발행하는 이벤트
 	 * 환불 처리 후 payment.refunded 이벤트 발행
@@ -98,7 +99,7 @@ public class PaymentEventConsumer {
 		queues = PAYMENT_PARTICIPANT_CANCEL,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleParticipantCancelRefund(ParticipantEvents.CancelRefund event,
+	public void handleParticipantCancel(ParticipantEvents.Cancel event,
 		Channel channel,
 		Message message) {
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
@@ -107,6 +108,13 @@ public class PaymentEventConsumer {
 			event.meetingId(), event.userId(), event.participantNickname());
 
 		try {
+			if (!event.refundRequired()) {
+				log.warn("환불 필요 없음 - meetingId: {}, userId: {}",
+					event.meetingId(), event.userId());
+				channel.basicAck(deliveryTag, false);
+				return;
+			}
+
 			// 완료된 결제 조회
 			Payment payment = paymentRepository.findByMeetingIdAndUserIdAndStatus(
 					event.meetingId(), event.userId(), PaymentStatus.COMPLETED)
