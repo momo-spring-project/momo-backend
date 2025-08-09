@@ -16,15 +16,16 @@ spring:
       # 커넥션 풀 크기
       minimum-idle: 10              # 최소 유지 커넥션
       maximum-pool-size: 20         # 최대 커넥션 (개발/중간 규모에 적합)
+      pool-name: "MainHikariPool"   # 풀 이름 명시 (모니터링에 유용)
 
       # 타임아웃 설정
       connection-timeout: 20000     # 20초 (커넥션 대기 시간)
       idle-timeout: 600000          # 10분 (유휴 커넥션 유지 시간)
-      max-lifetime: 1800000         # 30분 (커넥션 최대 생존 시간)
 
-      # 모니터링 및 안정성
-      leak-detection-threshold: 30000 # 30초 (커넥션 누수 감지)
-      validation-timeout: 3000      # 3초 (커넥션 검증 시간)
+      # Actuator 연동 준비 (모니터링용)
+      max-lifetime: 1800000         # 30분 (커넥션 최대 생존 시간)
+      validation-timeout: 5000      # 5초 (커넥션 유효성 검사 타임아웃)
+      leak-detection-threshold: 300000  # 5분 (커넥션 누수 감지)
 
       # MySQL 최적화 설정
       data-source-properties:
@@ -71,6 +72,7 @@ spring:
         # SQL 로깅 (개발환경용)
         format_sql: true            # TODO: 운영단계에서는 false로 변경
         use_sql_comments: false
+        generate_statistics: false  # TODO: 운영에서는 false, 개발에서 성능 분석시만 true
 
         # 배치 처리 최적화 (QueryDSL 대량 처리에 유리)
         jdbc:
@@ -92,6 +94,7 @@ spring:
         query:
           in_clause_parameter_padding: true
           plan_cache_max_size: 128
+          fail_on_pagination_over_collection_fetch: true  # 컬렉션 페이징 에러 감지
 
     show-sql: true
 
@@ -109,6 +112,9 @@ spring:
     mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
     clean-disabled: false         # TODO: 운영단계에서는 true로 변경 -> 가장 중요
     baseline-on-migrate: true
+    fail-on-missing-locations: true # 마이그레이션 위치 누락시 실패
+    placeholder-replacement: false  # 플레이스홀더 비활성화 (보안)
+    sql-migration-suffixes: [ ".sql" ] # SQL 파일 확장자 명시
 
   messages:
     basename: validations, messages
