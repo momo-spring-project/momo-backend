@@ -9,116 +9,58 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.example.momo.global.rabbitmq.constant.QueueNames;
-import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
-import com.example.momo.global.rabbitmq.constant.RoutingKeys;
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.DLX_PARTICIPANT;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PAYMENT_EVENTS;
 
 @Configuration
 public class MeetingQueueConfig {
 
-	// Notification 배달 예정
+	// 참가자 Queue
 	@Bean
-	public Queue notificationParticipantJoinedQueue() {
-		return QueueBuilder.durable(QueueNames.NOTIFICATION_PARTICIPANT_JOIN)
+	public Queue participantPaymentSuccessQueue() {
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_SUCCESS)
+			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();
 	}
 
 	@Bean
-	public Queue notificationParticipantCanceledQueue() {
-		return QueueBuilder.durable(QueueNames.NOTIFICATION_PARTICIPANT_CANCEL)
+	public Queue participantPaymentFailQueue() {
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_FAIL)
+			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
+			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();
 	}
 
+	// 참가자 DLQ
 	@Bean
-	public Binding notificationParticipantJoinedBinding() {
-		return BindingBuilder.bind(notificationParticipantJoinedQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_JOIN);
-	}
-
-	@Bean
-	public Binding notificationParticipantCanceledBinding() {
-		return BindingBuilder.bind(notificationParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL_NOTIFICATION);
-	}
-	// ===========================
-	// Payment 이벤트 수신 Queue
-	// ===========================
-
-	/**
-	 * 결제 완료 이벤트 Queue
-	 * Payment에서 결제가 완료되면 참가자를 실제로 등록
-	 */
-	@Bean
-	public Queue meetingPaymentCompletedQueue() {
-		return QueueBuilder.durable("meeting.payment.completed.queue")
-			.withArgument("x-dead-letter-exchange", "momo.dlx.meeting")
-			.withArgument("x-dead-letter-routing-key", "meeting.dlq")
-			.build();
-	}
-
-	/**
-	 * 결제 실패 이벤트 Queue
-	 * Payment에서 결제가 실패하면 예약한 자리를 복구
-	 */
-	@Bean
-	public Queue meetingPaymentFailedQueue() {
-		return QueueBuilder.durable("meeting.payment.failed.queue")
-			.withArgument("x-dead-letter-exchange", "momo.dlx.meeting")
-			.withArgument("x-dead-letter-routing-key", "meeting.dlq")
-			.build();
-	}
-
-	/**
-	 * Meeting DLQ (Dead Letter Queue)
-	 */
-	@Bean
-	public Queue meetingDlq() {
-		return QueueBuilder.durable("meeting.dlq.queue")
+	public Queue participantDlq() {
+		return QueueBuilder.durable(DLQ_PARTICIPANT)
 			.withArgument("x-message-ttl", 604800000)  // 7일 후 자동 삭제
 			.build();
 	}
 
-	// ===========================
-	// Payment 이벤트 Bindings
-	// ===========================
-
-	/**
-	 * 결제 완료 이벤트 바인딩
-	 * Exchange: momo.payment.events (TopicExchange)
-	 * RoutingKey: payment.completed
-	 */
+	// 참가자 Binding
 	@Bean
-	public Binding meetingPaymentCompletedBinding() {
-		return BindingBuilder
-			.bind(meetingPaymentCompletedQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
-			.with(RoutingKeys.PAYMENT_COMPLETED);
+	public Binding participantPaymentSuccessBinding() {
+		return BindingBuilder.bind(participantPaymentSuccessQueue())
+			.to(new TopicExchange(PAYMENT_EVENTS))
+			.with("payment.completed"); // 이후에 글로벌 상수로 변경
 	}
 
-	/**
-	 * 결제 실패 이벤트 바인딩
-	 * Exchange: momo.payment.events (TopicExchange)
-	 * RoutingKey: payment.failed
-	 */
 	@Bean
-	public Binding meetingPaymentFailedBinding() {
-		return BindingBuilder
-			.bind(meetingPaymentFailedQueue())
-			.to(new TopicExchange(RabbitExchangeNames.PAYMENT_EVENTS))
-			.with(RoutingKeys.PAYMENT_FAILED);
+	public Binding participantPaymentFailBinding() {
+		return BindingBuilder.bind(participantPaymentFailQueue())
+			.to(new TopicExchange(PAYMENT_EVENTS))
+			.with("payment.failed"); // 이후에 글로벌 상수로 변경
 	}
 
-	/**
-	 * Meeting DLQ 바인딩
-	 * Bean으로 등록된 DLX를 주입받아 사용
-	 */
+	// 참가자 DLQ 바인딩
 	@Bean
-	public Binding meetingDlqBinding(DirectExchange meetingDlxExchange) {
-		return BindingBuilder
-			.bind(meetingDlq())
-			.to(meetingDlxExchange)
-			.with("meeting.dlq");
+	public Binding participantDlqBinding()  {
+		return BindingBuilder.bind(participantDlq())
+			.to(new DirectExchange(DLX_PARTICIPANT))
+			.with(DLQ_PARTICIPANT);
 	}
 }

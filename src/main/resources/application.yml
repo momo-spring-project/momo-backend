@@ -73,6 +73,8 @@ spring:
         format_sql: true            # TODO: 운영단계에서는 false로 변경
         use_sql_comments: false
         generate_statistics: false  # TODO: 운영에서는 false, 개발에서 성능 분석시만 true
+        session_factory:
+          statement_inspector: com.example.momo.global.monitoring.query.inspector.QueryCountInspector
 
         # 배치 처리 최적화 (QueryDSL 대량 처리에 유리)
         jdbc:
@@ -125,6 +127,7 @@ spring:
     port: 5672
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
+    publisher-confirm-type: correlated
 
   data:
     redis:

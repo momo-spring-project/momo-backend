@@ -12,7 +12,6 @@ import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.MessageType;
 import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitmq.dto.payment.PaymentAlarmMessages;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ public class MessageProvider {
 	private final RedisReminderService redisReminderService;
 
 	private void saveReminder(Long userId, Long meetingId, String meetingName, LocalDateTime meetingDate) {
-		redisReminderService.trySaveReminderMessage(MeetingReminderMessage.builder()
+		redisReminderService.saveReminderMessage(MeetingReminderMessage.builder()
 			.userId(userId)
 			.meetingId(meetingId)
 			.meetingName(meetingName)
@@ -114,19 +113,19 @@ public class MessageProvider {
 		return null;
 	}
 
-	public MessageDto processPaymentMessage(PaymentAlarmMessages.PaymentAlarmMessage paymentEvent) {
-		if (paymentEvent instanceof PaymentAlarmMessages.Paid event) {
-			String message = messageUtil.buildPaidMessage();
-			List<Long> userIdList = List.of(event.userId());
-			return new MessageDto(userIdList, event.paymentId(), MessageType.PAID,
-				message);
-		}
-		if (paymentEvent instanceof PaymentAlarmMessages.Refunded event) {
-			String message = messageUtil.buildPaidMessage();
-			List<Long> userIdList = List.of(event.userId());
-			return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,
-				message);
-		}
-		return null;
-	}
+	// public MessageDto processPaymentMessage(PaymentAlarmMessages.PaymentAlarmMessage paymentEvent) {
+	// 	if (paymentEvent instanceof PaymentAlarmMessages.Paid event) {
+	// 		String message = messageUtil.buildPaidMessage();
+	// 		List<Long> userIdList = List.of(event.userId());
+	// 		return new MessageDto(userIdList, event.paymentId(), MessageType.PAID,
+	// 			message);
+	// 	}
+	// 	if (paymentEvent instanceof PaymentAlarmMessages.Refunded event) {
+	// 		String message = messageUtil.buildPaidMessage();
+	// 		List<Long> userIdList = List.of(event.userId());
+	// 		return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,
+	// 			message);
+	// 	}
+	// 	return null;
+	// }
 }

@@ -22,21 +22,25 @@ import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
+import com.example.momo.domain.meeting.enums.PaymentEventType;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +58,8 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingOutboxService meetingOutboxService;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final EntityManager entityManager;
+	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
+	private final ObjectMapper objectMapper;
 
 	@Override
 	public Meeting getMeetingEntity(Long meetingId) {
@@ -74,15 +80,20 @@ public class MeetingServiceImpl implements MeetingService {
 			ElasticsearchEventType.SAVE);
 		meetingOutboxService.saveMeetingOutbox(outbox);
 
+		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+		meeting.getParticipants().add(participant);
+
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
 
-		// TODO : 기존 DTO 사용중이므로 메세지허브로 보내는 DTO 지운님 PR 병합 이후 수정 예정
-		meetingProducer.createMeetingMQ(new MeetingMessageEvents.Create(
+		meetingProducer.createMeetingMQ(new MeetingAlarmMessages.Create(
+			meeting.getHostUserId(),
 			meeting.getId(),
-			request.getCategoryId(),
+			meeting.getTitle(),
+			meeting.getCategoryId(),
 			category.getName(),
 			meeting.getLatitude(),
-			meeting.getLongitude()
+			meeting.getLongitude(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(savedMeeting);
@@ -106,10 +117,11 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.updateMeeting(request);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-		meetingProducer.updateMeetingMQ(new MeetingMessageEvents.Update(
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
 			meeting.getId(),
 			meeting.getTitle(),
-			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
 		));
 
 		return new MeetingResponseDto(meeting);
@@ -141,6 +153,13 @@ public class MeetingServiceImpl implements MeetingService {
 
 		meeting.updateStatus(status);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+
+		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
+			meeting.getId(),
+			meeting.getTitle(),
+			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
+			meeting.getMeetingDate()
+		));
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -185,18 +204,45 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		meeting.delete();
+		List<Long> participants = meeting.getParticipants().stream().map(MeetingParticipant::getId).toList();
 
-		meetingProducer.deleteMeetingMQ(new MeetingMessageEvents.Delete(
+		// 모임 삭제 메세지 mq 발행
+		meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
+			meeting.getHostUserId(),
 			meeting.getId(),
 			meeting.getTitle(),
-			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList()
+			participants
 		));
 
-		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
-			ElasticsearchEventType.DELETE);
-		meetingOutboxService.saveMeetingOutbox(outbox);
+		// 모임 삭제시 참가자들 환불 mq 발행
+		// 상태가 아직 진행중, 참가자가 존재 시 환불 이벤트 발행
+		if (!meeting.getParticipants().isEmpty() &&
+			meeting.getStatus().equals(MeetingStatus.IN_PROGRESS)) {
 
-		eventPublisher.publishEvent(new MeetingElasticEvents.Delete(meeting, outbox.getId()));
+			MeetingMessageEvents.Delete deleteEvent = new MeetingMessageEvents.Delete(
+				meeting.getId(),
+				meeting.getTitle(),
+				participants
+			);
+
+			try {
+				String eventPayload = objectMapper.writeValueAsString(deleteEvent);
+
+				MeetingPaymentOutbox paymentOutbox =
+					MeetingPaymentOutbox.create(PaymentEventType.MEETING_DELETE, meetingId, eventPayload);
+				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
+			} catch (Exception e) {
+				throw new MeetingException(MeetingExceptionCode.JSON_SERIALIZATION_ERROR);
+			}
+
+			eventPublisher.publishEvent(deleteEvent);
+		}
+
+		MeetingElasticsearchOutbox elasticsearchOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.DELETE);
+		meetingOutboxService.saveMeetingOutbox(elasticsearchOutbox);
+
+		eventPublisher.publishEvent(new MeetingElasticEvents.Delete(meeting, elasticsearchOutbox.getId()));
 	}
 
 	@Override
@@ -231,13 +277,17 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
 
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+;
 		// 이미 참가했으면 예외처리
-		if (meetingRepository.existsByMeetingIdAndUserId(meetingId, userId)) {
+		if (meeting.getParticipants()
+			.stream()
+			.anyMatch(p -> p.getUserId().equals(userId))
+		) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
 		}
 
 		// 모임 활성화 확인
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
 		isMeetingOpen(meeting);
 
 		// 유저 자격 확인
@@ -251,31 +301,33 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
-		// 인원 추가
-		meeting.addMeetingParticipant();
-
+		String status;
+		String message;
+		boolean success;
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
-			MeetingParticipant participant = new MeetingParticipant(meeting.getId(), userId);
-			meetingRepository.saveParticipant(participant);
-			meetingEventPublisher.publishParticipantEvents(
+			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+
+			meeting.addMeetingParticipant();
+			meeting.getParticipants().add(participant);
+
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
 			);
-			return new ParticipantCreateResponseDto("COMPLETE", "참가 완료");
+
+			status = success ? "COMPLETED" : "FAILED";
+			message = success ? "참가 완료" : "요청 실패";
 		} else {
-			meetingEventPublisher.publishParticipantEvents(new ParticipantEvents.Register(meetingId, userId));
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+				new ParticipantEvents.Register(meetingId, userId)
+			);
+
+			status = success ? "PENDING" : "FAILED";
+			message = success ? "결제 대기" : "요청 실패";
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
-		return new ParticipantCreateResponseDto("PENDING", "결제 진행 중...");
-	}
-
-	@Override
-	public ParticipantResponseDto getParticipant(Long participantId) {
-
-		MeetingParticipant participant = meetingReader.getParticipantById(participantId);
-
-		return new ParticipantResponseDto(participant);
+		return new ParticipantCreateResponseDto(status, message);
 	}
 
 	@Override
@@ -285,7 +337,9 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND);
 		}
 
-		List<MeetingParticipant> participants = meetingRepository.findAllParticipantsByMeetingId(meetingId);
+		Meeting meeting = meetingReader.getMeetingById(meetingId);
+
+		List<MeetingParticipant> participants = meeting.getParticipants();
 
 		return participants.stream()
 			.map(ParticipantResponseDto::new)
@@ -302,6 +356,7 @@ public class MeetingServiceImpl implements MeetingService {
 		UserClientResponseDto user = userClient.getUser(userId);
 
 		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		System.out.println("participant: " + participant.getId() + ", userId: " + userId + ", meetingId: " + meetingId);
 
 		// 6시간 전이면 취소/환불 불가
 		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
@@ -309,8 +364,8 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		// 인원 감소, 참가자 삭제
-		entityManager.remove(participant);
 		meeting.removeMeetingParticipant();
+		meetingRepository.removeParticipant(participant.getId());
 
 		// 참가비 있을 경우만 환불 요청 이벤트
 		if (meeting.getParticipationFee() != 0) {
