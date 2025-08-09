@@ -1,5 +1,7 @@
 package com.example.momo.domain.messagehub.application.provider;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,8 +14,12 @@ import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.MessageType;
 import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -24,15 +30,26 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MessageProvider {
 
 	private final MessageFormatUtil messageUtil;
 	private final TargetUserProvider targetUserProvider;
 	private final RedisReminderService redisReminderService;
+	private final ObjectMapper objectMapper;
+
+	public MessageProvider(MessageFormatUtil messageUtil, TargetUserProvider targetUserProvider,
+		RedisReminderService redisReminderService) {
+		this.messageUtil = messageUtil;
+		this.targetUserProvider = targetUserProvider;
+		this.redisReminderService = redisReminderService;
+		this.objectMapper = new ObjectMapper()
+			.registerModule(new JavaTimeModule())
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
 
 	private void saveReminder(Long userId, Long meetingId, String meetingName, LocalDateTime meetingDate) {
-		redisReminderService.saveReminderMessage(MeetingReminderMessage.builder()
+		redisReminderService.createReminderMessage(MeetingReminderMessage.builder()
 			.userId(userId)
 			.meetingId(meetingId)
 			.meetingName(meetingName)
@@ -47,13 +64,13 @@ public class MessageProvider {
 			.build());
 	}
 
-	public MessageDto processMeetingMessage(MeetingAlarmMessages.MeetingAlarmMessage meetingEvent) {
-		if (meetingEvent instanceof MeetingAlarmMessages.Create event) {
+	public MessageDto processMeetingMessage(String type, Object object) {
+		if (MEETING_CREATE.equals(type)) {
+			MeetingAlarmMessages.Create event = objectMapper.convertValue(object, MeetingAlarmMessages.Create.class);
 			saveReminder(event.hostUserId(), event.meetingId(), event.meetingName(), event.meetingDate());
 			String message = messageUtil.buildCreateMessage(event.categoryName());
 			List<Long> userIdList = targetUserProvider.getUserIdList(event.categoryId(), event.latitude(),
 				event.longitude());
-
 			if (userIdList.isEmpty()) {
 				log.debug("모임을 추천할만한 인원이 없습니다.");
 				return null;
@@ -63,7 +80,8 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingAlarmMessages.Update event) {
+		if (MEETING_UPDATE.equals(type)) {
+			MeetingAlarmMessages.Update event = objectMapper.convertValue(object, MeetingAlarmMessages.Update.class);
 			for (Long userId : event.userIdList()) {
 				saveReminder(userId, event.meetingId(), event.meetingName(), event.meetingDate());
 			}
@@ -74,7 +92,8 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingAlarmMessages.Delete event) {
+		if (MEETING_DELETE.equals(type)) {
+			MeetingAlarmMessages.Delete event = objectMapper.convertValue(object, MeetingAlarmMessages.Delete.class);
 			for (Long userId : event.userIdList()) {
 				deleteReminder(userId, event.meetingId());
 			}
@@ -84,7 +103,8 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingAlarmMessages.Join event) {
+		if (MEETING_JOIN.equals(type)) {
+			MeetingAlarmMessages.Join event = objectMapper.convertValue(object, MeetingAlarmMessages.Join.class);
 			saveReminder(event.userId(), event.meetingId(), event.meetingName(), event.meetingDate());
 			String message = messageUtil.buildJoinMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
@@ -92,7 +112,8 @@ public class MessageProvider {
 				message);
 
 		}
-		if (meetingEvent instanceof MeetingAlarmMessages.Cancel event) {
+		if (MEETING_CANCEL.equals(type)) {
+			MeetingAlarmMessages.Cancel event = objectMapper.convertValue(object, MeetingAlarmMessages.Cancel.class);
 			deleteReminder(event.userId(), event.meetingId());
 			String message = messageUtil.buildCancelMessage(event.participantNickname());
 			List<Long> userIdList = List.of(event.hostUserId());
@@ -103,8 +124,9 @@ public class MessageProvider {
 		return null;
 	}
 
-	public MessageDto processFollowMessage(FollowAlarmMessages.FollowAlarmMessage followEvent) {
-		if (followEvent instanceof FollowAlarmMessages.Followed event) {
+	public MessageDto processFollowMessage(String type, Object object) {
+		if (FOLLOWED.equals(type)) {
+			FollowAlarmMessages.Followed event = objectMapper.convertValue(object, FollowAlarmMessages.Followed.class);
 			String message = messageUtil.buildFollowedMessage(event.followerUserNickname());
 			List<Long> userIdList = List.of(event.followedId());
 			return new MessageDto(userIdList, event.followerId(), MessageType.FOLLOWED,
@@ -113,19 +135,23 @@ public class MessageProvider {
 		return null;
 	}
 
-	// public MessageDto processPaymentMessage(PaymentAlarmMessages.PaymentAlarmMessage paymentEvent) {
-	// 	if (paymentEvent instanceof PaymentAlarmMessages.Paid event) {
-	// 		String message = messageUtil.buildPaidMessage();
-	// 		List<Long> userIdList = List.of(event.userId());
-	// 		return new MessageDto(userIdList, event.paymentId(), MessageType.PAID,
-	// 			message);
-	// 	}
-	// 	if (paymentEvent instanceof PaymentAlarmMessages.Refunded event) {
-	// 		String message = messageUtil.buildPaidMessage();
-	// 		List<Long> userIdList = List.of(event.userId());
-	// 		return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,
-	// 			message);
-	// 	}
-	// 	return null;
-	// }
+	public MessageDto processPaymentMessage(String type, Object object) {
+		if (PAYMENT_COMPLETED.equals(type)) {
+			PaymentEventMessages.Completed event = objectMapper.convertValue(object,
+				PaymentEventMessages.Completed.class);
+			String message = messageUtil.buildPaidMessage();
+			List<Long> userIdList = List.of(event.userId());
+			return new MessageDto(userIdList, event.paymentId(), MessageType.PAID,
+				message);
+		}
+		if (PAYMENT_FAILED.equals(type)) {
+			PaymentEventMessages.Refunded event = objectMapper.convertValue(object,
+				PaymentEventMessages.Refunded.class);
+			String message = messageUtil.buildPaidMessage();
+			List<Long> userIdList = List.of(event.userId());
+			return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,
+				message);
+		}
+		return null;
+	}
 }

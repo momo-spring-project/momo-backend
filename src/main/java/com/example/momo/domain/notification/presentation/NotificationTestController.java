@@ -1,17 +1,22 @@
 package com.example.momo.domain.notification.presentation;
 
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.momo.global.rabbitmq.constant.EventTypeNames;
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitmq.producer.HubMessageProducer;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,15 +25,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @RequestMapping("/test/notification")
 public class NotificationTestController {
-
-	private final HubMessageProducer publisher;
+	private final RabbitTemplate rabbitTemplate;
 
 	@PostMapping("/test-message")
-	public ResponseEntity<Void> testRabbitMQ(@RequestBody MessageTestDto req) {
+	public ResponseEntity<Void> testRabbitMQ(@RequestBody MessageTestDto dto) {
 
-		EventWrapper<MessageTestDto> eventWrapper = EventWrapper.of("payment.paid", req);
+		EventWrapper<?> eventWrapper = EventWrapper.of(PAYMENT_COMPLETED, dto);
 
-		publisher.publishWrappper(eventWrapper);
+		publishWrapper(eventWrapper);
 		return ResponseEntity.accepted().build();
 	}
 
@@ -42,7 +46,7 @@ public class NotificationTestController {
 				i * 100L + 2,
 				i * 100L + 3
 			);
-			publisher.publish(new MeetingAlarmMessages.Update(
+			publish(new MeetingAlarmMessages.Update(
 				(long)i, // userId
 				"테스트 모임 " + i,
 				userIdList,
@@ -63,5 +67,22 @@ public class NotificationTestController {
 		Long userId,
 		Long paymentId
 	) {
+	}
+
+	public void publish(MeetingAlarmMessages.Update event) {
+		EventWrapper<?> eventWrapper = EventWrapper.of(EventTypeNames.MEETING_UPDATE, event);
+		rabbitTemplate.convertAndSend(
+			RabbitExchangeNames.MEETING_EVENTS,
+			RoutingKeys.MEETING_UPDATE,
+			eventWrapper
+		);
+	}
+
+	public <T> void publishWrapper(EventWrapper<T> event) {
+		rabbitTemplate.convertAndSend(
+			RabbitExchangeNames.PAYMENT_EVENTS,
+			RoutingKeys.PAYMENT_COMPLETED,
+			event
+		);
 	}
 }

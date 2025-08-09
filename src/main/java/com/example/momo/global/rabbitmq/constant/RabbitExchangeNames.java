@@ -6,12 +6,11 @@ public class RabbitExchangeNames {
 
 	//Message Hub 관련 exchange
 	public static final String MESSAGE_HUB_EVENTS = "momo.message-hub.events";
-	public static final String MESSAGE_HUB_EVENTS_DLX = "momo.message-hub.events.dlx";
-	public static final String MESSAGE_HUB_EVENTS_RETRY = "momo.message-hub.events.retry";
+	public static final String DLX_MESSAGE_HUB = "momo.dlx.message-hub";
 
 	//Notification 관련 exchange
 	public static final String NOTIFICATION_EVENTS = "momo.notification.events";
-	public static final String NOTIFICATION_EVENTS_DLX = "momo.notification.events.dlx";
+	public static final String DLX_NOTIFICATION = "momo.dlx.notification";
 	public static final String NOTIFICATION_EVENTS_RETRY = "momo.notification.events.retry";
 
 	// Meeting

@@ -5,9 +5,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
-import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
-import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
+import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,31 +24,42 @@ public class EventRoutingHandler {
 
 	private final MessageProvider messageProvider;
 
-	private final NotificationMessageProducer messagePublisher;
+	private final MessageHubProducer messagePublisher;
 
-	public void handleMessage(DomainAlarmMessage event) {
-		MessageDto dto = createMessageDto(event);
+	public void handleMessage(String type, Object object) {
+		MessageDto dto = createMessageDto(type, object);
 
 		if (dto == null) {
-			log.warn("MessageEvent 발행 시도 - 이벤트가 null입니다");
+			log.warn("MessageEvent 발행 실패");
 			return;
 		}
 		publishMessageEvent(dto);
 	}
 
-	private MessageDto createMessageDto(DomainAlarmMessage event) {
-		if (event instanceof MeetingAlarmMessages.MeetingAlarmMessage e) {
-			return messageProvider.processMeetingMessage(e);
-		}
-		// else if (event instanceof PaymentAlarmMessages.PaymentAlarmMessage e) {
-		// 	return messageProvider.processPaymentMessage(e);
-		// } else if (event instanceof FollowAlarmMessages.FollowAlarmMessage e) {
-		// 	return messageProvider.processFollowMessage(e);
-		// }
+	private MessageDto createMessageDto(String type, Object object) {
+		String domain = extractDomain(type).toLowerCase();
 
-		else {
-			return null;
+		switch (domain) {
+			case "meeting" -> {
+				return messageProvider.processMeetingMessage(type, object);
+			}
+			case "payment" -> {
+				return messageProvider.processPaymentMessage(type, object);
+			}
+			case "follow" -> {
+				return messageProvider.processFollowMessage(type, object);
+			}
+			default -> {
+				log.warn("지원하지 않는 이벤트 타입: type={}", type);
+				return null;
+			}
 		}
+
+	}
+
+	private String extractDomain(String type) {
+		int idx = type.indexOf('.');
+		return (idx > 0 ? type.substring(0, idx) : type).toLowerCase();
 	}
 
 	private void publishMessageEvent(MessageDto messageDto) {
@@ -81,4 +90,5 @@ public class EventRoutingHandler {
 			}
 		}
 	}
+
 }

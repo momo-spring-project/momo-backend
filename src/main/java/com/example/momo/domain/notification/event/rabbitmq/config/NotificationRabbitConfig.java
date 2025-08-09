@@ -4,25 +4,26 @@ import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.retry.RejectAndDontRequeueRecoverer;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 
-@EnableRabbit
 @Configuration
 public class NotificationRabbitConfig {
 
-	public static final int NOTIFICATION_TTL_MS = 10_000;
-	public static final int NOTIFICATION_RETRY_TTL_MS = 30_000;
+	public static final int NOTIFICATION_TTL_MS = 600_000;
+	public static final int NOTIFICATION_RETRY_TTL_MS = 0;
 
 	@Bean(name = "notificationFactory")
 	public SimpleRabbitListenerContainerFactory notificationMainFactory(
@@ -32,54 +33,44 @@ public class NotificationRabbitConfig {
 		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
 		factory.setMessageConverter(messageConverter);
+		factory.setConcurrentConsumers(3);
+		factory.setMaxConcurrentConsumers(10);
+		factory.setPrefetchCount(50);
+
+		factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		factory.setDefaultRequeueRejected(false);
+		RetryOperationsInterceptor retry = RetryInterceptorBuilder.stateless()
+			.maxAttempts(3)
+			.backOffOptions(200, 2.0, 5000)
+			.recoverer(new RejectAndDontRequeueRecoverer())
+			.build();
+		factory.setAdviceChain(retry);
 		return factory;
 	}
 
-	@Bean(name = "notificationQueue")
+	@Bean
 	public Queue notificationQueue() {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE)
-			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS_DLX)
+			.withArgument("x-dead-letter-exchange", DLX_NOTIFICATION)
 			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLX)
 			.withArgument("x-message-ttl", NOTIFICATION_TTL_MS)
 			.build();
 	}
 
-	@Bean(name = "notificationExchange")
+	@Bean
 	public TopicExchange notificationExchange() {
+
 		return new TopicExchange(NOTIFICATION_EVENTS);
 	}
 
-	@Bean(name = "notificationDlxExchange")
-	public TopicExchange notificationDlxExchange() {
-
-		return new TopicExchange(NOTIFICATION_EVENTS_DLX);
-	}
-
-	@Bean(name = "notificationDlq")
-	public Queue notificationDlq() {
-
-		return QueueBuilder.durable(NOTIFICATION_QUEUE_DLQ).build();
-	}
-
-	@Bean(name = "notificationDlqBinding")
-	public Binding notificationDlqBinding(
-		@Qualifier("notificationDlq") Queue dlq,
-		@Qualifier("notificationDlxExchange") TopicExchange dlx
-	) {
-		return BindingBuilder.bind(dlq).to(dlx).with(NOTIFICATION_SENT_DLX);
-	}
-
-	@Bean(name = "notificationBinding")
+	@Bean
 	public Binding notificationBinding(
-		@Qualifier("notificationQueue") Queue notificationQueue,
-		@Qualifier("notificationExchange") TopicExchange notificationExchange
 	) {
-		return BindingBuilder.bind(notificationQueue)
-			.to(notificationExchange)
-			.with(NOTIFICATION_SENT);
+		return BindingBuilder.bind(notificationQueue())
+			.to(new TopicExchange(MESSAGE_HUB_EVENTS))
+			.with(MESSAGE_HUB_ASSEMBLE);
 	}
 
-	// 재시도 교환기/큐/바인딩
 	@Bean
 	public TopicExchange notificationRetryExchange() {
 		return new TopicExchange(NOTIFICATION_EVENTS_RETRY);
@@ -88,9 +79,9 @@ public class NotificationRabbitConfig {
 	@Bean
 	public Queue notificationRetryQueue() {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE_RETRY)
-			.withArgument("x-message-ttl", NOTIFICATION_RETRY_TTL_MS) // 30초 지연 후
-			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS)  // 메인으로 복귀
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT) // 메인 라우팅키
+			.withArgument("x-message-ttl", NOTIFICATION_RETRY_TTL_MS)
+			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT)
 			.build();
 	}
 

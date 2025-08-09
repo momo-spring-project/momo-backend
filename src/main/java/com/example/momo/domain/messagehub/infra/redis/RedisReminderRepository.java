@@ -28,14 +28,14 @@ public class RedisReminderRepository {
 	private static final String ZSET_KEY = "reminder:meeting";
 	private static final String HASH_KEY = "reminder:meeting:data";
 
-	public void save(MeetingReminderMessage message, Instant notifyAt) {
-		// 1. 고유 식별자 키 생성 (예: userId:meetingId)
+	public void saveMessage(MeetingReminderMessage message, Instant notifyAt) {
+		// 고유 식별자 키 생성 (예: userId:meetingId)
 		String uniqueKey = message.getUserId() + ":" + message.getMeetingId();
 
-		// 2. ZSet에는 고유키를 score와 함께 저장
+		// ZSet 에는 고유키를 score 와 함께 저장
 		redisTemplate.opsForZSet().add(ZSET_KEY, uniqueKey, (double)notifyAt.toEpochMilli());
 
-		// 3. Hash에는 고유키로 전체 객체를 저장 (상세 데이터 관리)
+		// Hash 에는 고유키로 전체 객체를 저장 (상세 데이터 관리)
 		redisReminderTemplate.opsForHash().put(HASH_KEY, uniqueKey, message);
 	}
 

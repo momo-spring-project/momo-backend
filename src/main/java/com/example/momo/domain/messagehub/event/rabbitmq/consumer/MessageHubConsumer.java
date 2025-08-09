@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.handler.EventRoutingHandler;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,17 +21,14 @@ public class MessageHubConsumer {
 	@RabbitListener(
 		queues = MESSAGE_HUB_QUEUE,
 		containerFactory = "hubListenerContainerFactory")
-	public void consume(DomainAlarmMessage event) {
-		log.info("메세지 허브 리스너 접근 : {}", event);
-		eventRoutingHandler.handleMessage(event);
+	public <T> void consumeWrapper(EventWrapper<T> eventWrapper) {
 
-	}
-
-	@RabbitListener(
-		queues = MESSAGE_HUB_QUEUE,
-		containerFactory = "hubListenerContainerFactory")
-	public <T> void consumeWrapper(EventWrapper<T> event) {
-		log.info("메세지 허브 리스너 접근<T> : {}", event);
+		if (eventWrapper.type() == null || eventWrapper.data() == null) {
+			log.error("메세지 허브 리스너 접근 실패 - null");
+			return;
+		}
+		log.info("메세지 허브 리스너 접근 : {}", eventWrapper);
+		eventRoutingHandler.handleMessage(eventWrapper.type(), eventWrapper.data());
 
 	}
 

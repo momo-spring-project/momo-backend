@@ -29,12 +29,4 @@ public class NotificationRetryProducer {
 			}
 		);
 	}
-
-	public void publishToDlq(MessageHubNotificationMessage message) {
-		rabbitTemplate.convertAndSend(
-			NOTIFICATION_EVENTS_DLX,
-			NOTIFICATION_SENT_DLX,
-			message
-		);
-	}
 }

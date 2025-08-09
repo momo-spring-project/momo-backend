@@ -13,7 +13,7 @@ import com.example.momo.domain.messagehub.application.service.RedisReminderServi
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
 import com.example.momo.domain.messagehub.enums.MessageType;
-import com.example.momo.domain.messagehub.event.rabbitmq.producer.NotificationMessageProducer;
+import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ReminderPollingScheduler {
 	private final RedisReminderService redisReminderService;
-	private final NotificationMessageProducer hubPublisher;
+	private final MessageHubProducer hubPublisher;
 	private final MessageFormatUtil messageFormatUtil;
 
 	@Scheduled(fixedDelay = 60_000)

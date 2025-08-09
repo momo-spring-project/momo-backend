@@ -1,5 +1,6 @@
 package com.example.momo.global.rabbitmq.config;
 
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * - 도메인 전용 설정이 없을 경우 해당 Bean이 주입됨
  */
 @Slf4j
+@EnableRabbit
 @Configuration
 public class RabbitMQConfig {
 

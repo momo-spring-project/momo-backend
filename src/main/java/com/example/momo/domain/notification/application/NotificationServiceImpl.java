@@ -24,19 +24,20 @@ public class NotificationServiceImpl implements NotificationService {
 
 	private final NotificationRepository notificationRepository;
 
+	//외부 알림 저장 용도
 	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public NotificationResponseDto createNotification(NotificationRequestDto dto) {
 		try {
-			Notification notification = notificationRepository.save(dto.toEntity());
+			Notification notification = notificationRepository.saveNotification(dto.toEntity());
 			log.debug("알림 저장 완료: userId={}, meetingId={}, type={}, content={}",
 				dto.getUserId(), dto.getTargetId(), dto.getType(), dto.getContent());
 
 			return NotificationResponseDto.from(notification);
 		} catch (DataIntegrityViolationException e) {
-			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
+			log.warn("알림 수동 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
-			log.warn("알림 저장 실패: {}", e.getMessage(), e);
+			log.warn("알림 수동 저장 실패: {}", e.getMessage(), e);
 		}
 		return null;
 	}
@@ -45,7 +46,7 @@ public class NotificationServiceImpl implements NotificationService {
 	public Long createNotification(NotificationMessageDto dto) {
 
 		try {
-			Notification savedNotification = notificationRepository.save(Notification.builder()
+			Notification savedNotification = notificationRepository.saveNotification(Notification.builder()
 				.userId(dto.getUserId())
 				.targetId(dto.getTargetId())
 				.type(dto.getType())
@@ -56,7 +57,7 @@ public class NotificationServiceImpl implements NotificationService {
 
 			return savedNotification.getId();
 		} catch (DataIntegrityViolationException e) {
-			log.warn("DB 저장 실패 - 무결성 오류: {}", e.getMessage());
+			log.warn("알림 저장 실패 - 무결성 오류: {}", e.getMessage());
 		} catch (Exception e) {
 			log.warn("알림 저장 실패: {}", e.getMessage(), e);
 		}
