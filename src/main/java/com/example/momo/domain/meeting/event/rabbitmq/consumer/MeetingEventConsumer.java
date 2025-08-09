@@ -4,11 +4,13 @@ import com.example.momo.domain.meeting.application.MeetingReader;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
-import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-import jakarta.persistence.EntityManager;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
@@ -21,7 +23,9 @@ import com.rabbitmq.client.Channel;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.PARTICIPANT_JOIN;
 
 // Dto 수정해야함
 
@@ -34,20 +38,33 @@ public class MeetingEventConsumer {
 	private final UserClient userClient;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final RedissonClient redissonClient;
-	private final EntityManager entityManager;
+	private final ObjectMapper objectMapper;
 
-	// 전체적으로 예외처리 어떻게할지
+	/**
+	 * 이벤트 수신 과정
+	 * 1. EventWrapper<?> event 수신
+	 * 2. type(EventTypeNames) 확인
+	 * 3. JsonNode 로 변환
+	 * 4. json.data 의 필드값으로 조회해서 값 사용
+	 */
 
 	// 결제 완료 -> 참가자 추가
 	@Transactional
-	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCESS, containerFactory = "participantListenerContainerFactory")
-	public void handlePaymentSuccessEvent(PaymentEventMessage.Completed event, Channel channel, Message message) {
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
+	public void handlePaymentSuccessEvent(EventWrapper<?> event, Channel channel, Message message) {
+
+		if (!event.type().equals(PAYMENT_COMPLETED)) {
+			log.error("[참가자 이벤트 수신 오류] Required: 결제완료, Received: {}", event);
+			throw new RuntimeException("Wrong event type");
+		}
+
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 		log.info("[결제 완료 이벤트 수신] message: {}", event);
+
 		try {
 			processPaymentSuccessEvent(event);
 			channel.basicAck(deliveryTag, false);
-			log.info("[결제 완료 이벤트 처리 완료] message: {}", event);
+			log.info("[결제 완료 이벤트 처리 완료] event: {}", event);
 		} catch (Exception e) {
 			log.error("[결제 완료 이벤트 처리 실패] message: {}", event, e);
 			throw new RuntimeException(e);
@@ -56,10 +73,17 @@ public class MeetingEventConsumer {
 
 	// 결제 실패 -> 인원 감소
 	@Transactional
-	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAIL, containerFactory = "participantListenerContainerFactory")
-	public void handlePaymentFailureEvent(PaymentEventMessage.Failed event, Channel channel, Message message) {
+	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAILED, containerFactory = "participantListenerContainerFactory")
+	public void handlePaymentFailureEvent(EventWrapper<?> event, Channel channel, Message message) {
+
+		if (!event.type().equals(PAYMENT_FAILED)) {
+			log.error("[참가자 이벤트 수신 오류] Required: 결제실패, Received: {}", event);
+			throw new RuntimeException("Wrong event type");
+		}
+
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 		log.info("[결제 실패 이벤트 수신] event: {}", event);
+
 		try {
 			processPaymentFailureEvent(event);
 			channel.basicAck(deliveryTag, false);
@@ -77,31 +101,41 @@ public class MeetingEventConsumer {
 	 */
 	@Transactional
 	@RabbitListener(queues = DLQ_PARTICIPANT)
-	public void handleParticipantDlq(PaymentEventMessage message) {
+	public void handleParticipantDlq(EventWrapper<?> event) {
+		JsonNode json;
 		try {
-			if (message instanceof PaymentEventMessage.Completed completed) {
-				processPaymentSuccessEvent(completed);
-			} else if (message instanceof PaymentEventMessage.Failed failed) {
-				processPaymentFailureEvent(failed);
+			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
+		} catch (JsonProcessingException e) {
+			log.info("[참가자 DLQ 처리] 직렬화 오류");
+			throw new RuntimeException(e);
+		}
+		String type = json.get("type").asText();
+
+		try {
+			switch (type) {
+				case PAYMENT_COMPLETED -> processPaymentSuccessEvent(event);
+				case PAYMENT_FAILED -> processPaymentFailureEvent(event);
+				default -> log.error("[참가자 DLQ] 해당하는 이벤트가 없습니다");
 			}
 		} catch (Exception e) {
-			log.error("[Dlq 처리 실패] : message: {}", message);
+			log.error("[Dlq 처리 실패] : event: {}", event);
 			throw e;
 		}
 	}
 
-	protected void processPaymentSuccessEvent(PaymentEventMessage.Completed event) {
-		RLock lock = redissonClient.getLock("lock:meeting:paid:" + event.getMeetingId());
-		boolean locked = false;
+	protected void processPaymentSuccessEvent(EventWrapper<?> event) {
+		JsonNode json;
+		try {
+			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
+		} catch (JsonProcessingException e) {
+			log.info("[참가자 결제 완료 이벤트 처리] 직렬화 오류");
+			throw new RuntimeException(e);
+		}
+
+		Long meetingId = json.get("data").get("meetingId").asLong();
+		Long userId = json.get("data").get("userId").asLong();
 
 		try {
-			locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
-			if (!locked) {
-				throw new IllegalStateException("Lock acquire failed");
-			}
-			Long meetingId = event.getMeetingId();
-			Long userId = event.getUserId();
-
 			Meeting meeting = meetingReader.getMeetingById(meetingId);
 			UserClientResponseDto user = userClient.getUser(userId);
 
@@ -111,25 +145,29 @@ public class MeetingEventConsumer {
 
 			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+				MEETING_PARTICIPANT_JOIN,
+				PARTICIPANT_JOIN
 			);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new RuntimeException("Thread interrupted while acquiring lock", e);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 			throw e;
-		} finally {
-			if (locked && lock.isHeldByCurrentThread()) {
-				lock.unlock();
-			}
 		}
 	}
 
-	protected void processPaymentFailureEvent(PaymentEventMessage.Failed event) {
+	protected void processPaymentFailureEvent(EventWrapper<?> event) {
+		JsonNode json;
 		try {
-			Meeting meeting = meetingReader.getMeetingById(event.getMeetingId());
+			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
+		} catch (JsonProcessingException e) {
+			log.info("[참가자 결제 실패 이벤트 처리] 직렬화 오류");
+			throw new RuntimeException(e);
+		}
+
+		Long meetingId = json.get("data").get("meetingId").asLong();
+
+		try {
+			Meeting meeting = meetingReader.getMeetingById(meetingId);
 			meeting.removeMeetingParticipant();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

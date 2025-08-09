@@ -89,7 +89,7 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantRegisteredBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantRegisteredQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
 			.with(RoutingKeys.PARTICIPANT_REGISTER);
 	}
 
@@ -102,7 +102,7 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantCanceledBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
 			.with(RoutingKeys.PARTICIPANT_CANCEL);
 	}
 

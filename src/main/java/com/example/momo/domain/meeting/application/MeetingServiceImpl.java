@@ -2,8 +2,10 @@ package com.example.momo.domain.meeting.application;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -36,7 +38,7 @@ import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.utils.HaversineUtils;
@@ -49,6 +51,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
 @Slf4j
 @Service
@@ -284,7 +289,7 @@ public class MeetingServiceImpl implements MeetingService {
 		RLock lock = redissonClient.getLock("lock:meeting:free:" + meetingId);
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
-;
+		;
 		// 이미 참가했으면 예외처리
 		if (meeting.getParticipants()
 			.stream()
@@ -302,9 +307,46 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-		// 참가자 수 확인
-		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		// (분산락) 인원 추가
+		boolean locked = false;
+		try {
+			locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+
+			if (locked) {
+				log.info("Lock acquired");
+
+				// 참가자 수 확인
+				if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+					throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+				}
+				meeting.addMeetingParticipant();
+
+				// 트랜잭션 커밋 이후에 락 해제
+				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+					@Override
+					public void afterCommit() {
+						lock.unlock();
+					}
+
+					// 롤백, 커밋 실패한 경우 락 해제
+					@Override
+					public void afterCompletion(int status) {
+						if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
+							lock.unlock();
+						}
+					}
+				});
+			}
+		} catch (InterruptedException e) {
+			// 인터럽트 발생 시 예외 발생 명시
+			Thread.currentThread().interrupt();
+			throw new RuntimeException("Thread interrupted while acquiring lock", e);
+		} catch (Exception e) {
+			// 예외 발생 시 락 직접 해제
+			if (locked && lock.isHeldByCurrentThread()) {
+				lock.unlock();
+				log.info("Unlocked");
+			}
 		}
 
 		String status = "";
@@ -314,56 +356,23 @@ public class MeetingServiceImpl implements MeetingService {
 		if (meeting.getParticipationFee() == 0) {
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
 
-			boolean locked = false;
-			try {
-				// 락 획득
-				locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
-
-				if (locked) {
-					log.info("Lock acquired");
-					meeting.addMeetingParticipant();
-
-					// 트랜잭션 커밋 이후에 락 해제
-					TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-						@Override
-						public void afterCommit() {
-							lock.unlock();
-						}
-
-						// 롤백, 커밋 실패한 경우 락 해제
-						@Override
-						public void afterCompletion(int status) {
-							if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
-								lock.unlock();
-							}
-						}
-					}
-					);
-					meeting.getParticipants().add(participant);
-					success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-						new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname())
-					);
-				} else {
-					log.info("Lock acquire failed");
-				}
-			} catch (InterruptedException e) {
-				// 인터럽트 발생 시 예외 발생 명시
-				Thread.currentThread().interrupt();
-				throw new RuntimeException("Thread interrupted while acquiring lock", e);
-			} catch (Exception e) {
-				// 예외 발생 시 락 직접 해제
-				if (locked && lock.isHeldByCurrentThread()) {
-					lock.unlock();
-					log.info("Unlocked");
-				}
-			}
+			meeting.getParticipants().add(participant);
+			// 참가 완료 이벤트 발행
+			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+				MEETING_PARTICIPANT_JOIN,
+				PARTICIPANT_JOIN
+			);
 			if (success) {
 				status = "COMPLETED";
 				message = "참가 완료";
 			}
 		} else {
+			// 참가 신청 이벤트 발행
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-				new ParticipantEvents.Register(meetingId, userId)
+				new ParticipantEvents.Register(meetingId, userId),
+				MEETING_PARTICIPANT_REGISTER,
+				PARTICIPANT_REGISTER
 			);
 			if (success) {
 				status = "PENDING";
@@ -440,7 +449,9 @@ public class MeetingServiceImpl implements MeetingService {
 					meeting.getHostUserId(),
 					user.getNickname(),
 					false,
-					0)
+					0),
+				MEETING_PARTICIPANT_CANCEL,
+				PARTICIPANT_CANCEL
 			);
 		} else {
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
@@ -451,7 +462,9 @@ public class MeetingServiceImpl implements MeetingService {
 					user.getNickname(),
 					true,
 					meeting.getParticipationFee()
-				)
+				),
+				MEETING_PARTICIPANT_CANCEL,
+				PARTICIPANT_CANCEL
 			);
 		}
 		if (!success) {

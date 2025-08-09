@@ -19,7 +19,7 @@ public class MeetingQueueConfig {
 	// 참가자 Queue
 	@Bean
 	public Queue participantPaymentSuccessQueue() {
-		return QueueBuilder.durable(PARTICIPANT_PAYMENT_SUCCESS)
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_SUCCEED)
 			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
 			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();
@@ -27,7 +27,7 @@ public class MeetingQueueConfig {
 
 	@Bean
 	public Queue participantPaymentFailQueue() {
-		return QueueBuilder.durable(PARTICIPANT_PAYMENT_FAIL)
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_FAILED)
 			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
 			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();

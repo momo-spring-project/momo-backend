@@ -15,7 +15,7 @@ import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.rabbitmq.client.Channel;
 
