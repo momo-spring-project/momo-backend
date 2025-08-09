@@ -23,7 +23,7 @@ public class RoutingKeys {
 	public static final String MEETING_UPDATE = "meeting.updated";
 	public static final String MEETING_DELETE = "meeting.deleted";
 
-	// Payment 도메인 이벤트
+	// Payment 관련 key
 	public static final String PAYMENT_COMPLETED = "payment.completed";
 	public static final String PAYMENT_FAILED = "payment.failed";
 	public static final String PAYMENT_REFUNDED = "payment.refunded";
