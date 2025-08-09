@@ -3,6 +3,7 @@ package com.example.momo.global.webclient.user;
 import java.time.Duration;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,7 +13,6 @@ import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,10 +21,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class UserClient {
 
 	private final WebClient webClient;
+
+	public UserClient(@Qualifier("internalWebClient") WebClient webClient) {
+		this.webClient = webClient;
+	}
+
 	private static final String USER_SERVICE_BASE_URL = "/users";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
 

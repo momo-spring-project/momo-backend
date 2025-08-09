@@ -141,9 +141,11 @@ toss:
     client-key: ${TOSS_CLIENT_KEY}
     base-url: ${TOSS_BASE_URL}
 
+# application.yml (정말 필요한 것만)
 webclient:
   internal:
-    secret-key: ${WEBCLIENT_SECRET_KEY}
+    secret-key: ${WEBCLIENT_SECRET_KEY:default-secret-key}
+    base-url: ${WEBCLIENT_BASE_URL:http://localhost:8080}
 
 management:
   tracing:
