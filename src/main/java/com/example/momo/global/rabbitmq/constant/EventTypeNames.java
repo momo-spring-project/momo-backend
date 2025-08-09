@@ -11,7 +11,10 @@ public class EventTypeNames {
 	public static final String MEETING_JOIN = "meeting.join";
 	public static final String MEETING_CANCEL = "meeting.cancel";
 
-	public static final String PAYMENT_PAID = "payment.paid";
-	public static final String PAYMENT_REFUNDED = "payment.refunded";
 	public static final String FOLLOWED = "followed";
+
+	// Payment 이벤트 타입
+	public static final String PAYMENT_COMPLETED = "payment.completed";
+	public static final String PAYMENT_FAILED = "payment.failed";
+	public static final String PAYMENT_REFUNDED = "payment.refunded";
 }

@@ -20,15 +20,6 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 
 	List<Payment> findByUserId(Long userId);
 
-	@Query("SELECT p FROM Payment p WHERE " +
-		"(:meetingId IS NULL OR p.meetingId = :meetingId) AND " +
-		"(:userId IS NULL OR p.userId = :userId) AND " +
-		"(:status IS NULL OR p.status = :status)")
-	Page<Payment> searchPayments(@Param("meetingId") Long meetingId,
-		@Param("userId") Long userId,
-		@Param("status") PaymentStatus status,
-		Pageable pageable);
-
 	// 단일 조회 (unique constraint 때문에 Optional)
 	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
 
@@ -36,4 +27,24 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 
 	// 모임의 특정 상태 결제 목록 조회
 	List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status);
+
+	@Query("""
+		    SELECT p FROM Payment p
+		    WHERE p.userId = :userId
+		      AND (:status IS NULL OR p.status = :status)
+		""")
+	Page<Payment> searchMyPayments(@Param("userId") Long userId,
+		@Param("status") PaymentStatus status,
+		Pageable pageable);
+
+	//관리자용 조건 검색
+	// @Query("SELECT p FROM Payment p WHERE " +
+	// 	"(:meetingId IS NULL OR p.meetingId = :meetingId) AND " +
+	// 	"(:userId IS NULL OR p.userId = :userId) AND " +
+	// 	"(:status IS NULL OR p.status = :status)")
+	// Page<Payment> searchPayments(@Param("meetingId") Long meetingId,
+	// 	@Param("userId") Long userId,
+	// 	@Param("status") PaymentStatus status,
+	// 	Pageable pageable);
+
 }

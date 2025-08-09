@@ -23,11 +23,14 @@ public interface PaymentService {
 
 	List<PaymentResponseDto> getPaymentsByUserId(Long userId);
 
+	Page<PaymentResponseDto> getMyPayments(Long userId, PaymentStatus status, Pageable pageable);
+
 	boolean validateUserPayment(Long userId, Long meetingId);
 
-	Page<PaymentResponseDto> searchPayments(Long meetingId,
-		Long userId,
-		PaymentStatus status,
-		Pageable pageable);
+	//관리자 용 조회 메서드
+	// Page<PaymentResponseDto> searchPayments(Long meetingId,
+	// 	Long userId,
+	// 	PaymentStatus status,
+	// 	Pageable pageable);
 
 }

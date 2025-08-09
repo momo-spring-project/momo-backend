@@ -21,12 +21,14 @@ import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
-import com.example.momo.domain.payment.event.springEvent.PaymentEventDto;
+import com.example.momo.domain.payment.event.springEvent.PaymentEvents;
 import com.example.momo.domain.payment.exception.PaymentErrorCode;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.domain.payment.infra.toss.TossPaymentsConfig;
+import com.example.momo.global.rabbitmq.constant.EventTypeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
-import com.example.momo.global.rabbitmq.dto.PaymentEventMessage;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
 import com.example.momo.global.webclient.meeting.MeetingClient;
 import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.webclient.payment.dto.TossKeyInRequestDto;
@@ -119,9 +121,14 @@ public class PaymentServiceImpl implements PaymentService {
 
 			// Outbox 저장 및 도메인 이벤트 발행
 			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED);
-			eventPublisher.publishEvent(new PaymentEventMessage.Completed(
-				payment.getId(), payment.getUserId(), payment.getMeetingId(),
-				payment.getAmount(), outboxId
+
+			eventPublisher.publishEvent(new PaymentEvents.Completed(
+				payment.getId(),
+				payment.getUserId(),
+				payment.getMeetingId(),
+				payment.getAmount(),
+				orderId,
+				outboxId
 			));
 
 			log.info("결제 완료 - paymentId: {}, orderId: {}", payment.getId(), orderId);
@@ -133,9 +140,12 @@ public class PaymentServiceImpl implements PaymentService {
 
 			// Outbox 저장 및 도메인 이벤트 발행
 			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", RoutingKeys.PAYMENT_FAILED);
-			eventPublisher.publishEvent(new PaymentEventMessage.Failed(
-				payment.getId(), payment.getUserId(), payment.getMeetingId(),
-				e.getMessage(), outboxId
+			eventPublisher.publishEvent(new PaymentEvents.Failed(
+				payment.getId(),
+				payment.getUserId(),
+				payment.getMeetingId(),
+				e.getMessage(),
+				outboxId
 			));
 
 			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
@@ -179,9 +189,13 @@ public class PaymentServiceImpl implements PaymentService {
 
 		// Outbox 저장 및 도메인 이벤트 발행
 		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED);
-		eventPublisher.publishEvent(new PaymentEventMessage.Refunded(
-			payment.getId(), payment.getUserId(), payment.getMeetingId(),
-			payment.getAmount(), outboxId
+		eventPublisher.publishEvent(new PaymentEvents.Refunded(
+			payment.getId(),
+			payment.getUserId(),
+			payment.getMeetingId(),
+			payment.getAmount(),
+			request.getReason(),
+			outboxId
 		));
 
 		// 결제 레코드 삭제 (재결제 가능하도록)
@@ -192,16 +206,42 @@ public class PaymentServiceImpl implements PaymentService {
 
 	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey) {
 		try {
-			PaymentEventDto event = PaymentEventDto.builder()
-				.paymentId(payment.getId())
-				.userId(payment.getUserId())
-				.meetingId(payment.getMeetingId())
-				.amount(payment.getAmount())
-				.eventType(eventType)
-				.occurredAt(LocalDateTime.now())
-				.build();
+			Object eventMessage;
+			// 1) 이벤트 DTO 구성 (outboxId는 헤더로 보내므로 DTO 필드는 null로 둬도 됨)
+			switch (eventType) {
+				case "PAYMENT_COMPLETED" -> eventMessage = new PaymentEventMessages.Completed(
+					payment.getId(), payment.getUserId(), payment.getMeetingId(),
+					payment.getAmount(),
+					payment.getOrderId() != null ? payment.getOrderId() : "", // orderId가 필요하면 저장
+					null
+				);
+				case "PAYMENT_FAILED" -> eventMessage = new PaymentEventMessages.Failed(
+					payment.getId(), payment.getUserId(), payment.getMeetingId(),
+					payment.getFailReason() != null ? payment.getFailReason() : "결제 실패",
+					null
+				);
+				case "PAYMENT_REFUNDED" -> eventMessage = new PaymentEventMessages.Refunded(
+					payment.getId(), payment.getUserId(), payment.getMeetingId(),
+					payment.getAmount(),
+					"환불 사유", // 필요 시 실제 사유로 교체
+					null
+				);
+				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
+			}
 
-			String payload = objectMapper.writeValueAsString(event);
+			// 2) EventTypeNames와 매핑
+			String wrapperType = switch (eventType) {
+				case "PAYMENT_COMPLETED" -> EventTypeNames.PAYMENT_COMPLETED; // "payment.completed"
+				case "PAYMENT_FAILED" -> EventTypeNames.PAYMENT_FAILED;    // "payment.failed"
+				case "PAYMENT_REFUNDED" -> EventTypeNames.PAYMENT_REFUNDED;  // "payment.refunded"
+				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
+			};
+
+			// 3) Wrapper로 감싸기
+			EventWrapper<Object> wrapper = EventWrapper.of(wrapperType, eventMessage);
+
+			// 4) Outbox payload에 Wrapper JSON 저장
+			String payload = objectMapper.writeValueAsString(wrapper);
 
 			PaymentOutbox outbox = PaymentOutbox.create(
 				eventType,
@@ -209,9 +249,8 @@ public class PaymentServiceImpl implements PaymentService {
 				routingKey,
 				payload
 			);
-
 			PaymentOutbox saved = outboxRepository.save(outbox);
-			log.debug("Outbox 이벤트 저장 - type: {}, paymentId: {}", eventType, payment.getId());
+			log.debug("Outbox 이벤트 저장(Wrapper) - type: {}, paymentId: {}", eventType, payment.getId());
 
 			return saved.getId();
 		} catch (Exception e) {
@@ -221,17 +260,10 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 	// ==================== 조회 메서드 ====================
 
-	/**
-	 * 관리자용 전체 조회 메서드
-	 */
 	@Override
 	@Transactional(readOnly = true)
-	public Page<PaymentResponseDto> searchPayments(Long meetingId,
-		Long userId,
-		PaymentStatus status,
-		Pageable pageable) {
-
-		Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
+	public Page<PaymentResponseDto> getMyPayments(Long userId, PaymentStatus status, Pageable pageable) {
+		Page<Payment> page = paymentRepository.searchMyPayments(userId, status, pageable);
 		return page.map(PaymentResponseDto::from);
 	}
 
@@ -279,6 +311,20 @@ public class PaymentServiceImpl implements PaymentService {
 		return paymentRepository.existsByMeetingIdAndUserIdAndStatus(
 			meetingId, userId, PaymentStatus.COMPLETED);
 	}
+
+	// /**
+	//  * 관리자용 전체 조회 메서드
+	//  */
+	// @Override
+	// @Transactional(readOnly = true)
+	// public Page<PaymentResponseDto> searchPayments(Long meetingId,
+	// 	Long userId,
+	// 	PaymentStatus status,
+	// 	Pageable pageable) {
+	//
+	// 	Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
+	// 	return page.map(PaymentResponseDto::from);
+	// }
 
 	// ==================== Private Helper 메서드 ====================
 
