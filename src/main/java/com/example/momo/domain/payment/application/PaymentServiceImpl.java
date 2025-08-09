@@ -260,17 +260,10 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 	// ==================== 조회 메서드 ====================
 
-	/**
-	 * 관리자용 전체 조회 메서드
-	 */
 	@Override
 	@Transactional(readOnly = true)
-	public Page<PaymentResponseDto> searchPayments(Long meetingId,
-		Long userId,
-		PaymentStatus status,
-		Pageable pageable) {
-
-		Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
+	public Page<PaymentResponseDto> getMyPayments(Long userId, PaymentStatus status, Pageable pageable) {
+		Page<Payment> page = paymentRepository.searchMyPayments(userId, status, pageable);
 		return page.map(PaymentResponseDto::from);
 	}
 
@@ -318,6 +311,20 @@ public class PaymentServiceImpl implements PaymentService {
 		return paymentRepository.existsByMeetingIdAndUserIdAndStatus(
 			meetingId, userId, PaymentStatus.COMPLETED);
 	}
+
+	// /**
+	//  * 관리자용 전체 조회 메서드
+	//  */
+	// @Override
+	// @Transactional(readOnly = true)
+	// public Page<PaymentResponseDto> searchPayments(Long meetingId,
+	// 	Long userId,
+	// 	PaymentStatus status,
+	// 	Pageable pageable) {
+	//
+	// 	Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
+	// 	return page.map(PaymentResponseDto::from);
+	// }
 
 	// ==================== Private Helper 메서드 ====================
 

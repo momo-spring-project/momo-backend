@@ -22,11 +22,6 @@ public interface PaymentRepository {
 
 	void delete(Payment payment);
 
-	Page<Payment> searchPayments(Long meetingId,
-		Long userId,
-		PaymentStatus status,
-		Pageable pageable);
-
 	// 단일 결제 조회 (unique constraint: meeting_id + user_id)
 	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
 
@@ -34,4 +29,13 @@ public interface PaymentRepository {
 
 	// 모임별 특정 상태의 모든 결제 조회 (모임 삭제 시 전체 환불용)
 	List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status);
+
+	Page<Payment> searchMyPayments(Long userId, PaymentStatus status, Pageable pageable);
+
+	//관리자 용 조건 검색
+	// Page<Payment> searchPayments(Long meetingId,
+	// 	Long userId,
+	// 	PaymentStatus status,
+	// 	Pageable pageable);
+
 }
