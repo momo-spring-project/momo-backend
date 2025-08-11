@@ -15,11 +15,9 @@ import com.example.momo.domain.messagehub.enums.MessageType;
 import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -30,23 +28,13 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class MessageProvider {
 
 	private final MessageFormatUtil messageUtil;
 	private final TargetUserProvider targetUserProvider;
 	private final RedisReminderService redisReminderService;
 	private final ObjectMapper objectMapper;
-
-	public MessageProvider(MessageFormatUtil messageUtil, TargetUserProvider targetUserProvider,
-		RedisReminderService redisReminderService) {
-		this.messageUtil = messageUtil;
-		this.targetUserProvider = targetUserProvider;
-		this.redisReminderService = redisReminderService;
-		this.objectMapper = new ObjectMapper()
-			.registerModule(new JavaTimeModule())
-			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-	}
 
 	private void saveReminder(Long userId, Long meetingId, String meetingName, LocalDateTime meetingDate) {
 		redisReminderService.createReminderMessage(MeetingReminderMessage.builder()
@@ -74,6 +62,7 @@ public class MessageProvider {
 			if (userIdList.isEmpty()) {
 				log.debug("모임을 추천할만한 인원이 없습니다.");
 				return null;
+
 			}
 			return new MessageDto(userIdList, event.meetingId(),
 				MessageType.MEETING_RECOMMENDED,
@@ -147,7 +136,7 @@ public class MessageProvider {
 		if (PAYMENT_FAILED.equals(type)) {
 			PaymentEventMessages.Refunded event = objectMapper.convertValue(object,
 				PaymentEventMessages.Refunded.class);
-			String message = messageUtil.buildPaidMessage();
+			String message = messageUtil.buildRefundedMessage();
 			List<Long> userIdList = List.of(event.userId());
 			return new MessageDto(userIdList, event.paymentId(), MessageType.REFUNDED,
 				message);

@@ -1,6 +1,6 @@
 package com.example.momo.domain.messagehub.infra.redis;
 
-import static com.example.momo.domain.messagehub.application.service.MessageKeyConverter.*;
+import static com.example.momo.domain.messagehub.application.util.ReminderKeyUtil.*;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -16,7 +16,6 @@ import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.application.dto.ScoreRangeDto;
-import com.example.momo.domain.messagehub.application.service.MessageKeyConverter;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,13 +26,12 @@ public class RedisReminderRepository {
 	private final StringRedisTemplate redisTemplate;
 	private final RedisTemplate<String, MeetingReminderMessage> redisReminderTemplate;
 
-	public void saveMessage(MeetingReminderMessage message, long meetingTime) {
-		// 고유 식별자 키 생성 (예: userId:meetingId)
-		String uniqueKey = MessageKeyConverter.toUniqueKey(message);
-
+	public void saveZsetMessage(String uniqueKey, long meetingTime) {
 		// ZSet 에는 고유키를 score 와 함께 저장
 		redisTemplate.opsForZSet().add(ZSET_KEY, uniqueKey, meetingTime);
+	}
 
+	public void saveHashMessage(String uniqueKey, MeetingReminderMessage message) {
 		// Hash 에는 고유키로 전체 객체를 저장 (상세 데이터 관리)
 		redisReminderTemplate.opsForHash().put(HASH_KEY, uniqueKey, message);
 	}
@@ -48,9 +46,10 @@ public class RedisReminderRepository {
 	public List<MeetingReminderMessage> findMessagesByKeys(Collection<String> uniqueKeys) {
 		List<Object> objects = redisReminderTemplate.opsForHash()
 			.multiGet(HASH_KEY, new ArrayList<>(uniqueKeys));
+
 		return objects.stream()
+			.map(MeetingReminderMessage::of)
 			.filter(Objects::nonNull)
-			.map(obj -> (MeetingReminderMessage)obj)
 			.collect(Collectors.toList());
 	}
 

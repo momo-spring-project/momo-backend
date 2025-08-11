@@ -9,9 +9,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
-import com.example.momo.domain.messagehub.application.service.MessageKeyConverter;
 import com.example.momo.domain.messagehub.application.service.RedisReminderService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
+import com.example.momo.domain.messagehub.application.util.ReminderKeyUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
 import com.example.momo.domain.messagehub.enums.MessageType;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
@@ -38,7 +38,7 @@ public class ReminderPollingScheduler {
 
 		Set<String> succeededMessageKeys = messages.stream()
 			.filter(this::publishReminderMessage)
-			.map(MessageKeyConverter::toUniqueKey)
+			.map(ReminderKeyUtil::toUniqueKey)
 			.collect(Collectors.toSet());
 
 		redisReminderService.deleteSentMessages(succeededMessageKeys);
@@ -74,7 +74,7 @@ public class ReminderPollingScheduler {
 
 		Set<String> succeededKeys = messages.stream()
 			.filter(this::publishTomorrowReminderMessage)
-			.map(MessageKeyConverter::toUniqueKey)
+			.map(ReminderKeyUtil::toUniqueKey)
 			.collect(Collectors.toSet());
 
 		if (!succeededKeys.isEmpty()) {
@@ -97,6 +97,7 @@ public class ReminderPollingScheduler {
 
 	@Scheduled(cron = "0 * 02-06 * * *", zone = "Asia/Seoul")
 	public void deleteOldRemindersByZSetScore() {
+
 		redisReminderService.deleteOldRemindersByDate(500);
 	}
 }

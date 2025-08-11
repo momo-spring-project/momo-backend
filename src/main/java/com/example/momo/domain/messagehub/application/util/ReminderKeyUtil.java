@@ -1,9 +1,9 @@
-package com.example.momo.domain.messagehub.application.service;
+package com.example.momo.domain.messagehub.application.util;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.enums.AlarmType;
 
-public class MessageKeyConverter {
+public class ReminderKeyUtil {
 
 	public static final String ZSET_KEY = "reminder:meeting";
 	public static final String HASH_KEY = "reminder:meeting:data";

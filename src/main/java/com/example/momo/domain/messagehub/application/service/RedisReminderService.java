@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.application.dto.ScoreRangeDto;
+import com.example.momo.domain.messagehub.application.util.ReminderKeyUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
 import com.example.momo.domain.messagehub.infra.redis.RedisReminderRepository;
 
@@ -52,12 +53,15 @@ public class RedisReminderService {
 	}
 
 	private void tryCreateReminderMessage(MeetingReminderMessage message, long meetingTime) {
+		String uniqueKey = ReminderKeyUtil.toUniqueKey(message);
 		int maxAttempts = 3;
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				redisReminderRepository.saveMessage(message, meetingTime);
+				redisReminderRepository.saveZsetMessage(uniqueKey, meetingTime);
+				redisReminderRepository.saveHashMessage(uniqueKey, message);
 				break;
 			} catch (Exception e) {
+				redisReminderRepository.deleteSentMessage(uniqueKey);
 				if (attempt == maxAttempts) {
 					log.error("[알림 예약 저장 실패] {}회 시도 - userId: {}, meetingId: {}",
 						attempt, message.getUserId(), message.getMeetingId());
@@ -111,13 +115,13 @@ public class RedisReminderService {
 
 		// === sentKey 체크 추가! ===
 
-		String sentKey = MessageKeyConverter.toSentKeyWithToday(today);
+		String sentKey = ReminderKeyUtil.toSentKeyWithToday(today);
 
 		return messages.stream()
 			.filter(Objects::nonNull)
 			.filter(msg -> {
-				String uniqueKey = MessageKeyConverter.toUniqueKey(msg);
-				String sentMark = MessageKeyConverter.toSentMark(uniqueKey, AlarmType.DAY);
+				String uniqueKey = ReminderKeyUtil.toUniqueKey(msg);
+				String sentMark = ReminderKeyUtil.toSentMark(uniqueKey, AlarmType.DAY);
 				return !redisReminderRepository.isSent(sentKey, sentMark);
 			})
 			.collect(Collectors.toList());
@@ -125,10 +129,10 @@ public class RedisReminderService {
 
 	public void updateSentMessages(Collection<String> uniqueKeys, AlarmType alarmType) {
 		String today = LocalDate.now(zone).format(DateTimeFormatter.BASIC_ISO_DATE);
-		String sentKey = MessageKeyConverter.toSentKeyWithToday(today);
+		String sentKey = ReminderKeyUtil.toSentKeyWithToday(today);
 
 		String[] markedMembers = uniqueKeys.stream()
-			.map(key -> MessageKeyConverter.toSentMark(key, alarmType))
+			.map(key -> ReminderKeyUtil.toSentMark(key, alarmType))
 			.toArray(String[]::new);
 
 		redisReminderRepository.markAsSent(sentKey, markedMembers);
@@ -136,11 +140,12 @@ public class RedisReminderService {
 
 	//단일 메세지 삭제
 	public void deleteSentMessage(MeetingReminderMessage message) {
-		String uniqueKey = MessageKeyConverter.toUniqueKey(message);
+		String uniqueKey = ReminderKeyUtil.toUniqueKey(message);
 		redisReminderRepository.deleteSentMessage(uniqueKey);
 	}
 
 	public void deleteSentMessages(Set<String> keys) {
+
 		redisReminderRepository.deleteSentMessages(keys);
 	}
 

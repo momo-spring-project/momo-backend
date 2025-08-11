@@ -33,4 +33,12 @@ public class MeetingReminderMessage {
 			.type(type)
 			.build();
 	}
+
+	public static MeetingReminderMessage of(Object obj) {
+		if (obj instanceof MeetingReminderMessage m) {
+			return m;
+		}
+		return null;
+	}
+
 }
