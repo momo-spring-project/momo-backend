@@ -8,6 +8,10 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 메시지 허브에서 사용하는 RabbitMQ 교환기 설정.
+ * 이벤트 전달용 TopicExchange와 DLX(Dead Letter Exchange)용 DirectExchange를 생성.
+ */
 @Configuration
 public class MessageHubExchangeConfig {
 

@@ -3,6 +3,10 @@ package com.example.momo.domain.messagehub.application.util;
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.enums.AlarmType;
 
+/**
+ * 모임 알림 관련 Redis 키를 생성·관리하는 유틸리티 클래스.
+ * ZSET/HASH 저장 키, 발송 마킹 키 및 멤버를 규칙에 맞게 변환하는 기능을 제공.
+ */
 public class ReminderKeyUtil {
 
 	public static final String ZSET_KEY = "reminder:meeting";

@@ -10,6 +10,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 
+/**
+ * 메시지 허브 전용 RabbitMQ 리스너 컨테이너 팩토리 설정.
+ * 수동 ACK 모드, 동시성 및 Prefetch 설정, 재시도 정책과 메시지 변환기를 구성.
+ */
 @Configuration
 public class MessageHubRabbitConfig {
 

@@ -1,8 +1,12 @@
 package com.example.momo.domain.messagehub.event.rabbitmq.config;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_CREATE;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_DELETE;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_UPDATE;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -13,6 +17,11 @@ import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 메시지 허브에서 처리할 RabbitMQ 큐와 바인딩 설정.
+ * 허브 메인 큐, DLQ(Dead Letter Queue), TTL 및 라우팅 키를 포함한
+ * 각 도메인 이벤트(Payment, Meeting, Participant)와의 바인딩을 구성.
+ */
 @Configuration
 public class MessageHubQueueConfig {
 
@@ -22,7 +31,7 @@ public class MessageHubQueueConfig {
 	public Queue hubQueue() {
 		return QueueBuilder.durable(MESSAGE_HUB_QUEUE)
 			.withArgument("x-dead-letter-exchange", DLX_MESSAGE_HUB)
-			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLX)
+			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLX_KEY)
 			.withArgument("x-message-ttl", HUB_QUEUE_TTL_MS)
 			.build();
 	}
@@ -39,7 +48,7 @@ public class MessageHubQueueConfig {
 	) {
 		return BindingBuilder.bind(hubDlq())
 			.to(new DirectExchange(DLX_MESSAGE_HUB))
-			.with(MESSAGE_HUB_ASSEMBLE_DLX);
+			.with(MESSAGE_HUB_ASSEMBLE_DLX_KEY);
 	}
 
 	@Bean
@@ -81,14 +90,14 @@ public class MessageHubQueueConfig {
 	public Binding participantJoinHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(PARTICIPANT_EVENTS))
-			.with(PARTICIPANT_JOIN);
+			.with(PARTICIPANT_JOIN_KEY);
 	}
 
 	@Bean
 	public Binding participantCancelHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(PARTICIPANT_EVENTS))
-			.with(PARTICIPANT_CANCEL_NOTIFICATION);
+			.with(PARTICIPANT_CANCEL_KEY);
 	}
 
 	// @Bean

@@ -11,6 +11,10 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+/**
+ * 모임 알림(30분 전/하루 전) 전송에 사용되는 메시지 DTO.
+ * Redis 저장·조회 및 메시지 허브 이벤트 변환에 활용.
+ */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

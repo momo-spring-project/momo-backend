@@ -52,7 +52,7 @@ public class NotificationRabbitConfig {
 	public Queue notificationQueue() {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE)
 			.withArgument("x-dead-letter-exchange", DLX_NOTIFICATION)
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLX)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLX_KEY)
 			.withArgument("x-message-ttl", NOTIFICATION_TTL_MS)
 			.build();
 	}
@@ -68,7 +68,7 @@ public class NotificationRabbitConfig {
 	) {
 		return BindingBuilder.bind(notificationQueue())
 			.to(new TopicExchange(MESSAGE_HUB_EVENTS))
-			.with(MESSAGE_HUB_ASSEMBLE);
+			.with(MESSAGE_HUB_ASSEMBLE_KEY);
 	}
 
 	@Bean
@@ -81,7 +81,7 @@ public class NotificationRabbitConfig {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE_RETRY)
 			.withArgument("x-message-ttl", NOTIFICATION_RETRY_TTL_MS)
 			.withArgument("x-dead-letter-exchange", NOTIFICATION_EVENTS)
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_KEY)
 			.build();
 	}
 
@@ -89,7 +89,7 @@ public class NotificationRabbitConfig {
 	public Binding notificationRetryBinding() {
 		return BindingBuilder.bind(notificationRetryQueue())
 			.to(notificationRetryExchange())
-			.with(NOTIFICATION_SENT_RETRY);
+			.with(NOTIFICATION_SENT_RETRY_KEY);
 	}
 
 }

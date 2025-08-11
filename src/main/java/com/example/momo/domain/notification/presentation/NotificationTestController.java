@@ -1,6 +1,6 @@
 package com.example.momo.domain.notification.presentation;
 
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -81,7 +81,7 @@ public class NotificationTestController {
 	public <T> void publishWrapper(EventWrapper<T> event) {
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.PAYMENT_EVENTS,
-			RoutingKeys.PAYMENT_COMPLETED,
+			RoutingKeys.PAYMENT_COMPLETED_KEY,
 			event
 		);
 	}

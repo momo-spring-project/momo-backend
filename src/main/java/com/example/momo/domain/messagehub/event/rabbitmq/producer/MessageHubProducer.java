@@ -13,6 +13,10 @@ import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMes
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * 메시지 허브 알림 이벤트를 RabbitMQ로 발행하는 프로듀서.
+ * 지정된 교환기와 라우팅 키를 사용해 EventWrapper 형태로 메시지를 전송.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -22,7 +26,7 @@ public class MessageHubProducer {
 	public void publish(MessageHubNotificationMessage message) {
 		rabbitTemplate.convertAndSend(
 			MESSAGE_HUB_EVENTS,
-			MESSAGE_HUB_ASSEMBLE,
+			MESSAGE_HUB_ASSEMBLE_KEY,
 			EventWrapper.of(
 				MESSAGE_HUB_SENT,
 				message

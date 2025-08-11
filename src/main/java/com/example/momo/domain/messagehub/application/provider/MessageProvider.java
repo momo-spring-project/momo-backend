@@ -21,10 +21,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 도메인 이벤트를 알림용 {@link MessageDto}로 변환하는 프로바이더 클래스입니다.
+ * 이벤트 타입별로 알림 메시지를 생성하고,
+ * 필요 시 Redis 에 모임 알림(30분 전/하루 전)을 저장·삭제하는 Provider.
+ *
  * <p>
- * 도메인 이벤트를 받아 알림 메시지를 생성하고,
- * 수신자 ID 및 알림 타입과 함께 {@link MessageDto} 객체로 구성합니다.
+ *
+ * 모임 관련 이벤트(생성, 수정, 삭제, 참가, 취소) 처리
+ * 팔로우 및 결제 이벤트 처리
+ * MessageDto 생성 및 메시지 허브 전송 준비
+ * RedisReminderService를 통한 알림 예약 데이터 관리
+ *
  */
 @Slf4j
 @Component
@@ -52,6 +58,7 @@ public class MessageProvider {
 			.build());
 	}
 
+	// 모임 관련 객체 처리
 	public MessageDto processMeetingMessage(String type, Object object) {
 		if (MEETING_CREATE.equals(type)) {
 			MeetingAlarmMessages.Create event = objectMapper.convertValue(object, MeetingAlarmMessages.Create.class);
@@ -113,6 +120,7 @@ public class MessageProvider {
 		return null;
 	}
 
+	// 팔로우 관련 객체 처리
 	public MessageDto processFollowMessage(String type, Object object) {
 		if (FOLLOWED.equals(type)) {
 			FollowAlarmMessages.Followed event = objectMapper.convertValue(object, FollowAlarmMessages.Followed.class);
@@ -124,6 +132,7 @@ public class MessageProvider {
 		return null;
 	}
 
+	// 결제 관련 객체 처리
 	public MessageDto processPaymentMessage(String type, Object object) {
 		if (PAYMENT_COMPLETED.equals(type)) {
 			PaymentEventMessages.Completed event = objectMapper.convertValue(object,

@@ -23,6 +23,10 @@ import com.example.momo.domain.messagehub.infra.redis.RedisReminderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Redis를 이용해 모임 알림 예약·조회·삭제·마킹을 처리하는 서비스.
+ * 30분 전/하루 전 알림의 저장, 발송 대상 조회, 발송 후 중복 방지 마킹, 오래된 데이터 정리 기능을 제공.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,6 +34,11 @@ public class RedisReminderService {
 	private final RedisReminderRepository redisReminderRepository;
 	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 
+	/**
+	 * 모임 알림 예약 데이터를 Redis에 저장.
+	 * 이미 시작된 모임은 저장하지 않으며,
+	 * ZSET의 score를 모임 시작 시간(epoch milli)으로 설정.
+	 */
 	public void createReminderMessage(MeetingReminderMessage message) {
 		LocalDateTime meetingDate = message.getMeetingDate();
 		LocalDateTime now = LocalDateTime.now();
@@ -52,6 +61,7 @@ public class RedisReminderService {
 			message.getUserId(), message.getMeetingId(), meetingDate);
 	}
 
+	//저장 재시도 후 실패시 로그 생성
 	private void tryCreateReminderMessage(MeetingReminderMessage message, long meetingTime) {
 		String uniqueKey = ReminderKeyUtil.toUniqueKey(message);
 		int maxAttempts = 3;
@@ -76,7 +86,12 @@ public class RedisReminderService {
 		}
 	}
 
-	/** 30분 전 알림 (기존 로직 유지) */
+	/**
+	 * 30분 전 알림 발송 대상 조회.
+	 * 현재 시각부터 30분 이내의 score 범위를 ZSET에서 조회해 uniqueKey 목록을 얻고,
+	 * 해당 키로 HASH에서 실제 알림 데이터를 한 번에 조회하여 반환.
+	 * @param maxCount : 한번에 가지고 오는 최대 조회 수
+	 */
 	public List<MeetingReminderMessage> getUpcomingMessages(int maxCount) {
 		Instant now = Instant.now();
 		log.debug("[30분전 알림] 실행 시간: {}", now);
@@ -95,8 +110,15 @@ public class RedisReminderService {
 		return redisReminderRepository.findMessagesByKeys(uniqueKeys);
 	}
 
-	/** 하루 전 알림 전용 — 내일 일정만 조회 */
+	/**
+	 * 하루 전 알림 발송 대상 조회.
+	 * 내일 0시부터 23:59:59까지의 score 범위를 ZSET에서 조회해 uniqueKey 목록을 얻고,
+	 * 해당 키로 HASH에서 실제 알림 데이터를 한 번에 조회.
+	 * 이미 발송 마킹(SET)에 등록된 알림은 제외하여 중복 발송을 방지.
+	 * @param maxCount : 한번에 가지고 오는 최대 조회 수
+	 */
 	public List<MeetingReminderMessage> getTomorrowMessages(int maxCount) {
+		//비교 대상 날짜 타입 생성
 		String today = LocalDate.now(zone).format(DateTimeFormatter.BASIC_ISO_DATE);
 		LocalDate tomorrow = LocalDate.now(zone).plusDays(1);
 		Instant startOfTomorrow = tomorrow.atStartOfDay(zone).toInstant();
@@ -104,19 +126,19 @@ public class RedisReminderService {
 
 		ScoreRangeDto rangeDto = ScoreRangeDto.of(startOfTomorrow, endOfTom, maxCount);
 
+		//키만 조회
 		Set<String> uniqueKeys = redisReminderRepository.findUniqueKeysByScoreRange(rangeDto);
 
 		if (uniqueKeys.isEmpty()) {
 			return List.of();
 		}
 
-		// Hash에서 uniqueKey로 실제 객체를 한 번에 조회
+		//객체 조회
 		List<MeetingReminderMessage> messages = redisReminderRepository.findMessagesByKeys(uniqueKeys);
-
-		// === sentKey 체크 추가! ===
 
 		String sentKey = ReminderKeyUtil.toSentKeyWithToday(today);
 
+		//Mark Key(이미 전송된 Key) 필터링 후 반환
 		return messages.stream()
 			.filter(Objects::nonNull)
 			.filter(msg -> {
@@ -127,6 +149,11 @@ public class RedisReminderService {
 			.collect(Collectors.toList());
 	}
 
+	/**
+	 * 발송된 알림을 SET에 마킹하여 중복 발송을 방지.
+	 * uniqueKey와 알림 타입을 조합해 멤버를 생성하고,
+	 * 오늘 날짜 기반의 sentKey에 저장 후 TTL(만료 시간)을 적용.
+	 */
 	public void updateSentMessages(Collection<String> uniqueKeys, AlarmType alarmType) {
 		String today = LocalDate.now(zone).format(DateTimeFormatter.BASIC_ISO_DATE);
 		String sentKey = ReminderKeyUtil.toSentKeyWithToday(today);
@@ -138,17 +165,24 @@ public class RedisReminderService {
 		redisReminderRepository.markAsSent(sentKey, markedMembers);
 	}
 
-	//단일 메세지 삭제
+	//단건 삭제
 	public void deleteSentMessage(MeetingReminderMessage message) {
 		String uniqueKey = ReminderKeyUtil.toUniqueKey(message);
 		redisReminderRepository.deleteSentMessage(uniqueKey);
 	}
 
+	//다건 삭제
 	public void deleteSentMessages(Set<String> keys) {
 
 		redisReminderRepository.deleteSentMessages(keys);
 	}
 
+	/**
+	 * 오래된 알림(2~8일 전)을 점수 범위로 조회해 일괄 삭제.
+	 * ZSET에서 uniqueKey를 조회한 뒤 ZSET/HASH 동시 삭제로 정리.
+	 * 한 번에 최대 maxCount건까지 처리하여 부하 제한.
+	 * 삭제 완료 후 삭제 건수를 로그로 기록.
+	 */
 	public void deleteOldRemindersByDate(int maxCount) {
 		LocalDate today = LocalDate.now();
 		Instant startOf = today.minusDays(8).atStartOfDay(zone).toInstant();
@@ -158,9 +192,8 @@ public class RedisReminderService {
 
 		Set<String> expiredKeys = redisReminderRepository.findUniqueKeysByScoreRange(rangeDto);
 
-		for (String expiredKey : expiredKeys) {
-			redisReminderRepository.deleteSentMessage(expiredKey);
-		}
+		redisReminderRepository.deleteSentMessages(expiredKeys);
+
 		log.info("[알림 만료] {}건 삭제 완료", expiredKeys.size());
 
 	}
