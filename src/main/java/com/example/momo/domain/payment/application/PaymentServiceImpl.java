@@ -63,51 +63,43 @@ public class PaymentServiceImpl implements PaymentService {
 	 * PENDING 결제가 있으면 재사용, 없으면 새로 생성
 	 */
 	@Override
+	@Transactional(noRollbackFor = PaymentException.class)
 	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
-		// 1. 테스트 환경 검증
-		validateTestKey();
-
-		// 2. 엔티티 조회
-		MeetingClientResponseDto meeting = getMeetingViaClient(request.getMeetingId());
-		UserClientResponseDto user = getUserViaClient(userId);
-		int amount = meeting.getParticipationFee();
-
-		// 3. 기존 결제 상태 확인
-		// 3-1. 이미 완료된 결제가 있으면 예외
-		if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
-			meeting.getId(), user.getId(), PaymentStatus.COMPLETED)) {
-			throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
-		}
-
-		// 3-2. PENDING 또는 FAILED 결제 조회
-		Payment payment = paymentRepository.findByMeetingIdAndUserId(
-				meeting.getId(), user.getId())
-			.filter(p -> p.getStatus() == PaymentStatus.PENDING || p.getStatus() == PaymentStatus.FAILED)
-			.orElseGet(() -> {
-				// PENDING이 없으면 새로 생성 (예외 케이스 대비)
-				Payment newPayment = Payment.createPending(user.getId(), meeting.getId(),
-					amount);
-				return paymentRepository.save(newPayment);
-			});
-
-		// FAILED 상태인 경우 PENDING으로 변경
-		if (payment.getStatus() == PaymentStatus.FAILED) {
-			payment = Payment.createPending(userId, meeting.getId(), amount);
-			payment = paymentRepository.save(payment);
-		}
-
-		// 4. 무료 모임인 경우 결제 차단
-		if (amount == 0) {
-			log.warn("무료 모임에 대한 결제 요청이 차단되었습니다. meetingId: {}, userId: {}",
-				meeting.getId(), user.getId());
-			throw new PaymentException(PaymentErrorCode.FREE_MEETING_PARTICIPATION_FAILED);
-		}
-
-		// 5. 유료 결제 처리
-		String orderId = "order-" + UUID.randomUUID();
+		Long meetingId = request.getMeetingId();
+		Payment payment = null;
 
 		try {
-			// Key-in API 호출
+			// 1) 사전 검증
+			validateTestKey();
+
+			// 2) 조회
+			MeetingClientResponseDto meeting = getMeetingViaClient(meetingId);
+			UserClientResponseDto user = getUserViaClient(userId);
+			int amount = meeting.getParticipationFee();
+
+			// 3) 이미 결제 완료 멱등 체크
+			if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
+				meeting.getId(), user.getId(), PaymentStatus.COMPLETED)) {
+				throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
+			}
+
+			// 4) PENDING/FAILED 결제 재사용(또는 생성)
+			payment = paymentRepository.findByMeetingIdAndUserId(meeting.getId(), user.getId())
+				.filter(p -> p.getStatus() == PaymentStatus.PENDING || p.getStatus() == PaymentStatus.FAILED)
+				.orElseGet(() -> paymentRepository.save(
+					Payment.createPending(user.getId(), meeting.getId(), amount)));
+
+			if (payment.getStatus() == PaymentStatus.FAILED) {
+				payment = paymentRepository.save(Payment.createPending(userId, meeting.getId(), amount));
+			}
+
+			// 5) 무료 모임 차단
+			if (amount == 0) {
+				throw new PaymentException(PaymentErrorCode.FREE_MEETING_PARTICIPATION_FAILED);
+			}
+
+			// 6) 결제 수행
+			String orderId = "order-" + UUID.randomUUID();
 			TossKeyInRequestDto tossRequest = buildKeyInRequest(request, meeting, amount, orderId);
 			TossPaymentResponseDto result = paymentClient.createTestKeyInPayment(tossRequest, orderId);
 
@@ -115,39 +107,37 @@ public class PaymentServiceImpl implements PaymentService {
 				throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 			}
 
-			// 결제 완료 처리
+			// 7) 완료 처리 + 성공 이벤트
 			LocalDateTime approvedAt = OffsetDateTime.parse(result.getApprovedAt()).toLocalDateTime();
 			payment.complete(result.getPaymentKey(), orderId, approvedAt);
 
-			// Outbox 저장 및 도메인 이벤트 발행
 			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED_KEY);
-
 			eventPublisher.publishEvent(new PaymentEvents.Completed(
-				payment.getId(),
-				payment.getUserId(),
-				payment.getMeetingId(),
-				payment.getAmount(),
-				orderId,
-				outboxId
-			));
+				payment.getId(), payment.getUserId(), payment.getMeetingId(), payment.getAmount(), orderId, outboxId));
 
 			log.info("결제 완료 - paymentId: {}, orderId: {}", payment.getId(), orderId);
 			return PaymentResponseDto.from(payment);
 
-		} catch (Exception e) {
-			// 결제 실패 처리
-			payment.fail(e.getMessage());
-
-			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", RoutingKeys.PAYMENT_FAILED_KEY);
+		} catch (PaymentException pe) {
+			// 비즈니스 예외도 '실패 이벤트' 발행
+			if (payment != null && payment.getStatus() != PaymentStatus.FAILED) {
+				payment.fail(pe.getMessage());
+			}
+			Long outboxId = saveFailedOutboxEvent(
+				payment != null ? payment.getId() : null, meetingId, userId, pe.getMessage());
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
-				payment.getId(),
-				payment.getUserId(),
-				payment.getMeetingId(),
-				e.getMessage(),
-				outboxId
-			));
+				payment != null ? payment.getId() : null, userId, meetingId, pe.getMessage(), outboxId));
+			throw pe; // 그대로 전파ㅂㅂ
 
+		} catch (Exception e) {
+			// 시스템/외부 예외도 '실패 이벤트' 발행
+			if (payment != null && payment.getStatus() != PaymentStatus.FAILED) {
+				payment.fail(e.getMessage());
+			}
+			Long outboxId = saveFailedOutboxEvent(
+				payment != null ? payment.getId() : null, meetingId, userId, e.getMessage());
+			eventPublisher.publishEvent(new PaymentEvents.Failed(
+				payment != null ? payment.getId() : null, userId, meetingId, e.getMessage(), outboxId));
 			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 		}
 	}
@@ -158,53 +148,76 @@ public class PaymentServiceImpl implements PaymentService {
 	 * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
 	 */
 	@Override
+	@Transactional(noRollbackFor = PaymentException.class)
 	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request) {
-		Payment payment = paymentRepository.findById(paymentId)
-			.orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+		Payment payment = null;
 
-		if (!payment.getUserId().equals(userId)) {
-			throw new PaymentException(PaymentErrorCode.UNAUTHORIZED_REFUND);
-		}
+		try {
 
-		// 환불 가능 상태 확인
-		if (payment.getStatus() != PaymentStatus.COMPLETED) {
-			throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);
-		}
+			payment = paymentRepository.findById(paymentId)
+				.orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
-		// 토스 환불 처리
-		if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
-			try {
-				paymentClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
-			} catch (HttpClientErrorException e) {
-				log.error("[TOSS] 환불 실패: {}", e.getResponseBodyAsString());
-				throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
+			if (!payment.getUserId().equals(userId)) {
+				throw new PaymentException(PaymentErrorCode.UNAUTHORIZED_REFUND);
 			}
+
+			// 환불 가능 상태 확인
+			if (payment.getStatus() != PaymentStatus.COMPLETED) {
+				throw new PaymentException(PaymentErrorCode.REFUND_NOT_ALLOWED);
+			}
+
+			// 토스 환불 처리
+			if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
+				try {
+					paymentClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
+				} catch (HttpClientErrorException e) {
+					log.error("[TOSS] 환불 실패: {}", e.getResponseBodyAsString());
+					throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
+				}
+			}
+
+			// 환불 상태로 변경
+			payment.refund();
+
+			// 환불 응답 생성
+			PaymentResponseDto response = PaymentResponseDto.from(payment);
+
+			// Outbox 저장 및 도메인 이벤트 발행
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED_KEY,
+				request.getReason());
+			eventPublisher.publishEvent(new PaymentEvents.Refunded(
+				payment.getId(),
+				payment.getUserId(),
+				payment.getMeetingId(),
+				payment.getAmount(),
+				request.getReason(),
+				outboxId
+			));
+
+			// 결제 레코드 삭제 (재결제 가능하도록)
+			paymentRepository.delete(payment);
+
+			return response;
+		} catch (PaymentException pe) {
+			log.warn("[환불 실패-비즈니스] paymentId={}, userId={}, msg={}",
+				payment != null ? payment.getId() : null, userId, pe.getMessage());
+			recordRefundFailure(payment, payment != null ? payment.getMeetingId() : null, pe.getMessage());
+			throw pe;
+			
+		} catch (Exception e) {
+			log.error("[환불 실패-시스템] paymentId={}, userId={}, err={}",
+				payment != null ? payment.getId() : null, userId, e.getMessage(), e);
+			recordRefundFailure(payment, payment != null ? payment.getMeetingId() : null, e.getMessage());
+			throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
+
 		}
-
-		// 환불 상태로 변경
-		payment.refund();
-
-		// 환불 응답 생성
-		PaymentResponseDto response = PaymentResponseDto.from(payment);
-
-		// Outbox 저장 및 도메인 이벤트 발행
-		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED_KEY);
-		eventPublisher.publishEvent(new PaymentEvents.Refunded(
-			payment.getId(),
-			payment.getUserId(),
-			payment.getMeetingId(),
-			payment.getAmount(),
-			request.getReason(),
-			outboxId
-		));
-
-		// 결제 레코드 삭제 (재결제 가능하도록)
-		paymentRepository.delete(payment);
-
-		return response;
 	}
 
 	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey) {
+		return saveOutboxEvent(payment, eventType, routingKey, null);
+	}
+
+	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey, String refundReason) {
 		try {
 			Object eventMessage;
 			// 1) 이벤트 DTO 구성 (outboxId는 헤더로 보내므로 DTO 필드는 null로 둬도 됨)
@@ -223,7 +236,7 @@ public class PaymentServiceImpl implements PaymentService {
 				case "PAYMENT_REFUNDED" -> eventMessage = new PaymentEventMessages.Refunded(
 					payment.getId(), payment.getUserId(), payment.getMeetingId(),
 					payment.getAmount(),
-					"환불 사유", // 필요 시 실제 사유로 교체
+					(refundReason != null && !refundReason.isBlank()) ? refundReason : "사유 미기재",
 					null
 				);
 				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
@@ -255,6 +268,35 @@ public class PaymentServiceImpl implements PaymentService {
 			return saved.getId();
 		} catch (Exception e) {
 			log.error("Outbox 저장 실패", e);
+			throw new RuntimeException("이벤트 저장 실패", e);
+		}
+	}
+
+	private Long saveFailedOutboxEvent(Long paymentId, Long meetingId, Long userId, String reason) {
+		try {
+			PaymentEventMessages.Failed msg = new PaymentEventMessages.Failed(
+				paymentId, userId, meetingId, (reason != null ? reason : "결제 실패"), null
+			);
+
+			EventWrapper<Object> wrapper = EventWrapper.of(EventTypeNames.PAYMENT_FAILED, msg);
+			String payload = objectMapper.writeValueAsString(wrapper);
+
+			// Payment 엔티티가 없을 수 있으니, aggregateId를 안전하게 구성
+			String aggregateId = (paymentId != null)
+				? String.valueOf(paymentId)
+				: String.format("meeting:%s/user:%s", String.valueOf(meetingId), String.valueOf(userId));
+
+			PaymentOutbox outbox = PaymentOutbox.create(
+				"PAYMENT_FAILED",
+				aggregateId,
+				RoutingKeys.PAYMENT_FAILED_KEY,
+				payload
+			);
+			PaymentOutbox saved = outboxRepository.save(outbox);
+			log.debug("Outbox 실패 이벤트 저장 - aggregateId: {}", aggregateId);
+			return saved.getId();
+		} catch (Exception e) {
+			log.error("Outbox 실패 이벤트 저장 실패", e);
 			throw new RuntimeException("이벤트 저장 실패", e);
 		}
 	}
@@ -382,5 +424,14 @@ public class PaymentServiceImpl implements PaymentService {
 			.customerEmail("test@example.com")
 			.customerName("테스트")
 			.build();
+	}
+
+	private void recordRefundFailure(Payment payment, Long meetingId, String errorMessage) {
+		Long paymentId = (payment != null ? payment.getId() : null);
+		Long userId = (payment != null ? payment.getUserId() : null);
+
+		// TODO: 필요 시 RefundFailureRecord 저장 로직으로 대체
+		log.error("[환불 실패 기록] paymentId={}, meetingId={}, userId={}, error={}",
+			paymentId, meetingId, userId, errorMessage);
 	}
 }

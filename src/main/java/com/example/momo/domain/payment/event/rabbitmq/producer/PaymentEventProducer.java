@@ -82,7 +82,7 @@ public class PaymentEventProducer {
 			// Publisher Confirm 대기
 			try {
 				CorrelationData.Confirm confirm = correlationData.getFuture()
-					.get(10, TimeUnit.SECONDS);
+					.get(5, TimeUnit.SECONDS);
 
 				if (confirm != null && confirm.isAck()) {
 					log.info("[Payment] Publisher Confirm ACK - outboxId={}", outboxId);
