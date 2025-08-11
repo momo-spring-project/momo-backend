@@ -26,9 +26,9 @@ public class RoutingKeys {
 	public static final String MEETING_DELETE = "meeting.deleted";
 
 	// Payment 관련 key
-	public static final String PAYMENT_COMPLETED_KEY = "payment.completed";
-	public static final String PAYMENT_FAILED_KEY = "payment.failed";
-	public static final String PAYMENT_REFUNDED_KEY = "payment.refunded";
+	public static final String PAYMENT_COMPLETED_KEY = "payment.completed.key";
+	public static final String PAYMENT_FAILED_KEY = "payment.failed.key";
+	public static final String PAYMENT_REFUNDED_KEY = "payment.refunded.key";
 	public static final String PAYMENT_DLQ = "payment.dlq";
 
 }
