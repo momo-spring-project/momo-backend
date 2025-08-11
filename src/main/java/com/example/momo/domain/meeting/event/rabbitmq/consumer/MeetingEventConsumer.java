@@ -6,14 +6,12 @@ import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -21,11 +19,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import com.rabbitmq.client.Channel;
 
-import java.util.concurrent.TimeUnit;
-
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.PARTICIPANT_JOIN;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.PARTICIPANT_JOIN_KEY;
 
 // Dto 수정해야함
 
@@ -102,14 +98,8 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = DLQ_PARTICIPANT)
 	public void handleParticipantDlq(EventWrapper<?> event) {
-		JsonNode json;
-		try {
-			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
-		} catch (JsonProcessingException e) {
-			log.info("[참가자 DLQ 처리] 직렬화 오류");
-			throw new RuntimeException(e);
-		}
-		String type = json.get("type").asText();
+
+		String type = event.type();
 
 		try {
 			switch (type) {
@@ -124,16 +114,11 @@ public class MeetingEventConsumer {
 	}
 
 	protected void processPaymentSuccessEvent(EventWrapper<?> event) {
-		JsonNode json;
-		try {
-			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
-		} catch (JsonProcessingException e) {
-			log.info("[참가자 결제 완료 이벤트 처리] 직렬화 오류");
-			throw new RuntimeException(e);
-		}
 
-		Long meetingId = json.get("data").get("meetingId").asLong();
-		Long userId = json.get("data").get("userId").asLong();
+		PaymentEventMessages.Completed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Completed.class);
+
+		Long meetingId = message.meetingId();
+		Long userId = message.userId();
 
 		try {
 			Meeting meeting = meetingReader.getMeetingById(meetingId);
@@ -147,7 +132,7 @@ public class MeetingEventConsumer {
 			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
 				MEETING_PARTICIPANT_JOIN,
-				PARTICIPANT_JOIN
+				PARTICIPANT_JOIN_KEY
 			);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
@@ -156,15 +141,10 @@ public class MeetingEventConsumer {
 	}
 
 	protected void processPaymentFailureEvent(EventWrapper<?> event) {
-		JsonNode json;
-		try {
-			json = objectMapper.readTree(objectMapper.writeValueAsString(event));
-		} catch (JsonProcessingException e) {
-			log.info("[참가자 결제 실패 이벤트 처리] 직렬화 오류");
-			throw new RuntimeException(e);
-		}
 
-		Long meetingId = json.get("data").get("meetingId").asLong();
+		PaymentEventMessages.Failed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Failed.class);
+
+		Long meetingId = message.meetingId();
 
 		try {
 			Meeting meeting = meetingReader.getMeetingById(meetingId);

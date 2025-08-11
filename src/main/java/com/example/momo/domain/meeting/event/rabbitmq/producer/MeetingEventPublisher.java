@@ -29,7 +29,7 @@ public class MeetingEventPublisher {
 	 * 발행하는 이벤트 목록 ( EventWrapper<?> 타입으로 발행 )
 	 * : Register, Join, Cancel
 	 * RoutingKeys 상수
-	 * : 글로벌 RoutingKeys 참고 ( 예시 : PARTICIPANT_JOIN )
+	 * : 글로벌 RoutingKeys 참고 ( 예시 : PARTICIPANT_JOIN_KEY )
 	 * <p>
 	 * 일반 발행 -> 유실 가능
 	 * 정상 전달 확인 발행 -> 유실되면 false 리턴, 유저 재시도
@@ -37,7 +37,7 @@ public class MeetingEventPublisher {
 
 	// 일반 발행
 	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
-		EventWrapper<?> wrapper = createParticipantEventWrapper(event, eventType);
+		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
 			routingKey,
@@ -58,10 +58,11 @@ public class MeetingEventPublisher {
 			}
 		});
 
+		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
 			routingKey,
-			event,
+			wrapper,
 			correlationData
 		);
 
@@ -72,14 +73,5 @@ public class MeetingEventPublisher {
 			log.error("confirm participant events time out", e);
 			return false;
 		}
-	}
-
-	//
-	public EventWrapper<?> createParticipantEventWrapper(ParticipantEvents.ParticipantEvent event, String eventType) {
-		return new EventWrapper<>(
-			UUID.randomUUID().toString(),
-			eventType,
-			event
-		);
 	}
 }

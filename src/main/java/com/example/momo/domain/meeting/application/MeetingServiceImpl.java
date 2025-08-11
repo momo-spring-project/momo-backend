@@ -2,10 +2,8 @@ package com.example.momo.domain.meeting.application;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -361,7 +359,7 @@ public class MeetingServiceImpl implements MeetingService {
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
 				MEETING_PARTICIPANT_JOIN,
-				PARTICIPANT_JOIN
+				PARTICIPANT_JOIN_KEY
 			);
 			if (success) {
 				status = "COMPLETED";
@@ -372,7 +370,7 @@ public class MeetingServiceImpl implements MeetingService {
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
 				new ParticipantEvents.Register(meetingId, userId),
 				MEETING_PARTICIPANT_REGISTER,
-				PARTICIPANT_REGISTER
+				PARTICIPANT_REGISTER_KEY
 			);
 			if (success) {
 				status = "PENDING";
@@ -451,7 +449,7 @@ public class MeetingServiceImpl implements MeetingService {
 					false,
 					0),
 				MEETING_PARTICIPANT_CANCEL,
-				PARTICIPANT_CANCEL
+				PARTICIPANT_CANCEL_KEY
 			);
 		} else {
 			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
@@ -464,7 +462,7 @@ public class MeetingServiceImpl implements MeetingService {
 					meeting.getParticipationFee()
 				),
 				MEETING_PARTICIPANT_CANCEL,
-				PARTICIPANT_CANCEL
+				PARTICIPANT_CANCEL_KEY
 			);
 		}
 		if (!success) {
