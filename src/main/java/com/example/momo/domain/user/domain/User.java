@@ -59,7 +59,7 @@ public class User extends BaseEntity {
 	private List<UserCategory> categories = new ArrayList<>();
 
 	// 내가 팔로잉을 하는 사람들의 리스트
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "follower_id")
 	private List<UserFollow> followings = new ArrayList<>();
 
