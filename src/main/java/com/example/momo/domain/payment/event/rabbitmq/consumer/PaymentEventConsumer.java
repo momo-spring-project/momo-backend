@@ -15,8 +15,10 @@ import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
 import lombok.RequiredArgsConstructor;
@@ -34,11 +36,12 @@ public class PaymentEventConsumer {
 
 	private final PaymentRepository paymentRepository;
 	private final PaymentService paymentService;
+	private final ObjectMapper objectMapper;
 
 	/**
 	 * 1. 참가자 등록 이벤트 처리 - 결제 생성
 	 * Queue: payment.participant.registered.queue
-	 * Event: ParticipantEvents.Register (meetingId, userId)
+	 * EventWrapper<ParticipantEvents.Register>를 수신
 	 *
 	 * Meeting에서 참가 신청 시 발행하는 이벤트
 	 * 결제 처리 후 payment.completed 또는 payment.failed 이벤트 발행
@@ -47,16 +50,22 @@ public class PaymentEventConsumer {
 		queues = PAYMENT_PARTICIPANT_REGISTER,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleParticipantRegister(ParticipantEvents.Register event,
+	public void handleParticipantRegister(EventWrapper<?> eventWrapper,
 		Channel channel,
 		Message message) {
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 
-		log.info("[결제 시작] 참가자 등록 이벤트 수신 - meetingId: {}, userId: {}",
-			event.meetingId(), event.userId());
-
 		try {
-			// 이미 결제 완료된 경우 체크 (중복 방지)
+			// EventWrapper의 data를 ParticipantEvents.Register로 변환
+			ParticipantEvents.Register event = objectMapper.convertValue(
+				eventWrapper.data(),
+				ParticipantEvents.Register.class
+			);
+
+			log.info("[결제 시작] 참가자 등록 이벤트 수신 - meetingId: {}, userId: {}",
+				event.meetingId(), event.userId());
+
+			// 이미 결제 완료된 경우 체크 (멱등성)
 			if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
 				event.meetingId(), event.userId(), PaymentStatus.COMPLETED)) {
 				log.warn("이미 결제 완료됨 – meetingId={}, userId={}",
@@ -65,10 +74,7 @@ public class PaymentEventConsumer {
 				return;
 			}
 
-			// 결제 실행 (Service에서 결제 생성 및 처리)
-			// createTestKeyInPayment 내부에서:
-			// - 성공 시: payment.completed 이벤트 발행
-			// - 실패 시: payment.failed 이벤트 발행
+			// 결제 실행
 			CardPaymentTestRequestDto request = CardPaymentTestRequestDto.builder()
 				.meetingId(event.meetingId())
 				.build();
@@ -80,16 +86,15 @@ public class PaymentEventConsumer {
 				event.meetingId(), event.userId());
 
 		} catch (Exception ex) {
-			log.error("[결제 처리 실패] meetingId={}, userId={}, error={}",
-				event.meetingId(), event.userId(), ex.getMessage());
-			handleMessageFailure(channel, deliveryTag, event.meetingId(), event.userId());
+			log.error("[결제 처리 실패] wrapper={}, error={}", eventWrapper, ex.getMessage(), ex);
+			handleMessageFailure(channel, deliveryTag, null, null);
 		}
 	}
 
 	/**
 	 * 2. 참가자 취소 이벤트 처리 - 개별 환불
 	 * Queue: payment.participant.canceled.queue
-	 * Event: ParticipantEvents.Cancel
+	 * EventWrapper<ParticipantEvents.Cancel>을 수신
 	 * (meetingId, userId, hostUserId, participantNickname, refundRequired, amount)
 	 *
 	 * Meeting에서 참가 취소 시 발행하는 이벤트
@@ -99,17 +104,23 @@ public class PaymentEventConsumer {
 		queues = PAYMENT_PARTICIPANT_CANCEL,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleParticipantCancel(ParticipantEvents.Cancel event,
+	public void handleParticipantCancel(EventWrapper<?> eventWrapper,
 		Channel channel,
 		Message message) {
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
 
-		log.info("[환불 시작] 참가자 취소 이벤트 수신 - meetingId: {}, userId: {}, nickname: {}",
-			event.meetingId(), event.userId(), event.participantNickname());
-
 		try {
+			// EventWrapper의 data를 ParticipantEvents.Cancel로 변환
+			ParticipantEvents.Cancel event = objectMapper.convertValue(
+				eventWrapper.data(),
+				ParticipantEvents.Cancel.class
+			);
+
+			log.info("[환불 시작] 참가자 취소 이벤트 수신 - meetingId: {}, userId: {}, nickname: {}",
+				event.meetingId(), event.userId(), event.participantNickname());
+
 			if (!event.refundRequired()) {
-				log.warn("환불 필요 없음 - meetingId: {}, userId: {}",
+				log.info("환불 불필요 (무료 모임) - meetingId: {}, userId: {}",
 					event.meetingId(), event.userId());
 				channel.basicAck(deliveryTag, false);
 				return;
@@ -128,10 +139,6 @@ public class PaymentEventConsumer {
 			}
 
 			// 환불 처리
-			// refundPayment 내부에서:
-			// 1. 토스 API 호출하여 환불
-			// 2. payment.refunded 이벤트 발행
-			// 3. 결제 레코드 삭제 (재결제 가능하도록)
 			RefundRequestDto refundRequest = new RefundRequestDto(
 				String.format("사용자 %s님의 참가 취소", event.participantNickname())
 			);
@@ -143,16 +150,15 @@ public class PaymentEventConsumer {
 				payment.getId(), event.meetingId(), event.userId(), payment.getAmount());
 
 		} catch (Exception ex) {
-			log.error("[환불 실패] meetingId={}, userId={}, error={}",
-				event.meetingId(), event.userId(), ex.getMessage());
-			handleMessageFailure(channel, deliveryTag, event.meetingId(), event.userId());
+			log.error("[환불 실패] wrapper={}, error={}", eventWrapper, ex.getMessage(), ex);
+			handleMessageFailure(channel, deliveryTag, null, null);
 		}
 	}
 
 	/**
 	 * 3. 모임 삭제 이벤트 처리 - 전체 참가자 환불
 	 * Queue: payment.meeting.deleted.queue
-	 * Event: MeetingMessageEvents.Delete (meetingId, meetingName, userIdList)
+	 * EventWrapper로 수신예정 (아직 모임삭제 쪽에서 반영이 안되어있어서 springevent로 발행되고 있는 상황)
 	 *
 	 * Meeting 삭제 시 발행하는 이벤트
 	 * 모든 참가자의 결제를 환불 처리
