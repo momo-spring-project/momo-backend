@@ -26,7 +26,7 @@ public class UserCategory {
 	@Column(name = "category_id", nullable = false)
 	private Integer categoryId;
 
-	public UserCategory(Long userId, Integer categoryId) {
+	UserCategory(Long userId, Integer categoryId) {
 		this.userId = userId;
 		this.categoryId = categoryId;
 	}

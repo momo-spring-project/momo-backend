@@ -91,6 +91,50 @@ public class User extends BaseEntity {
 		return user;
 	}
 
+	// === 하위 엔티티 관리 메서드 (User 애그리거트 책임) ===
+
+	public void addRating(Long reviewerId, Long meetingId, Integer ratingScore) {
+		UserRating rating = new UserRating(reviewerId, this.id, meetingId, ratingScore);
+		this.ratings.add(rating);
+	}
+
+	public void addFollowing(Long followingId) {
+		UserFollow userFollow = new UserFollow(this.id, followingId);
+		this.followings.add(userFollow);
+		this.incrementFollowingCount();
+	}
+
+	public void removeFollowing(Long followingId) {
+		this.followings.removeIf(follow -> follow.getFollowingId().equals(followingId));
+		this.decrementFollowingCount();
+	}
+
+	public void increaseFollowerCount() {
+		this.followerCount++;
+	}
+
+	public void decreaseFollowerCount() {
+		this.followerCount--;
+	}
+
+	public void incrementFollowingCount() {
+		this.followingCount++;
+	}
+
+	public void decrementFollowingCount() {
+		this.followingCount--;
+	}
+
+	public void updateCategories(List<Integer> categoryIds) {
+		this.categories.clear();
+		if (categoryIds != null && !categoryIds.isEmpty()) {
+			for (Integer categoryId : categoryIds) {
+				UserCategory category = new UserCategory(this.id, categoryId);
+				this.categories.add(category);
+			}
+		}
+	}
+
 	// === 업데이트 메서드들 ===
 	public void updateNickname(String nickname) {
 		this.nickname = nickname;
@@ -104,31 +148,8 @@ public class User extends BaseEntity {
 		this.score = score;
 	}
 
-	public void incrementFollowingCount() {
-		this.followingCount++;
-	}
-
-	public void decrementFollowingCount() {
-		this.followingCount--;
-	}
-
-	public void incrementFollowerCount() {
-		this.followerCount++;
-	}
-
-	public void decrementFollowerCount() {
-		this.followerCount--;
-	}
-
 	public void updateLocation(Double latitude, Double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
-	}
-
-	public void updateCategories(List<Integer> categoryIds) {
-		this.categories.clear();
-		categoryIds.forEach(categoryId ->
-			this.categories.add(new UserCategory(this.id, categoryId))  // userId 전달
-		);
 	}
 }

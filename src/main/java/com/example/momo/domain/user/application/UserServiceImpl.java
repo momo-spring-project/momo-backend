@@ -26,7 +26,6 @@ import com.example.momo.domain.user.application.dto.UserResponseDto;
 import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
-import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.event.springEvent.UserEvents;
@@ -357,11 +356,8 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 4. 팔로우 관계 생성 및 카운트 증가
-		UserFollow userFollow = new UserFollow(followerId, followingId);
-		follower.getFollowings().add(userFollow);
-
-		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
-		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+		follower.addFollowing(followingId);        // 팔로잉 추가 + 카운트 증가
+		following.increaseFollowerCount();         // 팔로워 카운트만 증가
 
 		// 5. 아웃박스 이벤트 저장
 		userOutboxService.saveUserFollowedEvent(
@@ -407,14 +403,8 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 4. 팔로우 관계 삭제 및 카운트 감소
-		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
-		if (deletedCount == 0) {
-			log.error("팔로우 관계 삭제 실패: followerId={}, followingId={}", followerId, followingId);
-			throw new UserException(UserErrorCode.NOT_FOLLOWING);
-		}
-
-		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
-		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+		follower.removeFollowing(followingId);     // 팔로잉 제거 + 카운트 감소
+		following.decreaseFollowerCount();         // 팔로워 카운트만 감소
 
 		log.info("언팔로우 완료: followerId={}, followingId={}", followerId, followingId);
 	}
@@ -509,15 +499,7 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 평가 생성 및 targetUser의 ratings에 추가
-		UserRating userRating = new UserRating(
-			reviewerId,
-			targetUserId,
-			request.meetingId(),
-			request.ratingScore()
-		);
-
-		// User 애그리거트를 통해 평가 추가
-		targetUser.getRatings().add(userRating);
+		targetUser.addRating(reviewerId, request.meetingId(), request.ratingScore());
 
 		recalculateUserScore(targetUserId);
 	}

@@ -28,7 +28,7 @@ public class UserFollow extends BaseCreateEntity {
 	@Column(nullable = false, name = "following_id")
 	private Long followingId;
 
-	public UserFollow(Long followerId, Long followingId) {
+	UserFollow(Long followerId, Long followingId) {
 		this.followerId = followerId;
 		this.followingId = followingId;
 	}
