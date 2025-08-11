@@ -45,6 +45,8 @@ public interface MeetingService {
 
 	ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId);
 
+	ParticipantResponseDto getParticipant(Long meetingId, Long userId);
+
 	List<ParticipantResponseDto> getParticipants(Long meetingId);
 
 	ParticipantResponseDto deleteParticipant(Long userId, Long meetingId);
@@ -53,5 +55,4 @@ public interface MeetingService {
 
 	ParticipantCountResponseDto getParticipantCount(Long userId, Long meetingId, Boolean attendance,
 		LocalDateTime createdAt);
-
 }

@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.DLX_PARTICIPANT;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PAYMENT_EVENTS;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
 @Configuration
 public class MeetingQueueConfig {
@@ -19,7 +20,7 @@ public class MeetingQueueConfig {
 	// 참가자 Queue
 	@Bean
 	public Queue participantPaymentSuccessQueue() {
-		return QueueBuilder.durable(PARTICIPANT_PAYMENT_SUCCESS)
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_SUCCEED)
 			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
 			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();
@@ -27,7 +28,7 @@ public class MeetingQueueConfig {
 
 	@Bean
 	public Queue participantPaymentFailQueue() {
-		return QueueBuilder.durable(PARTICIPANT_PAYMENT_FAIL)
+		return QueueBuilder.durable(PARTICIPANT_PAYMENT_FAILED)
 			.withArgument("x-dead-letter-exchange", DLX_PARTICIPANT)
 			.withArgument("x-dead-letter-routing-key", DLQ_PARTICIPANT)
 			.build();
@@ -46,14 +47,14 @@ public class MeetingQueueConfig {
 	public Binding participantPaymentSuccessBinding() {
 		return BindingBuilder.bind(participantPaymentSuccessQueue())
 			.to(new TopicExchange(PAYMENT_EVENTS))
-			.with("payment.completed"); // 이후에 글로벌 상수로 변경
+			.with(PAYMENT_COMPLETED_KEY);
 	}
 
 	@Bean
 	public Binding participantPaymentFailBinding() {
 		return BindingBuilder.bind(participantPaymentFailQueue())
 			.to(new TopicExchange(PAYMENT_EVENTS))
-			.with("payment.failed"); // 이후에 글로벌 상수로 변경
+			.with(PAYMENT_FAILED_KEY);
 	}
 
 	// 참가자 DLQ 바인딩
@@ -61,6 +62,6 @@ public class MeetingQueueConfig {
 	public Binding participantDlqBinding()  {
 		return BindingBuilder.bind(participantDlq())
 			.to(new DirectExchange(DLX_PARTICIPANT))
-			.with(DLQ_PARTICIPANT);
+			.with(PARTICIPANT_DLQ_KEY);
 	}
 }

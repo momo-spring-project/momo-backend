@@ -120,6 +120,17 @@ public class MeetingController {
 		return ResponseEntity.ok(response);
 	}
 
+	// 참가자 조회
+	@GetMapping("/{meetingId}/participants/{userId}")
+	public ResponseEntity<ApiResponse<ParticipantResponseDto>> getParticipant(
+		@PathVariable Long meetingId,
+		@PathVariable Long userId
+	) {
+		ParticipantResponseDto responseData = meetingService.getParticipant(meetingId, userId);
+		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("참가자 조회를 성공했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
 	// 참가자 목록 조회
 	@GetMapping("/{meetingId}/participants")
 	public ResponseEntity<ApiResponse<List<ParticipantResponseDto>>> getParticipants(

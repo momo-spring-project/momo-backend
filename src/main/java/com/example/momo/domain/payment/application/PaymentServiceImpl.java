@@ -120,7 +120,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.complete(result.getPaymentKey(), orderId, approvedAt);
 
 			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED);
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED_KEY);
 
 			eventPublisher.publishEvent(new PaymentEvents.Completed(
 				payment.getId(),
@@ -139,7 +139,7 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.fail(e.getMessage());
 
 			// Outbox 저장 및 도메인 이벤트 발행
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", RoutingKeys.PAYMENT_FAILED);
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_FAILED", RoutingKeys.PAYMENT_FAILED_KEY);
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
 				payment.getId(),
 				payment.getUserId(),
@@ -188,7 +188,7 @@ public class PaymentServiceImpl implements PaymentService {
 		PaymentResponseDto response = PaymentResponseDto.from(payment);
 
 		// Outbox 저장 및 도메인 이벤트 발행
-		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED);
+		Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED_KEY);
 		eventPublisher.publishEvent(new PaymentEvents.Refunded(
 			payment.getId(),
 			payment.getUserId(),
