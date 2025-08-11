@@ -86,14 +86,6 @@ public class PaymentEventConsumer {
 				throw new AmqpRejectAndDontRequeueException("[register] missing fields");
 			}
 
-			// 멱등: 이미 결제완료 -> ACK
-			if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
-				meetingId, userId, PaymentStatus.COMPLETED)) {
-				log.info("[register] already completed. meetingId={}, userId={}", meetingId, userId);
-				ch.basicAck(tag, false);
-				return;
-			}
-
 			// 결제 비즈니스
 			log.info("[결제 시작] meetingId={}, userId={}", meetingId, userId);
 			CardPaymentTestRequestDto req = CardPaymentTestRequestDto.builder()
