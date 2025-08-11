@@ -33,7 +33,6 @@ public class MeetingEventConsumer {
 	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final MeetingEventPublisher meetingEventPublisher;
-	private final RedissonClient redissonClient;
 	private final ObjectMapper objectMapper;
 
 	/**
@@ -49,7 +48,7 @@ public class MeetingEventConsumer {
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentSuccessEvent(EventWrapper<?> event, Channel channel, Message message) {
 
-		if (!event.type().equals(PAYMENT_COMPLETED)) {
+		if (event.type() == null || !event.type().equals(PAYMENT_COMPLETED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제완료, Received: {}", event);
 			throw new RuntimeException("Wrong event type");
 		}
@@ -72,7 +71,7 @@ public class MeetingEventConsumer {
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAILED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentFailureEvent(EventWrapper<?> event, Channel channel, Message message) {
 
-		if (!event.type().equals(PAYMENT_FAILED)) {
+		if (event.type() == null || !event.type().equals(PAYMENT_FAILED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제실패, Received: {}", event);
 			throw new RuntimeException("Wrong event type");
 		}
@@ -99,6 +98,10 @@ public class MeetingEventConsumer {
 	@RabbitListener(queues = DLQ_PARTICIPANT)
 	public void handleParticipantDlq(EventWrapper<?> event) {
 
+		if (event.type() == null) {
+			log.error("[참가자 DLQ] Received: {}", event);
+			throw new RuntimeException("Wrong event type");
+		}
 		String type = event.type();
 
 		try {
