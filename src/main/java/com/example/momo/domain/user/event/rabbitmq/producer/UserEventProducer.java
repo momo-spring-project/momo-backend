@@ -41,7 +41,7 @@ public class UserEventProducer {
 
 		String correlationId = "user-withdrawn-" + userId;
 
-		publishEvent(eventWrapper, RoutingKeys.USER_WITHDRAWN, correlationId);
+		publishEvent(eventWrapper, RoutingKeys.USER_WITHDRAWN_KEY, correlationId);
 	}
 
 	/**
@@ -63,7 +63,7 @@ public class UserEventProducer {
 
 		String correlationId = "user-followed-" + followerId + "-" + followingId;
 
-		publishEvent(eventWrapper, RoutingKeys.USER_FOLLOWED, correlationId);
+		publishEvent(eventWrapper, RoutingKeys.USER_FOLLOWED_KEY, correlationId);
 	}
 
 	/**
