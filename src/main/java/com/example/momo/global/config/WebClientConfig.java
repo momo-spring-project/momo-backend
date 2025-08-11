@@ -134,7 +134,8 @@ public class WebClientConfig {
 	 */
 	private ExchangeStrategies createExchangeStrategies() {
 		return ExchangeStrategies.builder()
-			.codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024)) // 16MB
+			.codecs(configurer -> configurer.defaultCodecs()
+				.maxInMemorySize(16 * 1024 * 1024)) // 16MB
 			.build();
 	}
 

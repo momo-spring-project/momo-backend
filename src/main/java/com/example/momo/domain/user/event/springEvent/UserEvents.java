@@ -21,4 +21,18 @@ public class UserEvents {
 			this(userId, email, nickname, LocalDateTime.now());
 		}
 	}
+
+	/**
+	 * 팔로우 이벤트
+	 */
+	public record Followed(
+		Long followerId,      // 팔로우한 사람
+		Long followingId,     // 팔로우 당한 사람
+		String followerNickname,
+		LocalDateTime followedAt
+	) {
+		public Followed(Long followerId, Long followingId, String followerNickname) {
+			this(followerId, followingId, followerNickname, LocalDateTime.now());
+		}
+	}
 }

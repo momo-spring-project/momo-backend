@@ -45,6 +45,23 @@ public class UserOutboxServiceImpl implements UserOutboxService {
 	}
 
 	@Override
+	@Transactional
+	public void saveUserFollowedEvent(Long followerId, Long followingId, String followerNickname) {
+		try {
+			String eventData = String.format(
+				"{\"followerId\":%d,\"followingId\":%d,\"followerNickname\":\"%s\"}",
+				followerId, followingId, followerNickname
+			);
+			UserOutboxEvent outboxEvent = UserOutboxEvent.create(followingId, "USER_FOLLOWED", eventData);
+			userOutboxEventRepository.save(outboxEvent);
+			log.info("팔로우 아웃박스 이벤트 저장 완료: followerId={}, followingId={}", followerId, followingId);
+		} catch (Exception e) {
+			log.error("팔로우 아웃박스 이벤트 저장 실패: {}", e.getMessage(), e);
+			throw new RuntimeException("이벤트 저장 실패");
+		}
+	}
+
+	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void markEventAsPublished(Long userId, String eventType) {
 		try {

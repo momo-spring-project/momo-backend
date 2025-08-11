@@ -363,6 +363,22 @@ public class UserServiceImpl implements UserService {
 		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
 		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
 
+		// 5. 아웃박스 이벤트 저장
+		userOutboxService.saveUserFollowedEvent(
+			followerId,
+			followingId,
+			follower.getNickname()
+		);
+
+		// 6. 스프링 이벤트 발행
+		eventPublisher.publishEvent(
+			new UserEvents.Followed(
+				followerId,
+				followingId,
+				follower.getNickname()
+			)
+		);
+
 		log.info("팔로우 완료: followerId={}, followingId={}", followerId, followingId);
 	}
 

@@ -1,43 +1,38 @@
 package com.example.momo.global.rabbitmq.dto;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+/**
+ * 유저 도메인 이벤트 데이터 모음
+ * EventWrapper와 함께 사용되는 데이터 클래스들을 정의
+ */
+public class UserEventMessage {
 
-public record UserEventMessage(
-	String eventId,
-	String eventType,
-	LocalDateTime timestamp,
-	String source,
-	@JsonTypeInfo(
-		use = JsonTypeInfo.Id.CLASS,
-		include = JsonTypeInfo.As.PROPERTY,
-		property = "@class"
-	)
-	Object data  // 다양한 이벤트 데이터를 담기 위해 Object 사용
-) {
-
-	// 모든 User 이벤트 데이터 타입들을 내부 레코드로 정의
-
-	// 회원탈퇴 이벤트 데이터
+	/**
+	 * 회원탈퇴 이벤트 데이터
+	 */
 	public record UserWithdrawnData(
 		Long userId,
 		String email,
 		String nickname,
 		LocalDateTime withdrawnAt
 	) {
+		public UserWithdrawnData(Long userId, String email, String nickname) {
+			this(userId, email, nickname, LocalDateTime.now());
+		}
 	}
 
-	// 팩토리 메서드들
-
-	public static UserEventMessage createWithdrawn(Long userId, String email, String nickname) {
-		return new UserEventMessage(
-			UUID.randomUUID().toString(),
-			"user.withdrawn",
-			LocalDateTime.now(),
-			"user-service",
-			new UserWithdrawnData(userId, email, nickname, LocalDateTime.now())
-		);
+	/**
+	 * 팔로우 이벤트 데이터
+	 */
+	public record UserFollowedData(
+		Long followerId,      // 팔로우한 사람
+		Long followingId,     // 팔로우 당한 사람
+		String followerNickname,
+		LocalDateTime followedAt
+	) {
+		public UserFollowedData(Long followerId, Long followingId, String followerNickname) {
+			this(followerId, followingId, followerNickname, LocalDateTime.now());
+		}
 	}
 }
