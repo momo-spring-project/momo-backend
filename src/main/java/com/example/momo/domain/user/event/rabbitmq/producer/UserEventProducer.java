@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.example.momo.global.rabbitmq.constant.EventTypeNames;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
-import com.example.momo.global.rabbitmq.dto.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,13 +33,15 @@ public class UserEventProducer {
 	 */
 	public void publishUserWithdrawn(Long userId, String email, String nickname) {
 		UserEventMessage.UserWithdrawnData data = new UserEventMessage.UserWithdrawnData(userId, email, nickname);
+
 		EventWrapper<UserEventMessage.UserWithdrawnData> eventWrapper = EventWrapper.of(
 			EventTypeNames.USER_WITHDRAWN,
 			data
 		);
+
 		String correlationId = "user-withdrawn-" + userId;
 
-		publishEvent(eventWrapper, RoutingKeys.USER_WITHDRAWN, correlationId);
+		publishEvent(eventWrapper, RoutingKeys.USER_WITHDRAWN_KEY, correlationId);
 	}
 
 	/**
@@ -50,15 +52,18 @@ public class UserEventProducer {
 	 * @param followerNickname 팔로우한 사용자 닉네임
 	 */
 	public void publishUserFollowed(Long followerId, Long followingId, String followerNickname) {
-		UserEventMessage.UserFollowedData data = new UserEventMessage.UserFollowedData(followerId, followingId,
-			followerNickname);
+		UserEventMessage.UserFollowedData data =
+			new UserEventMessage.UserFollowedData(followerId, followingId,
+				followerNickname);
+
 		EventWrapper<UserEventMessage.UserFollowedData> eventWrapper = EventWrapper.of(
 			EventTypeNames.USER_FOLLOWED,
 			data
 		);
+
 		String correlationId = "user-followed-" + followerId + "-" + followingId;
 
-		publishEvent(eventWrapper, RoutingKeys.USER_FOLLOWED, correlationId);
+		publishEvent(eventWrapper, RoutingKeys.USER_FOLLOWED_KEY, correlationId);
 	}
 
 	/**
@@ -78,8 +83,14 @@ public class UserEventProducer {
 				RabbitExchangeNames.USER_EVENTS,  // Exchange: "momo.user.events"
 				routingKey,                       // RoutingKey: "user.withdrawn"
 				eventWrapper,
+				message -> {
+					message.getMessageProperties()
+						.setHeader("correlationId", correlationId);
+					return message;
+				},
 				correlationData                   // 발행 결과 추적용 ID
 			);
+
 			log.info("[User] 이벤트 발행 요청 완료 - eventType: {}, eventId: {}, correlationId: {}",
 				eventWrapper.type(), eventWrapper.uuId(), correlationId);
 

@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -39,30 +38,26 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	// ==================== 팔로우 시스템 ====================
 
 	@Query("""
-			SELECT u FROM User u
-			WHERE u.id IN (
-				SELECT uf.followingId
-				FROM UserFollow uf
-				WHERE uf.followerId = :userId
-			)
-			AND u.isDeleted = false
-			ORDER BY u.id
+		    SELECT u FROM User u
+		    WHERE u.id IN (
+		        SELECT uf.following.id
+		        FROM UserFollow uf
+		        WHERE uf.follower.id = :userId
+		    )
+		    AND u.isDeleted = false
+		    ORDER BY u.id
 		""")
 	Slice<User> findFollowingsByUserId(@Param("userId") Long userId, Pageable pageable);
 
 	@Query("""
-			SELECT u FROM User u
-			WHERE u.id IN (
-				SELECT uf.followerId
-				FROM UserFollow uf
-				WHERE uf.followingId = :userId
-			)
-			AND u.isDeleted = false
-			ORDER BY u.id
+		    SELECT u FROM User u
+		    WHERE u.id IN (
+		        SELECT uf.follower.id
+		        FROM UserFollow uf
+		        WHERE uf.following.id = :userId
+		    )
+		    AND u.isDeleted = false
+		    ORDER BY u.id
 		""")
 	Slice<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
-
-	@Modifying
-	@Query("DELETE FROM UserFollow uf WHERE uf.followerId = :followerId AND uf.followingId = :followingId")
-	int deleteUserFollow(@Param("followerId") Long followerId, @Param("followingId") Long followingId);
 }

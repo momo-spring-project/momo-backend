@@ -26,7 +26,6 @@ import com.example.momo.domain.user.application.dto.UserResponseDto;
 import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.domain.User;
 import com.example.momo.domain.user.domain.UserCategory;
-import com.example.momo.domain.user.domain.UserFollow;
 import com.example.momo.domain.user.domain.UserRating;
 import com.example.momo.domain.user.domain.UserRepository;
 import com.example.momo.domain.user.event.springEvent.UserEvents;
@@ -38,6 +37,7 @@ import com.example.momo.global.webclient.meeting.MeetingClient;
 import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDto;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,6 +60,7 @@ public class UserServiceImpl implements UserService {
 	private final MeetingClient meetingClient;
 	private final UserOutboxService userOutboxService;
 	private final ApplicationEventPublisher eventPublisher;
+	private final EntityManager entityManager;
 
 	// ==================== 1. 회원 관리 ====================
 
@@ -250,7 +251,7 @@ public class UserServiceImpl implements UserService {
 
 		boolean allValid = new HashSet<>(validCategoryIds).containsAll(categoryIds);
 		if (!allValid) {
-			log.warn("유효하지 않은 카테고리 ID 포함: categoryIds={}", categoryIds);
+			log.info("유효하지 않은 카테고리 ID 포함: categoryIds={}", categoryIds);
 			throw new UserException(UserErrorCode.INVALID_CATEGORY_IDS);
 		}
 
@@ -272,13 +273,13 @@ public class UserServiceImpl implements UserService {
 
 		// 1. 현재 비밀번호 확인
 		if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-			log.warn("현재 비밀번호 불일치: userId={}", userId);
+			log.info("현재 비밀번호 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_MISMATCH);
 		}
 
 		// 2. 새 비밀번호 확인
 		if (!request.newPassword().equals(request.confirmPassword())) {
-			log.warn("새 비밀번호 확인 불일치: userId={}", userId);
+			log.info("새 비밀번호 확인 불일치: userId={}", userId);
 			throw new UserException(UserErrorCode.PASSWORD_CONFIRM_MISMATCH);
 		}
 
@@ -298,7 +299,7 @@ public class UserServiceImpl implements UserService {
 
 		// 중복 검사 (자기 자신 제외)
 		if (userRepository.isDuplicateNickname(request.nickname(), userId)) {
-			log.warn("닉네임 중복: nickname={}", request.nickname());
+			log.info("닉네임 중복: nickname={}", request.nickname());
 			throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
 		}
 
@@ -339,7 +340,7 @@ public class UserServiceImpl implements UserService {
 
 		// 1. 자기 자신 팔로우 방지
 		if (followerId.equals(followingId)) {
-			log.warn("자기 자신 팔로우 시도: userId={}", followerId);
+			log.info("자기 자신 팔로우 시도: userId={}", followerId);
 			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
 		}
 
@@ -349,19 +350,16 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 중복 팔로우 확인
 		boolean alreadyFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+			.anyMatch(follow -> follow.getFollowing().getId().equals(followingId));
 
 		if (alreadyFollowing) {
-			log.warn("이미 팔로우 중: followerId={}, followingId={}", followerId, followingId);
+			log.info("이미 팔로우 중: followerId={}, followingId={}", followerId, followingId);
 			throw new UserException(UserErrorCode.ALREADY_FOLLOWING);
 		}
 
 		// 4. 팔로우 관계 생성 및 카운트 증가
-		UserFollow userFollow = new UserFollow(followerId, followingId);
-		follower.getFollowings().add(userFollow);
-
-		follower.incrementFollowingCount();     // 내 팔로잉 수 +1
-		following.incrementFollowerCount();     // 상대방 팔로워 수 +1
+		follower.addFollowing(following);        // User 엔티티로 전달
+		following.increaseFollowerCount();       // 팔로워 카운트만 증가
 
 		// 5. 아웃박스 이벤트 저장
 		userOutboxService.saveUserFollowedEvent(
@@ -389,7 +387,7 @@ public class UserServiceImpl implements UserService {
 
 		// 1. 자기 자신 언팔로우 방지
 		if (followerId.equals(followingId)) {
-			log.warn("자기 자신 언팔로우 시도: userId={}", followerId);
+			log.info("자기 자신 언팔로우 시도: userId={}", followerId);
 			throw new UserException(UserErrorCode.CANNOT_FOLLOW_SELF);
 		}
 
@@ -399,22 +397,16 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 팔로우 관계 존재 확인
 		boolean isFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+			.anyMatch(follow -> follow.getFollowing().getId().equals(followingId));
 
 		if (!isFollowing) {
-			log.warn("팔로우하지 않은 사용자: followerId={}, followingId={}", followerId, followingId);
+			log.info("팔로우하지 않은 사용자: followerId={}, followingId={}", followerId, followingId);
 			throw new UserException(UserErrorCode.NOT_FOLLOWING);
 		}
 
 		// 4. 팔로우 관계 삭제 및 카운트 감소
-		int deletedCount = userRepository.deleteUserFollow(followerId, followingId);
-		if (deletedCount == 0) {
-			log.error("팔로우 관계 삭제 실패: followerId={}, followingId={}", followerId, followingId);
-			throw new UserException(UserErrorCode.NOT_FOLLOWING);
-		}
-
-		follower.decrementFollowingCount();     // 내 팔로잉 수 -1
-		following.decrementFollowerCount();     // 상대방 팔로워 수 -1
+		follower.removeFollowing(following);     // User 엔티티로 전달
+		following.decreaseFollowerCount();       // 팔로워 카운트만 감소
 
 		log.info("언팔로우 완료: followerId={}, followingId={}", followerId, followingId);
 	}
@@ -488,7 +480,7 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 평가자 존재 확인
-		User reviewer = validateAndGetUser(reviewerId);
+		validateAndGetUser(reviewerId);
 
 		// 평가 대상자 존재 확인
 		User targetUser = userRepository.findByIdAndIsDeletedFalse(targetUserId)
@@ -509,15 +501,7 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 평가 생성 및 targetUser의 ratings에 추가
-		UserRating userRating = new UserRating(
-			reviewerId,
-			targetUserId,
-			request.meetingId(),
-			request.ratingScore()
-		);
-
-		// User 애그리거트를 통해 평가 추가
-		targetUser.getRatings().add(userRating);
+		targetUser.addRating(reviewerId, request.meetingId(), request.ratingScore());
 
 		recalculateUserScore(targetUserId);
 	}
@@ -575,10 +559,15 @@ public class UserServiceImpl implements UserService {
 
 		// 6. 점수 업데이트
 		user.updateScore(totalScore);
+
+		log.info("사용자 점수 재계산 완료: userId={}, 이전점수={}, 새점수={}, " +
+				"평점점수={}, 참석률점수={}, 활동도점수={}",
+			userId, oldScore, totalScore, ratingScore, attendanceScore, activityScore);
 	}
 
 	/**
 	 * MeetingClient를 통해 사용자의 모임 참가 통계 조회
+	 * 실제 출석 정보를 활용하여 정확한 통계 계산
 	 */
 	private UserMeetingStatsDto getUserMeetingStats(Long userId) {
 		// MeetingClient를 통해 사용자가 참가한 모임 목록 조회
@@ -602,43 +591,50 @@ public class UserServiceImpl implements UserService {
 		for (MeetingClientResponseDto meeting : userMeetings) {
 			// 각 모임의 참가자 중에서 해당 사용자의 출석 정보 확인
 			// 현재는 참가자 상세 정보를 개별 조회해야 함 (N+1 문제)
+			// TODO : 모임쪽에서 N+1 해결한 메서드(배치 API)를 제공해주면 수정 예정
 			ParticipantClientResponseDto userParticipant = meetingClient.getParticipant(meeting.getId(), userId);
 
-			if (userParticipant != null) {
-				// 출석 여부 확인
-				if (userParticipant.isAttendanceStatus()) {
-					attendedMeetings++;
-				}
+			if (userParticipant != null && userParticipant.isAttendanceStatus()) {
+				attendedMeetings++;
 			}
 
-			// 최근 3개월 참가 여부 확인 (모임 생성일 기준)
-			if (meeting.getMeetingDate().isAfter(threeMonthsAgo)) {
+			// 최근 3개월 참가 여부 확인 (모임 날짜 기준)
+			if (meeting.getMeetingDate() != null &&
+				meeting.getMeetingDate().isAfter(threeMonthsAgo)) {
 				recentParticipation++;
 			}
 		}
+
+		log.debug("모임 통계 계산 완료: userId={}, 총참가={}, 출석={}, 최근3개월={}",
+			userId, totalParticipation, attendedMeetings, recentParticipation);
 
 		return new UserMeetingStatsDto(totalParticipation, attendedMeetings, recentParticipation);
 	}
 
 	/**
 	 * 평점 기반 점수 계산 (60%)
-	 * 평점 4.5/5.0 → (4.5/5.0) * 60 = 54점
-	 * 주의: 이 메서드는 평가가 있는 사용자에 대해서만 호출됨
+	 * 신규 사용자는 기본 점수 제공
 	 */
 	private double calculateRatingScore(User user) {
-		// 평가받은 사용자라면 ratings가 있어야 함
-		if (user.getRatings().isEmpty()) {
-			throw new IllegalStateException("평가 점수를 계산하려 하는데 평가가 없습니다!");
+		if (user.getRatings() == null || user.getRatings().isEmpty()) {
+			// 신규 사용자 기본 점수: 2.5/5.0 * 60 = 30점
+			log.debug("신규 사용자 기본 평점 점수 적용: userId={}", user.getId());
+			return 30.0;
 		}
 
 		// 평균 평점 계산
 		double averageRating = user.getRatings().stream()
 			.mapToInt(UserRating::getRatingScore)
 			.average()
-			.orElseThrow(() -> new IllegalStateException("평가 데이터가 비어있습니다!"));
+			.orElse(2.5); // 안전장치
 
 		// 5점 만점을 60점 만점으로 변환
-		return (averageRating / 5.0) * 60.0;
+		double score = (averageRating / 5.0) * 60.0;
+
+		log.debug("평점 점수 계산: userId={}, 평균평점={}, 점수={}",
+			user.getId(), averageRating, score);
+
+		return score;
 	}
 
 	/**
@@ -647,11 +643,21 @@ public class UserServiceImpl implements UserService {
 	 */
 	private double calculateAttendanceScore(UserMeetingStatsDto meetingStats) {
 		if (meetingStats.totalParticipation() == 0) {
-			throw new IllegalStateException("평가받은 사용자인데 참가한 모임이 없습니다. 데이터 정합성 오류!");
+			// 참가한 모임이 없는 경우 기본 점수: 50% 참석률 = 15점
+			log.debug("모임 참가 이력 없음 - 기본 참석률 점수 적용");
+			return 15.0;
 		}
 
-		// 30점 만점으로 변환
-		return meetingStats.getAttendanceRate() * 30.0;
+		// 참석률을 30점 만점으로 변환
+		double attendanceRate = meetingStats.getAttendanceRate();
+		double score = attendanceRate * 30.0;
+
+		log.debug("참석률 점수 계산: 총참가={}, 출석={}, 참석률={}, 점수={}",
+			meetingStats.totalParticipation(),
+			meetingStats.attendedMeetings(),
+			attendanceRate, score);
+
+		return score;
 	}
 
 	/**
@@ -660,14 +666,22 @@ public class UserServiceImpl implements UserService {
 	 */
 	private double calculateActivityScore(UserMeetingStatsDto meetingStats) {
 		double monthlyAverage = meetingStats.getMonthlyAverage();
+		double score;
 
 		// 활동도 점수 계산
 		if (monthlyAverage >= 2.0) {
-			return 10.0; // 월 평균 2회 이상
+			score = 10.0; // 월 평균 2회 이상 - 매우 활발
 		} else if (monthlyAverage >= 1.0) {
-			return 7.0;  // 월 평균 1-2회
+			score = 7.0;  // 월 평균 1-2회 - 보통
+		} else if (monthlyAverage > 0) {
+			score = 3.0;  // 월 평균 1회 미만 - 저조
 		} else {
-			return 3.0;  // 월 평균 1회 미만 (0회 포함)
+			score = 0.0;  // 최근 활동 없음
 		}
+
+		log.debug("활동도 점수 계산: 최근3개월참가={}, 월평균={}, 점수={}",
+			meetingStats.recentParticipation(), monthlyAverage, score);
+
+		return score;
 	}
 }

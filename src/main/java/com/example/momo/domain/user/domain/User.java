@@ -53,17 +53,13 @@ public class User extends BaseEntity {
 	@Column(name = "longitude")
 	private Double longitude;
 
-	// === 연관관계 (OneToMany 단방향) ===
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id")
+	// === 연관관계 (양방향) ===
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserCategory> categories = new ArrayList<>();
 
-	// 내가 팔로잉을 하는 사람들의 리스트
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-	@JoinColumn(name = "follower_id")
+	@OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserFollow> followings = new ArrayList<>();
 
-	// 내가 받은 평가들
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
@@ -91,7 +87,52 @@ public class User extends BaseEntity {
 		return user;
 	}
 
-	// === 업데이트 메서드들 ===
+	// === 하위 엔티티 관리 메서드 (User 애그리거트 책임) ===
+
+	public void addRating(Long reviewerId, Long meetingId, Integer ratingScore) {
+		UserRating rating = new UserRating(reviewerId, this.id, meetingId, ratingScore);
+		this.ratings.add(rating);
+	}
+
+	public void addFollowing(User following) {
+		UserFollow userFollow = new UserFollow(this, following);
+		this.followings.add(userFollow);
+		this.incrementFollowingCount();
+	}
+
+	public void removeFollowing(User following) {
+		this.followings.removeIf(follow ->
+			follow.getFollowing().getId().equals(following.getId()));
+		this.decrementFollowingCount();
+	}
+
+	public void increaseFollowerCount() {
+		this.followerCount++;
+	}
+
+	public void decreaseFollowerCount() {
+		this.followerCount--;
+	}
+
+	public void incrementFollowingCount() {
+		this.followingCount++;
+	}
+
+	public void decrementFollowingCount() {
+		this.followingCount--;
+	}
+
+	public void updateCategories(List<Integer> categoryIds) {
+		this.categories.clear();
+		if (categoryIds != null && !categoryIds.isEmpty()) {
+			for (Integer categoryId : categoryIds) {
+				UserCategory category = new UserCategory(this, categoryId);
+				this.categories.add(category);
+			}
+		}
+	}
+
+	// === User 테이블 업데이트 메서드 ===
 	public void updateNickname(String nickname) {
 		this.nickname = nickname;
 	}
@@ -104,31 +145,8 @@ public class User extends BaseEntity {
 		this.score = score;
 	}
 
-	public void incrementFollowingCount() {
-		this.followingCount++;
-	}
-
-	public void decrementFollowingCount() {
-		this.followingCount--;
-	}
-
-	public void incrementFollowerCount() {
-		this.followerCount++;
-	}
-
-	public void decrementFollowerCount() {
-		this.followerCount--;
-	}
-
 	public void updateLocation(Double latitude, Double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
-	}
-
-	public void updateCategories(List<Integer> categoryIds) {
-		this.categories.clear();
-		categoryIds.forEach(categoryId ->
-			this.categories.add(new UserCategory(this.id, categoryId))  // userId 전달
-		);
 	}
 }

@@ -87,7 +87,7 @@ public class WebClientConfig {
 	 */
 	private HttpClient createHttpClient() {
 		ConnectionProvider connectionProvider = ConnectionProvider.builder("internal-pool")
-			.maxConnections(50)                    // 최대 커넥션 수
+			.maxConnections(100)                    // 최대 커넥션 수
 			.maxIdleTime(Duration.ofSeconds(30))   // 유휴 시간
 			.maxLifeTime(Duration.ofMinutes(10))   // 최대 생존 시간
 			.pendingAcquireTimeout(Duration.ofSeconds(10)) // 커넥션 대기 시간
