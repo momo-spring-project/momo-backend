@@ -42,4 +42,27 @@ public class UserEventHandler {
 				event.userId(), e.getMessage(), e);
 		}
 	}
+
+	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+	public void handleUserFollowed(UserEvents.Followed event) {
+		try {
+			log.info("팔로우 이벤트 처리 시작: followerId={}, followingId={}",
+				event.followerId(), event.followingId());
+
+			userEventProducer.publishUserFollowed(
+				event.followerId(),
+				event.followingId(),
+				event.followerNickname()
+			);
+
+			userOutboxService.markEventAsPublished(event.followingId(), "USER_FOLLOWED");
+
+			log.info("팔로우 이벤트 처리 완료: followerId={}, followingId={}",
+				event.followerId(), event.followingId());
+
+		} catch (Exception e) {
+			log.error("팔로우 이벤트 처리 실패: followerId={}, followingId={}, error={}",
+				event.followerId(), event.followingId(), e.getMessage(), e);
+		}
+	}
 }
