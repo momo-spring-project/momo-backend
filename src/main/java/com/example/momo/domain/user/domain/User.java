@@ -54,7 +54,7 @@ public class User extends BaseEntity {
 	private Double longitude;
 
 	// === 연관관계 (OneToMany 단방향) ===
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
 	private List<UserCategory> categories = new ArrayList<>();
 

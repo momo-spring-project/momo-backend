@@ -37,6 +37,7 @@ import com.example.momo.global.webclient.meeting.MeetingClient;
 import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDto;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -59,6 +60,7 @@ public class UserServiceImpl implements UserService {
 	private final MeetingClient meetingClient;
 	private final UserOutboxService userOutboxService;
 	private final ApplicationEventPublisher eventPublisher;
+	private final EntityManager entityManager;
 
 	// ==================== 1. 회원 관리 ====================
 
@@ -255,6 +257,9 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 카테고리 업데이트
 		user.updateCategories(categoryIds);
+
+		// 4. 영속성 컨텍스트 플러시
+		entityManager.flush();
 
 		log.info("관심 카테고리 수정 완료: userId={}, 이전={}, 변경후={}",
 			userId, oldCategoryIds, categoryIds);
