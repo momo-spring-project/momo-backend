@@ -19,4 +19,6 @@ public interface UserOutboxService {
 	void publishEvent(UserOutboxEvent outboxEvent);
 
 	int cleanupOldPublishedEvents(int daysOld);
+
+	void saveUserFollowedEvent(Long followerId, Long followingId, String followerNickname);
 }

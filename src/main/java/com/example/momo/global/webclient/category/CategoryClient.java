@@ -3,6 +3,7 @@ package com.example.momo.global.webclient.category;
 import java.time.Duration;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -11,17 +12,20 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import com.example.momo.global.common.dto.ApiResponse;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class CategoryClient {
+
+	private final WebClient webClient;
+
+	public CategoryClient(@Qualifier("internalWebClient") WebClient webClient) {
+		this.webClient = webClient;
+	}
 
 	private final static String CATEGORY_SERVICE_BASE_URI = "/categories";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-	private final WebClient webClient;
 
 	public CategoryClientResponseDto getCategory(Integer categoryId) {
 		try {

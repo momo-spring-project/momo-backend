@@ -10,12 +10,11 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.application.dto.event.AuthEventMessage;
 import com.example.momo.domain.auth.event.config.AuthRabbitMQConfig;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.auth.slack.SlackNotifier;
-import com.example.momo.domain.user.domain.User;
 import com.example.momo.global.rabbitmq.dto.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,35 +35,43 @@ public class AuthUserEventConsumer {
 	)
 	@RabbitHandler
 	@Transactional
-	public void handleUserEvent(UserEventMessage message) {
-		if (message.eventType().equals("user.withdrawn")) {
-			handleUserWithdrawn(message);
-			return;
-			// 필요한 이벤트들 추가 -> 케이스 많아지면 switch 문으로 변경
+	public void handleUserEvent(EventWrapper<?> eventWrapper) {
+		switch (eventWrapper.type()) {
+			case "user.withdrawn" -> handleUserWithdrawn(eventWrapper);
+			default -> throw new RuntimeException("지원하지 않는 이벤트 타입: " + eventWrapper.type());
 		}
-
-		throw new RuntimeException("지원하지 않는 이벤트 타입:" + message.eventType());
 	}
 
 	/**
 	 * 메시지 소비를 3번 시도하고 실패하면 DLQ로 이동
 	 */
 	@Recover
-	public void recover(Exception e, UserEventMessage message) {
+	public void recover(Exception e, EventWrapper<?> eventWrapper) {
 		// Retryable 의 최대 횟수를 모두 실패하면 error 로그를 남김.
-		log.error("User 이벤트 처리 실패: eventType={}, error={}", message.eventType(), e.getMessage(), e);
+		log.error("User 이벤트 처리 실패: eventType={}, eventId={}, error={}",
+			eventWrapper.type(), eventWrapper.uuId(), e.getMessage(), e);
 
 		// Slack 메시지를 보냄
-		slackNotifier.notifyMessageConsumeFailure(this.getClass().getSimpleName(), message.eventType(),
-			AuthRabbitMQConfig.AUTH_USER_EVENTS_QUEUE,  e);
+		slackNotifier.notifyMessageConsumeFailure(
+			this.getClass().getSimpleName(),
+			eventWrapper.type(),
+			AuthRabbitMQConfig.AUTH_USER_EVENTS_QUEUE,
+			e
+		);
+
 		// Slack 메시지를 보내고 DLQ로 이동
-		throw new AmqpRejectAndDontRequeueException("Retry 실패, DLQ로 이동: eventType=" + message.eventType(), e);
+		throw new AmqpRejectAndDontRequeueException(
+			"Retry 실패, DLQ로 이동: eventType=" + eventWrapper.type(), e);
 	}
 
-	private void handleUserWithdrawn(UserEventMessage message) {
-		UserEventMessage.UserWithdrawnData data = (UserEventMessage.UserWithdrawnData)message.data();
+	/**
+	 * 회원탈퇴 이벤트 처리
+	 */
+	private void handleUserWithdrawn(EventWrapper<?> eventWrapper) {
+		// RabbitMQ 에서 자동 역직렬화된 데이터를 직접 캐스팅
+		UserEventMessage.UserWithdrawnData data = (UserEventMessage.UserWithdrawnData)eventWrapper.data();
 
-		log.info("회원탈퇴 이벤트 수신: userId={}, email={}", data.userId(), data.email());
+		log.info("회원탈퇴 이벤트 수신: userId={}, email={}, eventId={}", data.userId(), data.email(), eventWrapper.uuId());
 
 		userSocialRepository.deleteAllByUserId(data.userId());
 
