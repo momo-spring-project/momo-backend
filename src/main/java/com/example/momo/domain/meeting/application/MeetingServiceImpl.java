@@ -257,7 +257,7 @@ public class MeetingServiceImpl implements MeetingService {
 						MEETING_DELETE,
 						meetingId,
 						wrapper.uuId(),
-						objectMapper.writeValueAsString(wrapper)
+						objectMapper.writeValueAsString(eventPayload)
 					);
 				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
 			} catch (Exception e) {

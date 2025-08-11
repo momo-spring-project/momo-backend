@@ -55,7 +55,7 @@ public class MeetingEventPublisher {
 				eventType,
 				event.meetingId(),
 				wrapper.uuId(),
-				objectMapper.writeValueAsString(wrapper)
+				objectMapper.writeValueAsString(event)
 			);
 
 			meetingPaymentOutboxService.savePaymentOutbox(outbox);
@@ -94,7 +94,7 @@ public class MeetingEventPublisher {
 				eventType,
 				event.meetingId(),
 				wrapper.uuId(),
-				objectMapper.writeValueAsString(wrapper)
+				objectMapper.writeValueAsString(event)
 			);
 
 			meetingPaymentOutboxService.savePaymentOutbox(outbox);
