@@ -54,13 +54,11 @@ public class User extends BaseEntity {
 	private Double longitude;
 
 	// === 연관관계 (OneToMany 단방향) ===
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id")
+	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserCategory> categories = new ArrayList<>();
 
 	// 내가 팔로잉을 하는 사람들의 리스트
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE}, fetch = FetchType.LAZY)
-	@JoinColumn(name = "follower_id")
+	@OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserFollow> followings = new ArrayList<>();
 
 	// 내가 받은 평가들
@@ -98,14 +96,15 @@ public class User extends BaseEntity {
 		this.ratings.add(rating);
 	}
 
-	public void addFollowing(Long followingId) {
-		UserFollow userFollow = new UserFollow(this.id, followingId);
+	public void addFollowing(User following) {
+		UserFollow userFollow = new UserFollow(this, following);
 		this.followings.add(userFollow);
 		this.incrementFollowingCount();
 	}
 
-	public void removeFollowing(Long followingId) {
-		this.followings.removeIf(follow -> follow.getFollowingId().equals(followingId));
+	public void removeFollowing(User following) {
+		this.followings.removeIf(follow ->
+			follow.getFollowing().getId().equals(following.getId()));
 		this.decrementFollowingCount();
 	}
 
@@ -129,7 +128,7 @@ public class User extends BaseEntity {
 		this.categories.clear();
 		if (categoryIds != null && !categoryIds.isEmpty()) {
 			for (Integer categoryId : categoryIds) {
-				UserCategory category = new UserCategory(this.id, categoryId);
+				UserCategory category = new UserCategory(this, categoryId);
 				this.categories.add(category);
 			}
 		}

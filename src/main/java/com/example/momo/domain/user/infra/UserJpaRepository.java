@@ -38,26 +38,26 @@ public interface UserJpaRepository extends JpaRepository<User, Long> {
 	// ==================== 팔로우 시스템 ====================
 
 	@Query("""
-			SELECT u FROM User u
-			WHERE u.id IN (
-				SELECT uf.followingId
-				FROM UserFollow uf
-				WHERE uf.followerId = :userId
-			)
-			AND u.isDeleted = false
-			ORDER BY u.id
+		    SELECT u FROM User u
+		    WHERE u.id IN (
+		        SELECT uf.following.id
+		        FROM UserFollow uf
+		        WHERE uf.follower.id = :userId
+		    )
+		    AND u.isDeleted = false
+		    ORDER BY u.id
 		""")
 	Slice<User> findFollowingsByUserId(@Param("userId") Long userId, Pageable pageable);
 
 	@Query("""
-			SELECT u FROM User u
-			WHERE u.id IN (
-				SELECT uf.followerId
-				FROM UserFollow uf
-				WHERE uf.followingId = :userId
-			)
-			AND u.isDeleted = false
-			ORDER BY u.id
+		    SELECT u FROM User u
+		    WHERE u.id IN (
+		        SELECT uf.follower.id
+		        FROM UserFollow uf
+		        WHERE uf.following.id = :userId
+		    )
+		    AND u.isDeleted = false
+		    ORDER BY u.id
 		""")
 	Slice<User> findFollowersByUserId(@Param("userId") Long userId, Pageable pageable);
 }

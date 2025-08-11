@@ -258,9 +258,6 @@ public class UserServiceImpl implements UserService {
 		// 3. 카테고리 업데이트
 		user.updateCategories(categoryIds);
 
-		// 4. 영속성 컨텍스트 플러시
-		entityManager.flush();
-
 		log.info("관심 카테고리 수정 완료: userId={}, 이전={}, 변경후={}",
 			userId, oldCategoryIds, categoryIds);
 
@@ -353,7 +350,7 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 중복 팔로우 확인
 		boolean alreadyFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+			.anyMatch(follow -> follow.getFollowing().getId().equals(followingId));
 
 		if (alreadyFollowing) {
 			log.info("이미 팔로우 중: followerId={}, followingId={}", followerId, followingId);
@@ -361,8 +358,8 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 4. 팔로우 관계 생성 및 카운트 증가
-		follower.addFollowing(followingId);        // 팔로잉 추가 + 카운트 증가
-		following.increaseFollowerCount();         // 팔로워 카운트만 증가
+		follower.addFollowing(following);        // User 엔티티로 전달
+		following.increaseFollowerCount();       // 팔로워 카운트만 증가
 
 		// 5. 아웃박스 이벤트 저장
 		userOutboxService.saveUserFollowedEvent(
@@ -400,7 +397,7 @@ public class UserServiceImpl implements UserService {
 
 		// 3. 팔로우 관계 존재 확인
 		boolean isFollowing = follower.getFollowings().stream()
-			.anyMatch(follow -> follow.getFollowingId().equals(followingId));
+			.anyMatch(follow -> follow.getFollowing().getId().equals(followingId));
 
 		if (!isFollowing) {
 			log.info("팔로우하지 않은 사용자: followerId={}, followingId={}", followerId, followingId);
@@ -408,8 +405,8 @@ public class UserServiceImpl implements UserService {
 		}
 
 		// 4. 팔로우 관계 삭제 및 카운트 감소
-		follower.removeFollowing(followingId);     // 팔로잉 제거 + 카운트 감소
-		following.decreaseFollowerCount();         // 팔로워 카운트만 감소
+		follower.removeFollowing(following);     // User 엔티티로 전달
+		following.decreaseFollowerCount();       // 팔로워 카운트만 감소
 
 		log.info("언팔로우 완료: followerId={}, followingId={}", followerId, followingId);
 	}
