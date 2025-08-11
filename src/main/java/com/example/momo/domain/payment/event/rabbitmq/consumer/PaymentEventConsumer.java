@@ -58,11 +58,13 @@ public class PaymentEventConsumer {
 		long tag = msg.getMessageProperties().getDeliveryTag();
 		Long meetingId = null, userId = null;
 
+		// NULL payload: ack 후 드랍
+		if (wrapper == null || wrapper.data() == null) {
+			log.warn("[register] null payload - ack & drop (no dlq) ");
+			safeAck(ch, tag);
+			return;
+		}
 		try {
-			// 즉시 DLQ: NULL
-			if (wrapper == null || wrapper.data() == null) {
-				throw new AmqpRejectAndDontRequeueException("[register] null payload");
-			}
 
 			// 즉시 DLQ: 타입 불일치
 			if (!MEETING_PARTICIPANT_REGISTER.equals(wrapper.type())) {
@@ -121,11 +123,14 @@ public class PaymentEventConsumer {
 	public void handleParticipantCancel(EventWrapper<?> wrapper, Channel ch, Message msg) {
 		long tag = msg.getMessageProperties().getDeliveryTag();
 
+		// NULL payload: ack 후 드랍
+		if (wrapper == null || wrapper.data() == null) {
+			log.warn("[cancel] null payload - ack & drop (no dlq)");
+			safeAck(ch, tag);
+			return;
+		}
+
 		try {
-			// 즉시 DLQ: NULL
-			if (wrapper == null || wrapper.data() == null) {
-				throw new AmqpRejectAndDontRequeueException("[cancel] null payload");
-			}
 
 			// 즉시 DLQ: 타입 불일치
 			if (!MEETING_PARTICIPANT_CANCEL.equals(wrapper.type())) {
