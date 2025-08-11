@@ -14,6 +14,11 @@ public class EventTypeNames {
 
 	public static final String FOLLOWED = "followed";
 
+	// Meeting 이벤트 타입
+	public static final String MEETING_PARTICIPANT_REGISTER = "meeting.participant.register";
+	public static final String MEETING_PARTICIPANT_JOIN = "meeting.participant.join";
+	public static final String MEETING_PARTICIPANT_CANCEL = "meeting.participant.cancel";
+
 	// Payment 이벤트 타입
 	public static final String PAYMENT_COMPLETED = "payment.completed";
 	public static final String PAYMENT_FAILED = "payment.failed";

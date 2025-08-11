@@ -51,12 +51,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
 	}
 
 	@Override
-	public Page<Payment> searchPayments(Long meetingId, Long userId, PaymentStatus status,
-		Pageable pageable) {
-		return paymentJpaRepository.searchPayments(meetingId, userId, status, pageable);
-	}
-
-	@Override
 	public Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId,
 		PaymentStatus status) {
 		return paymentJpaRepository.findByMeetingIdAndUserIdAndStatus(meetingId, userId, status);
@@ -71,4 +65,16 @@ public class PaymentRepositoryImpl implements PaymentRepository {
 	public List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status) {
 		return paymentJpaRepository.findByMeetingIdAndStatus(meetingId, status);
 	}
+
+	@Override
+	public Page<Payment> searchMyPayments(Long userId, PaymentStatus status, Pageable pageable) {
+		return paymentJpaRepository.searchMyPayments(userId, status, pageable);
+	}
+
+	//관리자 용 조건 검색
+	// @Override
+	// public Page<Payment> searchPayments(Long meetingId, Long userId, PaymentStatus status,
+	// 	Pageable pageable) {
+	// 	return paymentJpaRepository.searchPayments(meetingId, userId, status, pageable);
+	// }
 }

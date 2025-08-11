@@ -39,19 +39,15 @@ public class PaymentController {
 		return ResponseEntity.ok(ApiResponse.success("테스트 키인 결제가 완료되었습니다.", response));
 	}
 
-	/**
-	 * 관리자용 다중 조건 검색 ex)
-	 * /search?meetingId=1&userId=3&status=COMPLETED&page=0&size=20&sort=paidAt,desc
-	 */
-	@GetMapping("/search")
-	public ResponseEntity<ApiResponse<Page<PaymentResponseDto>>> searchPayments(
-		@RequestParam(required = false) Long meetingId,
-		@RequestParam(required = false) Long userId,
+	//내 결제 내역 조회
+	@GetMapping("/me")
+	public ResponseEntity<ApiResponse<Page<PaymentResponseDto>>> getMyPayments(
+		@AuthenticationPrincipal AuthUser authUser,
 		@RequestParam(required = false) PaymentStatus status,
-		Pageable pageable) {
-
-		Page<PaymentResponseDto> page = paymentService.searchPayments(meetingId, userId, status, pageable);
-		return ResponseEntity.ok(ApiResponse.success("결제 내역 검색 완료", page));
+		Pageable pageable
+	) {
+		Page<PaymentResponseDto> page = paymentService.getMyPayments(authUser.getId(), status, pageable);
+		return ResponseEntity.ok(ApiResponse.success("내 결제 내역 조회 완료", page));
 	}
 
 	// 환불 처리
@@ -64,4 +60,18 @@ public class PaymentController {
 		return ResponseEntity.ok(ApiResponse.success("환불이 완료되었습니다.", response));
 	}
 
+	// /**
+	//  * 관리자용 다중 조건 검색 ex)
+	//  * /search?meetingId=1&userId=3&status=COMPLETED&page=0&size=20&sort=paidAt,desc
+	//  */
+	// @GetMapping("/search")
+	// public ResponseEntity<ApiResponse<Page<PaymentResponseDto>>> searchPayments(
+	// 	@RequestParam(required = false) Long meetingId,
+	// 	@RequestParam(required = false) Long userId,
+	// 	@RequestParam(required = false) PaymentStatus status,
+	// 	Pageable pageable) {
+	//
+	// 	Page<PaymentResponseDto> page = paymentService.searchPayments(meetingId, userId, status, pageable);
+	// 	return ResponseEntity.ok(ApiResponse.success("결제 내역 검색 완료", page));
+	// }
 }

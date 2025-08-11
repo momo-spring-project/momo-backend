@@ -91,12 +91,12 @@ dependencies {
     // JSON 직렬화/역직렬화용 Jackson
     implementation 'com.fasterxml.jackson.core:jackson-databind'
 
-
     // Slakc API
     implementation 'com.slack.api:slack-api-client:1.27.2'
 
     // Redis
     implementation "org.springframework.boot:spring-boot-starter-data-redis"
+    implementation("org.redisson:redisson:3.50.0")
 
 }
 

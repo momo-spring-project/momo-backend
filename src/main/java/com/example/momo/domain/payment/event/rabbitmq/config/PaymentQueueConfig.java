@@ -89,8 +89,8 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantRegisteredBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantRegisteredQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_REGISTER);
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_REGISTER_KEY);
 	}
 
 	/**
@@ -102,8 +102,8 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantCanceledBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL_REFUND);
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_CANCEL_KEY);
 	}
 
 	/**
