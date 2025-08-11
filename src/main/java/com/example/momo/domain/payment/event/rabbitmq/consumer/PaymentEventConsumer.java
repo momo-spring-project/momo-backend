@@ -36,7 +36,7 @@ public class PaymentEventConsumer {
 	private final PaymentService paymentService;
 
 	/**
-	 * ① 참가자 등록 이벤트 처리 - 결제 생성
+	 * 1. 참가자 등록 이벤트 처리 - 결제 생성
 	 * Queue: payment.participant.registered.queue
 	 * Event: ParticipantEvents.Register (meetingId, userId)
 	 *
@@ -87,7 +87,7 @@ public class PaymentEventConsumer {
 	}
 
 	/**
-	 * ② 참가자 취소 이벤트 처리 - 개별 환불
+	 * 2. 참가자 취소 이벤트 처리 - 개별 환불
 	 * Queue: payment.participant.canceled.queue
 	 * Event: ParticipantEvents.CancelRefund (meetingId, userId, hostUserId, participantNickname)
 	 *
@@ -142,7 +142,7 @@ public class PaymentEventConsumer {
 	}
 
 	/**
-	 * ③ 모임 삭제 이벤트 처리 - 전체 참가자 환불
+	 * 3. 모임 삭제 이벤트 처리 - 전체 참가자 환불
 	 * Queue: payment.meeting.deleted.queue
 	 * Event: MeetingMessageEvents.Delete (meetingId, meetingName, userIdList)
 	 *
@@ -150,7 +150,7 @@ public class PaymentEventConsumer {
 	 * 모든 참가자의 결제를 환불 처리
 	 */
 	@RabbitListener(
-		queues = "payment.meeting.deleted.queue",
+		queues = PAYMENT_MEETING_DELETED,
 		containerFactory = "paymentListenerContainerFactory"
 	)
 	public void handleMeetingDeleted(MeetingMessageEvents.Delete event,
