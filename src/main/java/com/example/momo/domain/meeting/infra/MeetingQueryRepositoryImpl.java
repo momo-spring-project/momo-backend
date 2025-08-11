@@ -91,7 +91,7 @@ public class MeetingQueryRepositoryImpl implements MeetingQueryRepository {
 
 		// meetingId 0이면 전체 조회
 		if(meetingId != 0L) {
-			builder.and(participant.meetingId.eq(meetingId));
+			builder.and(participant.meeting.id.eq(meeting.id));
 		}
 		// attendance null 이면 전체 조회
 		if(attendance != null) {

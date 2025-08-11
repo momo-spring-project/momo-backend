@@ -128,7 +128,7 @@ public class MeetingEventConsumer {
 			UserClientResponseDto user = userClient.getUser(userId);
 
 			// 참가자 추가
-			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
 			meeting.getParticipants().add(participant);
 
 			// 참가 완료 이벤트 발행

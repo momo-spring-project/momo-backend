@@ -25,7 +25,6 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	private final MeetingQueryRepository meetingQueryRepository;
 	private final MeetingElasticCustomRepository meetingElasticCustomRepository;
 	private final MeetingElasticRepository meetingElasticRepository;
-	private final MeetingParticipantJpaRepository meetingParticipantJpaRepository;
 
 	/* Meeting Repository */
 
@@ -81,10 +80,5 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	@Override
 	public Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt) {
 		return meetingQueryRepository.countParticipants(userId, meetingId, attendance, createdAt);
-	}
-
-	@Override
-	public void removeParticipant(Long participantId) {
-		meetingParticipantJpaRepository.removeMeetingParticipantById(participantId);
 	}
 }

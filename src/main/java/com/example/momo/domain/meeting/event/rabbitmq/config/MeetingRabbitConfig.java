@@ -62,7 +62,7 @@ public class MeetingRabbitConfig {
 		ExponentialBackOffPolicy backOff = new ExponentialBackOffPolicy();
 		backOff.setInitialInterval(500);   // 초기 대기 시간: 0.5초
 		backOff.setMultiplier(2.0);        // 대기 시간 배수: 2배씩 증가
-		backOff.setMaxInterval(10_000);    // 최대 대기 시간: 10초
+		backOff.setMaxInterval(1_000);    // 최대 대기 시간: 10초, 테스트중 변경: 1초
 		retry.setBackOffPolicy(backOff);
 		template.setRetryTemplate(retry);
 		// Confirm/Return Callback (로깅용)

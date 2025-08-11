@@ -37,7 +37,7 @@ public class MeetingEventPublisher {
 
 	// 일반 발행
 	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
-		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
+		EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
 			routingKey,
@@ -58,7 +58,7 @@ public class MeetingEventPublisher {
 			}
 		});
 
-		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
+		EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
 			routingKey,
