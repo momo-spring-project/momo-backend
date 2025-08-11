@@ -20,14 +20,14 @@ public class RoutingKeys {
 	public static final String PARTICIPANT_CANCEL_KEY = "participant.canceled";
 	public static final String PARTICIPANT_DLQ_KEY = "participant.canceled";
 
-	public static final String MEETING_CREATE = "meeting.created";
-	public static final String MEETING_UPDATE = "meeting.updated";
-	public static final String MEETING_DELETE = "meeting.deleted";
+	public static final String MEETING_CREATE_KEY = "meeting.created.key";
+	public static final String MEETING_UPDATE_KEY = "meeting.updated.key";
+	public static final String MEETING_DELETE_KEY = "meeting.deleted.key";
 
 	// Payment 관련 key
-	public static final String PAYMENT_COMPLETED_KEY = "payment.completed";
-	public static final String PAYMENT_FAILED_KEY = "payment.failed";
-	public static final String PAYMENT_REFUNDED_KEY = "payment.refunded";
+	public static final String PAYMENT_COMPLETED_KEY = "payment.completed.key";
+	public static final String PAYMENT_FAILED_KEY = "payment.failed.key";
+	public static final String PAYMENT_REFUNDED_KEY = "payment.refunded.key";
 	public static final String PAYMENT_DLQ = "payment.dlq";
 
 }

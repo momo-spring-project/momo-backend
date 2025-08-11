@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -60,7 +61,6 @@ public class MeetingServiceImpl implements MeetingService {
 
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingRepository meetingRepository;
-	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final CategoryClient categoryClient;
 	private final MeetingProducer meetingProducer;
@@ -70,10 +70,24 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 	private final ObjectMapper objectMapper;
 
-	@Override
-	public Meeting getMeetingEntity(Long meetingId) {
-		return meetingRepository.findById(meetingId).orElseThrow(() ->
-			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+	// 모임 조회
+	public Meeting getMeetingById(Long meetingId) {
+
+		Meeting meeting = meetingRepository.findById(meetingId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+		if(meeting.getIsDeleted()){
+			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
+		}
+
+		return meeting;
+	}
+
+	// 참가자 조회
+	public MeetingParticipant getParticipantByMeetingIdAndUserId(Long meetingId, Long userId) {
+		Meeting meeting = getMeetingById(meetingId);
+
+		return meeting.getParticipants().stream().filter(p -> p.getUserId().equals(userId)).findFirst()
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
 	}
 
 	@Override
@@ -237,8 +251,14 @@ public class MeetingServiceImpl implements MeetingService {
 			try {
 				String eventPayload = objectMapper.writeValueAsString(deleteEvent);
 
+				EventWrapper<?> wrapper = EventWrapper.of(MEETING_DELETE, eventPayload);
 				MeetingPaymentOutbox paymentOutbox =
-					MeetingPaymentOutbox.create(PaymentEventType.MEETING_DELETE, meetingId, eventPayload);
+					MeetingPaymentOutbox.create(
+						MEETING_DELETE,
+						meetingId,
+						wrapper.uuId(),
+						objectMapper.writeValueAsString(wrapper)
+					);
 				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
 			} catch (Exception e) {
 				throw new MeetingException(MeetingExceptionCode.JSON_SERIALIZATION_ERROR);
@@ -300,7 +320,7 @@ public class MeetingServiceImpl implements MeetingService {
 			}
 			log.info("Lock acquired");
 
-			Meeting meeting = meetingReader.getMeetingById(meetingId);
+			Meeting meeting = getMeetingById(meetingId);
 
 			// 이미 참가했으면 예외처리
 			if (meeting.getParticipants()
@@ -394,7 +414,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional(readOnly = true)
 	public ParticipantResponseDto getParticipant(Long meetingId, Long userId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		MeetingParticipant participant = meeting.getParticipants()
 			.stream()
@@ -409,7 +429,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional(readOnly = true)
 	public List<ParticipantResponseDto> getParticipants(Long meetingId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		List<MeetingParticipant> participants = meeting.getParticipants();
 
@@ -422,7 +442,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 		if (meeting.getHostUserId().equals(userId)) {
 			throw new MeetingException(MeetingExceptionCode.HOST_CANCEL_FORBIDDEN);
 		}
@@ -430,7 +450,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		UserClientResponseDto user = userClient.getUser(userId);
 
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		MeetingParticipant participant = getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		// 6시간 전이면 취소/환불 불가
 		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
@@ -480,7 +500,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantResponseDto updateParticipantStatus(Long userId, Long meetingId, double lat, double lng) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		// 모임 활성화 확인
 		isMeetingOpen(meeting);
@@ -493,7 +513,7 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
 		}
 
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		MeetingParticipant participant = getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		if (participant.getAttendanceStatus()) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_ATTENDED);

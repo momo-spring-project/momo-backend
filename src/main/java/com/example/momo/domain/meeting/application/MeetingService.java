@@ -17,9 +17,11 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 
 public interface MeetingService {
 
-	/** Meeting Service */
+	Meeting getMeetingById(Long meetingId);
 
-	Meeting getMeetingEntity(Long meetingId);
+	MeetingParticipant getParticipantByMeetingIdAndUserId(Long meetingId, Long userId);
+
+	/** Meeting Service */
 
 	MeetingResponseDto createMeeting(MeetingCreateRequestDto request, Long userId);
 

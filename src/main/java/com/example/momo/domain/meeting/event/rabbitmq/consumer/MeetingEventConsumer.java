@@ -1,6 +1,7 @@
 package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 
-import com.example.momo.domain.meeting.application.MeetingReader;
+import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.application.MeetingService;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
@@ -12,7 +13,6 @@ import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RedissonClient;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -30,10 +30,11 @@ import static com.example.momo.global.rabbitmq.constant.RoutingKeys.PARTICIPANT_
 @RequiredArgsConstructor
 public class MeetingEventConsumer {
 
-	private final MeetingReader meetingReader;
+	private final MeetingService meetingService;
 	private final UserClient userClient;
 	private final MeetingEventPublisher meetingEventPublisher;
 	private final ObjectMapper objectMapper;
+	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 
 	/**
 	 * 이벤트 수신 과정
@@ -47,6 +48,7 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentSuccessEvent(EventWrapper<?> event, Channel channel, Message message) {
+		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_COMPLETED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제완료, Received: {}", event);
@@ -70,6 +72,7 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAILED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentFailureEvent(EventWrapper<?> event, Channel channel, Message message) {
+		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_FAILED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제실패, Received: {}", event);
@@ -124,7 +127,7 @@ public class MeetingEventConsumer {
 		Long userId = message.userId();
 
 		try {
-			Meeting meeting = meetingReader.getMeetingById(meetingId);
+			Meeting meeting = meetingService.getMeetingById(meetingId);
 			UserClientResponseDto user = userClient.getUser(userId);
 
 			// 참가자 추가
@@ -150,7 +153,7 @@ public class MeetingEventConsumer {
 		Long meetingId = message.meetingId();
 
 		try {
-			Meeting meeting = meetingReader.getMeetingById(meetingId);
+			Meeting meeting = meetingService.getMeetingById(meetingId);
 			meeting.removeMeetingParticipant();
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
