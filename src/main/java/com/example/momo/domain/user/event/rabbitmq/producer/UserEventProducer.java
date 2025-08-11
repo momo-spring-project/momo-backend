@@ -83,6 +83,11 @@ public class UserEventProducer {
 				RabbitExchangeNames.USER_EVENTS,  // Exchange: "momo.user.events"
 				routingKey,                       // RoutingKey: "user.withdrawn"
 				eventWrapper,
+				message -> {
+					message.getMessageProperties()
+						.setHeader("correlationId", correlationId);
+					return message;
+				},
 				correlationData                   // 발행 결과 추적용 ID
 			);
 
