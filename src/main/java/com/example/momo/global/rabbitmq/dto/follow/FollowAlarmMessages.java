@@ -22,7 +22,7 @@ public class FollowAlarmMessages {
 	 * @param followerId 팔로우한 유저 ID
 	 * @param followerUserNickname 팔로우한 유저 닉네임
 	 */
-	@JsonTypeName(EventTypeNames.FOLLOWED)
+	@JsonTypeName(EventTypeNames.USER_FOLLOWED)
 	public record Followed(
 		Long followedId,
 		Long followerId,
