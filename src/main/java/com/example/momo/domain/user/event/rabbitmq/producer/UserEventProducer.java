@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import com.example.momo.global.rabbitmq.constant.EventTypeNames;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
-import com.example.momo.global.rabbitmq.dto.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.extern.slf4j.Slf4j;

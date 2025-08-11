@@ -1,4 +1,4 @@
-package com.example.momo.global.rabbitmq.dto;
+package com.example.momo.global.rabbitmq.dto.User;
 
 import java.time.LocalDateTime;
 

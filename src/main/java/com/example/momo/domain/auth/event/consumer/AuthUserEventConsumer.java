@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.momo.domain.auth.event.config.AuthRabbitMQConfig;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.auth.slack.SlackNotifier;
-import com.example.momo.global.rabbitmq.dto.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
