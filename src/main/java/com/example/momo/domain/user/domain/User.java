@@ -53,15 +53,13 @@ public class User extends BaseEntity {
 	@Column(name = "longitude")
 	private Double longitude;
 
-	// === 연관관계 (OneToMany 단방향) ===
+	// === 연관관계 (양방향) ===
 	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserCategory> categories = new ArrayList<>();
 
-	// 내가 팔로잉을 하는 사람들의 리스트
 	@OneToMany(mappedBy = "follower", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
 	private List<UserFollow> followings = new ArrayList<>();
 
-	// 내가 받은 평가들
 	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
 	@JoinColumn(name = "target_user_id")
 	private List<UserRating> ratings = new ArrayList<>();
@@ -134,7 +132,7 @@ public class User extends BaseEntity {
 		}
 	}
 
-	// === 업데이트 메서드들 ===
+	// === User 테이블 업데이트 메서드 ===
 	public void updateNickname(String nickname) {
 		this.nickname = nickname;
 	}
