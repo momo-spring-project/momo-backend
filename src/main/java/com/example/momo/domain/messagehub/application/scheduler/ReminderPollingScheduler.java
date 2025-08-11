@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
+import com.example.momo.domain.messagehub.application.service.MessageKeyConverter;
 import com.example.momo.domain.messagehub.application.service.RedisReminderService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
@@ -29,18 +30,22 @@ public class ReminderPollingScheduler {
 	@Scheduled(fixedDelay = 60_000)
 	public void poll30minBeforeAlarms() {
 		List<MeetingReminderMessage> messages = redisReminderService.getUpcomingMessages(1000);
-		log.debug("[30분전 알림] 조회된 메시지 수: {}", messages.size());
+		int messageCount = messages.size();
+		log.debug("[30분전 알림] 조회된 메시지 수: {}", messageCount);
+		if (messageCount == 0) {
+			return;
+		}
 
-		Set<MeetingReminderMessage> succeededMessages = messages.stream()
+		Set<String> succeededMessageKeys = messages.stream()
 			.filter(this::publishReminderMessage)
+			.map(MessageKeyConverter::toUniqueKey)
 			.collect(Collectors.toSet());
 
-		log.debug("[30분전 알림] 발송 완료 후 삭제된 메세지 수 : {}", succeededMessages.size());
+		redisReminderService.deleteSentMessages(succeededMessageKeys);
+		log.debug("[30분전 알림] 발송 완료 후 삭제된 메세지 수 : {}", succeededMessageKeys.size());
 
-		succeededMessages.forEach(redisReminderService::deleteSentMessage);
 	}
 
-	// 알림 발행/성공여부만 책임지는 함수
 	private boolean publishReminderMessage(MeetingReminderMessage message) {
 		String content = messageFormatUtil.buildUpcomingMessage(message.getMeetingName());
 		log.debug("[30분전 알림] 알림 발행 - userId: {}, content: {}", message.getUserId(), content);
@@ -55,18 +60,21 @@ public class ReminderPollingScheduler {
 		}
 	}
 
-	@Scheduled(fixedDelay = 1_800_000)
+	@Scheduled(cron = "0 * 10-17 * * *", zone = "Asia/Seoul")
 	public void pollDayBeforeAlarms() {
 		Instant now = Instant.now();
 		log.debug("[하루전 알림] 실행 시간: {}", now);
 
-		List<MeetingReminderMessage> messages = redisReminderService.getTomorrowMessages(1000);
-		log.debug("[하루전 알림] 조회된 메시지 수: {}", messages.size());
+		List<MeetingReminderMessage> messages = redisReminderService.getTomorrowMessages(250);
+		int messageCount = messages.size();
+		log.debug("[하루전 알림] 조회된 메시지 수: {}", messageCount);
+		if (messageCount == 0) {
+			return;
+		}
 
-		// 성공한 메시지의 uniqueKey만 모음
 		Set<String> succeededKeys = messages.stream()
 			.filter(this::publishTomorrowReminderMessage)
-			.map(msg -> msg.getUserId() + ":" + msg.getMeetingId())
+			.map(MessageKeyConverter::toUniqueKey)
 			.collect(Collectors.toSet());
 
 		if (!succeededKeys.isEmpty()) {
@@ -74,7 +82,6 @@ public class ReminderPollingScheduler {
 		}
 	}
 
-	// 발송 성공 여부만 판단
 	private boolean publishTomorrowReminderMessage(MeetingReminderMessage message) {
 		String content = messageFormatUtil.buildTomorrowMessage(message.getMeetingName());
 		log.debug("[하루전 알림] 알림 발행 - userId: {}, content: {}", message.getUserId(), content);
@@ -88,8 +95,8 @@ public class ReminderPollingScheduler {
 		}
 	}
 
-	@Scheduled(cron = "0 0 3 * * *")
+	@Scheduled(cron = "0 * 02-06 * * *", zone = "Asia/Seoul")
 	public void deleteOldRemindersByZSetScore() {
-		redisReminderService.deleteOldRemindersByDate();
+		redisReminderService.deleteOldRemindersByDate(500);
 	}
 }
