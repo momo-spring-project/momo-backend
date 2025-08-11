@@ -15,6 +15,7 @@ public enum MeetingExceptionCode implements ErrorCode {
 	FAR_FROM_MEETING(HttpStatus.FORBIDDEN, "Far from meeting"),
 	MEETING_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting is forbidden"),
 	MEETING_TIME_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting time forbidden"),
+	HOST_CANCEL_FORBIDDEN(HttpStatus.FORBIDDEN, "Host cannot cancel participation"),
 
 	// 404
 	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),
@@ -26,6 +27,7 @@ public enum MeetingExceptionCode implements ErrorCode {
 	ALREADY_FINISHED_MEETING(HttpStatus.CONFLICT, "Already finished meeting"),
 	MEETING_IS_FULL(HttpStatus.CONFLICT, "Meeting is full"),
 	INVALID_PARTICIPANT_COUNT(HttpStatus.CONFLICT, "Invalid participant count"),
+	ALREADY_ATTENDED(HttpStatus.CONFLICT, "Already attended"),
 
 	// 410
 	DELETED_MEETING(HttpStatus.GONE, "Deleted meeting");

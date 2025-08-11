@@ -66,11 +66,11 @@ public class MeetingClient {
 		}
 	}
 
-	public ParticipantClientResponseDto getParticipant(Long meetingId, Long participantId) {
+	public ParticipantClientResponseDto getParticipant(Long meetingId, Long userId) {
 		try {
 			ApiResponse<ParticipantClientResponseDto> response = webClient
 				.get()
-				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/{participantId}", meetingId, participantId)
+				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/{userId}", meetingId, userId)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantClientResponseDto>>() {
 				})
@@ -81,17 +81,17 @@ public class MeetingClient {
 				return null;
 			}
 
-			log.debug("참석자 조회 성공: meetingId={}, participantId={}", meetingId, participantId);
+			log.debug("참석자 조회 성공: meetingId={}, participantId={}", meetingId, userId);
 			return response.getData();
 
 		} catch (WebClientResponseException e) {
 			if (e.getStatusCode().value() == 404) {
-				log.debug("참석자를 찾을 수 없습니다: meetingId={}, participantId={}", meetingId, participantId);
+				log.debug("참석자를 찾을 수 없습니다: meetingId={}, participantId={}", meetingId, userId);
 				return null;
 			}
 
 			log.error("참석자 조회 실패: meetingId={}, participantId={}, status={}, error={}",
-				meetingId, participantId, e.getStatusCode(), e.getMessage());
+				meetingId, userId, e.getStatusCode(), e.getMessage());
 			throw new MeetingClientException("참석자 조회 중 오류가 발생했습니다: " + e.getMessage());
 		}
 	}
