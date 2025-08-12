@@ -118,7 +118,7 @@ public class PaymentQueueConfig {
 		return BindingBuilder
 			.bind(paymentMeetingDeletedQueue())
 			.to(new TopicExchange(RabbitExchangeNames.MEETING_EVENTS))       // meeting.exchange
-			.with(RoutingKeys.MEETING_DELETE);                 // meeting.deleted
+			.with(RoutingKeys.MEETING_DELETE_KEY);                 // meeting.deleted
 	}
 
 	/**

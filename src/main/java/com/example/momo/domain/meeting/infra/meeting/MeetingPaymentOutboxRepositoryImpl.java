@@ -30,4 +30,14 @@ public class MeetingPaymentOutboxRepositoryImpl implements MeetingPaymentOutboxR
 	public Optional<MeetingPaymentOutbox> findById(Long id) {
 		return jpaRepository.findByMeetingId(id);
 	}
+
+	@Override
+	public Optional<MeetingPaymentOutbox> findByEventUuid(String eventUuid) {
+		return jpaRepository.findByEventUuid(eventUuid);
+	}
+
+	@Override
+	public List<MeetingPaymentOutbox> findUnProcessedEvents() {
+		return jpaRepository.findByPublishedTrueAndProcessedFalse();
+	}
 }

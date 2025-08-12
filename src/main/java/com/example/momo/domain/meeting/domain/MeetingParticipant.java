@@ -2,12 +2,7 @@ package com.example.momo.domain.meeting.domain;
 
 import com.example.momo.global.common.entity.BaseCreateEntity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,8 +17,9 @@ public class MeetingParticipant extends BaseCreateEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(nullable = false, name = "meeting_id")
-	private Long meetingId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(nullable = false, name = "meeting_id")
+	private Meeting meeting;
 
 	@Column(nullable = false, name = "user_id")
 	private Long userId;
@@ -31,13 +27,13 @@ public class MeetingParticipant extends BaseCreateEntity {
 	@Column(name = "attendance_status")
 	private Boolean attendanceStatus = false;
 
-	private MeetingParticipant(Long meetingId, Long userId) {
-		this.meetingId = meetingId;
+	private MeetingParticipant(Meeting meeting, Long userId) {
+		this.meeting = meeting;
 		this.userId = userId;
 	}
 
-	public static MeetingParticipant createParticipant(Long meetingId, Long userId) {
-		return new MeetingParticipant(meetingId, userId);
+	public static MeetingParticipant createParticipant(Meeting meeting, Long userId) {
+		return new MeetingParticipant(meeting, userId);
 	}
 
 	public void updateAttendanceStatus() {

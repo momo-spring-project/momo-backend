@@ -13,7 +13,7 @@ public class ParticipantResponseDto {
 
 	public ParticipantResponseDto(MeetingParticipant participant) {
 		this.id = participant.getId();
-		this.meetingId = participant.getMeetingId();
+		this.meetingId = participant.getMeeting().getId();
 		this.participantId = participant.getUserId();
 		this.attendanceStatus = participant.getAttendanceStatus();
 	}

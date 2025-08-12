@@ -18,8 +18,8 @@ public class MeetingPaymentOutboxServiceImpl implements MeetingPaymentOutboxServ
 	private final MeetingPaymentOutboxRepository repository;
 
 	@Override
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void savePaymentOutbox(MeetingPaymentOutbox outbox) {
-
 		repository.save(outbox);
 	}
 
@@ -33,7 +33,28 @@ public class MeetingPaymentOutboxServiceImpl implements MeetingPaymentOutboxServ
 	}
 
 	@Override
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void markEventAsPublished2(String eventUuid) {
+		MeetingPaymentOutbox event = repository.findByEventUuid(eventUuid)
+			.orElseThrow(() -> new IllegalArgumentException("no outbox: " + eventUuid));
+		event.markAsPublished();
+	}
+
+	@Override
 	public List<MeetingPaymentOutbox> getUnpublishedPaymentOutbox() {
 		return repository.findUnpublishedEvents();
+	}
+
+	@Override
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void markEventAsProcessed(String uuId) {
+		MeetingPaymentOutbox event = repository.findByEventUuid(uuId)
+				.orElseThrow(() -> new IllegalArgumentException("no outbox: " + uuId));
+		event.markAsProcessed();
+	}
+
+	@Override
+	public List<MeetingPaymentOutbox> getUnProcessedPaymentOutbox() {
+		return repository.findUnProcessedEvents();
 	}
 }
