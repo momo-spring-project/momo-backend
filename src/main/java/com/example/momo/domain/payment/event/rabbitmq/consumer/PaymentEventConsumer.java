@@ -203,21 +203,41 @@ public class PaymentEventConsumer {
 		queues = PAYMENT_MEETING_DELETED,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleMeetingDeleted(MeetingMessageEvents.Delete event, Channel ch, Message msg) {
+	public void handleMeetingDeleted(EventWrapper<?> wrapper, Channel ch, Message msg) {
 		long tag = msg.getMessageProperties().getDeliveryTag();
 
+		// NULL payload: ack 후 드랍
+		if (wrapper == null || wrapper.data() == null) {
+			log.warn("[meeting.deleted] null payload - ack & drop (no dlq)");
+			safeAck(ch, tag);
+			return;
+		}
+
 		try {
-			// 즉시 DLQ: NULL/필수 누락
-			if (event == null || event.meetingId() == null) {
-				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] null event or missing meetingId");
+			// 즉시 DLQ: 타입 불일치
+			if (!MEETING_DELETE.equals(wrapper.type())) {
+				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] wrong type: " + wrapper.type());
+			}
+
+			// 즉시 DLQ: 역직렬화 실패
+			final MeetingMessageEvents.Delete ev;
+			try {
+				ev = objectMapper.convertValue(wrapper.data(), MeetingMessageEvents.Delete.class);
+			} catch (Exception cvt) {
+				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] deserialize fail", cvt);
+			}
+
+			// 즉시 DLQ: 필수 필드 누락
+			if (ev.meetingId() == null) {
+				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] missing meetingId");
 			}
 
 			log.info("[모임 삭제 환불] meetingId={}, meetingName={}, 참가자={}명",
-				event.meetingId(), event.meetingName(),
-				event.userIdList() != null ? event.userIdList().size() : 0);
+				ev.meetingId(), ev.meetingName(),
+				ev.userIdList() != null ? ev.userIdList().size() : 0);
 
 			List<Payment> completed = paymentRepository.findByMeetingIdAndStatus(
-				event.meetingId(), PaymentStatus.COMPLETED);
+				ev.meetingId(), PaymentStatus.COMPLETED);
 
 			if (completed.isEmpty()) {
 				ch.basicAck(tag, false);
@@ -225,21 +245,25 @@ public class PaymentEventConsumer {
 			}
 
 			int ok = 0, fail = 0;
+			String corr = wrapper.uuId();
+
 			for (Payment payment : completed) {
 				try {
 					RefundRequestDto refundRequest = new RefundRequestDto(
-						String.format("모임 '%s' 삭제로 인한 자동 환불", event.meetingName()));
-					paymentService.refundPayment(payment.getId(), payment.getUserId(), refundRequest);
+						String.format("모임 '%s' 삭제로 인한 자동 환불", ev.meetingName()));
+
+					paymentService.refundPayment(payment.getId(), payment.getUserId(), refundRequest, corr);
+
 					ok++;
 				} catch (Exception refundEx) {
 					fail++;
 					log.error("[환불 실패] paymentId={}, err={}", payment.getId(), refundEx.getMessage(), refundEx);
-					recordRefundFailure(payment, event.meetingId(), refundEx.getMessage());
+					recordRefundFailure(payment, ev.meetingId(), refundEx.getMessage());
 				}
 			}
 
 			log.info("[모임 삭제 환불 완료] 성공:{}건, 실패:{}건", ok, fail);
-			// 부분 실패여도 ACK (환불 실패건은 별도 관리)
+			// 부분 실패여도 ACK (실패건은 별도 기록/후처리)
 			ch.basicAck(tag, false);
 
 		} catch (AmqpRejectAndDontRequeueException reject) {
