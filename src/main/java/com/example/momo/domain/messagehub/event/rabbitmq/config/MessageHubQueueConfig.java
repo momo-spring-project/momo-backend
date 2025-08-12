@@ -4,9 +4,6 @@ import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_CREATE;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_DELETE;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.MEETING_UPDATE;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

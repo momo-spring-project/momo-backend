@@ -73,7 +73,7 @@ public class NotificationTestController {
 		EventWrapper<?> eventWrapper = EventWrapper.of(EventTypeNames.MEETING_UPDATE, event);
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			RoutingKeys.MEETING_UPDATE,
+			RoutingKeys.MEETING_UPDATE_KEY,
 			eventWrapper
 		);
 	}
