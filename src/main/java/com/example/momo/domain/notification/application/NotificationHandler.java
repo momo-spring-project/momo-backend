@@ -78,8 +78,6 @@ public class NotificationHandler {
 			notificationRetryProducer.publishRetry(event, attempts);
 			return;
 		}
-
-		notificationRetryProducer.publishToDlq(event);
 	}
 
 }
