@@ -120,4 +120,9 @@ public class Meeting extends BaseEntity {
 	public void removeMeetingParticipant() {
 		this.currentParticipantsCount--;
 	}
+
+	public void removeMeeting() {
+		this.getParticipants().clear();
+		this.currentParticipantsCount = 0;
+	}
 }

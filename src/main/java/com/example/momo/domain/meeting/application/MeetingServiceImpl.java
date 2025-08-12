@@ -1,10 +1,12 @@
 package com.example.momo.domain.meeting.application;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
@@ -14,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.example.momo.domain.meeting.application.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;
@@ -36,8 +40,8 @@ import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
@@ -47,11 +51,7 @@ import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -212,8 +212,9 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_FORBIDDEN);
 		}
 
-		meeting.delete();
 		List<Long> participants = meeting.getParticipants().stream().map(MeetingParticipant::getId).toList();
+		meeting.removeMeeting();
+		meeting.delete();
 
 		// 모임 삭제 메세지 mq 발행
 		meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
@@ -287,7 +288,6 @@ public class MeetingServiceImpl implements MeetingService {
 		RLock lock = redissonClient.getLock("lock:meeting:free:" + meetingId);
 
 		Meeting meeting = meetingReader.getMeetingById(meetingId);
-		;
 		// 이미 참가했으면 예외처리
 		if (meeting.getParticipants()
 			.stream()
