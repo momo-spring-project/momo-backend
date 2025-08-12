@@ -6,41 +6,19 @@ import com.example.momo.domain.meeting.enums.MeetingStatus;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
 
-@Getter
-public class MeetingUpdateRequestDto {
-
-	@NotBlank
-	private String title;
-
-	@NotBlank
-	private String description;
-
-	private Integer categoryId;
-
-	@NotNull
-	private int maxParticipantsCount;
-
-	@NotNull
-	private LocalDateTime meetingDate;
-
-	@NotNull
-	private LocalDateTime meetingEndDate;
-
-	@NotBlank
-	private String locationName;
-
-	@NotNull
-	private Double latitude;
-
-	@NotNull
-	private Double longitude;
-
-	private Double minEnterScore;
-
-	private int participationFee;
-
-	@NotNull
-	private MeetingStatus status;
+public record MeetingUpdateRequestDto(
+	@NotBlank String title,
+	@NotBlank String description,
+	Integer categoryId,
+	@NotNull int maxParticipantsCount,
+	@NotNull LocalDateTime meetingDate,
+	@NotNull LocalDateTime meetingEndDate,
+	@NotBlank String locationName,
+	@NotNull Double latitude,
+	@NotNull Double longitude,
+	Double minEnterScore,
+	int participationFee,
+	@NotNull MeetingStatus status
+) {
 }
