@@ -12,6 +12,7 @@ import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.domain.payment.enums.OutboxStatus;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -86,12 +87,21 @@ public class PaymentEventProducer {
 				CorrelationData.Confirm confirm = correlationData.getFuture()
 					.get(5, TimeUnit.SECONDS);
 
-				if (confirm != null && confirm.isAck()) {
-					log.info("[Payment] Publisher Confirm ACK - outboxId={}", outboxId);
+				boolean isRefund = RoutingKeys.PAYMENT_REFUNDED_KEY.equals(outbox.getRoutingKey());
 
+				if (confirm != null && confirm.isAck()) {
+					// 브로커까지는 도착
 					if (correlationData.getReturned() != null) {
-						log.warn("[Payment] 라우팅 실패 - outboxId={}", outboxId);
-						outboxService.markEventAsFailed(outboxId, "라우팅 실패");
+						// 교환기 -> 큐 라우팅 실패
+						if (isRefund) {
+							//  환불은 소비자 없음이 정상 -> 성공 처리
+							log.info("[Payment] Refund unroutable 정상 outboxId={}", outboxId);
+							outboxService.markEventAsPublished(outboxId);
+						} else {
+							// 그 외 이벤트는 실패 처리
+							log.warn("[Payment] Unroutable 실패 outboxId={}", outboxId);
+							outboxService.markEventAsFailed(outboxId, "라우팅 실패");
+						}
 					} else {
 						outboxService.markEventAsPublished(outboxId);
 						log.info("[Payment] 이벤트 발행 성공 - outboxId={}", outboxId);
