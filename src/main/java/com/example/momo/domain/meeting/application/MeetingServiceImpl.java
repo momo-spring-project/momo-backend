@@ -80,7 +80,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public MeetingResponseDto createMeeting(MeetingCreateRequestDto request, Long userId) {
 
-		CategoryClientResponseDto category = categoryClient.getCategory(request.getCategoryId());
+		CategoryClientResponseDto category = categoryClient.getCategory(request.categoryId());
 
 		Meeting meeting = request.toMeeting(userId);
 		Meeting savedMeeting = meetingRepository.save(meeting);
@@ -320,6 +320,12 @@ public class MeetingServiceImpl implements MeetingService {
 				}
 				meeting.addMeetingParticipant();
 
+				MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+					ElasticsearchEventType.SAVE);
+				meetingOutboxService.saveMeetingOutbox(outbox);
+
+				eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+
 				// 트랜잭션 커밋 이후에 락 해제
 				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
 					@Override
@@ -437,6 +443,12 @@ public class MeetingServiceImpl implements MeetingService {
 		// 인원 감소, 참가자 삭제
 		meeting.removeMeetingParticipant();
 		meetingRepository.removeParticipant(participant.getId());
+
+		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.SAVE);
+		meetingOutboxService.saveMeetingOutbox(outbox);
+
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
 		// 참가비 있을 경우만 환불 요청 이벤트
 		boolean success;
