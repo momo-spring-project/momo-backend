@@ -13,7 +13,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -33,8 +32,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Meeting extends BaseEntity {
 
-	@OneToMany(mappedBy = "meetingId", cascade = {CascadeType.PERSIST,
-		CascadeType.REMOVE}, fetch = FetchType.LAZY, orphanRemoval = true)
+	@OneToMany(mappedBy = "meeting", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
 	private final List<MeetingParticipant> participants = new ArrayList<>();
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -65,7 +63,6 @@ public class Meeting extends BaseEntity {
 	private Double minEnterScore = 0.0;
 	@Column(nullable = false, name = "participation_fee")
 	private int participationFee;
-
 	// TODO : 추후 Converter 변경 고려
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, name = "status")

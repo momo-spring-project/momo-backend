@@ -11,6 +11,8 @@ import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_DELETE;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,7 +71,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			RoutingKeys.MEETING_DELETE,
+			MEETING_DELETE,
 			event
 		);
 	}
