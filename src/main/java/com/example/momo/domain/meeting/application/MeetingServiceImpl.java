@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -60,7 +61,6 @@ public class MeetingServiceImpl implements MeetingService {
 
 	private final ApplicationEventPublisher eventPublisher;
 	private final MeetingRepository meetingRepository;
-	private final MeetingReader meetingReader;
 	private final UserClient userClient;
 	private final CategoryClient categoryClient;
 	private final MeetingProducer meetingProducer;
@@ -70,10 +70,24 @@ public class MeetingServiceImpl implements MeetingService {
 	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 	private final ObjectMapper objectMapper;
 
-	@Override
-	public Meeting getMeetingEntity(Long meetingId) {
-		return meetingRepository.findById(meetingId).orElseThrow(() ->
-			new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+	// 모임 조회
+	public Meeting getMeetingById(Long meetingId) {
+
+		Meeting meeting = meetingRepository.findById(meetingId)
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
+		if(meeting.getIsDeleted()){
+			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
+		}
+
+		return meeting;
+	}
+
+	// 참가자 조회
+	public MeetingParticipant getParticipantByMeetingIdAndUserId(Long meetingId, Long userId) {
+		Meeting meeting = getMeetingById(meetingId);
+
+		return meeting.getParticipants().stream().filter(p -> p.getUserId().equals(userId)).findFirst()
+			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.PARTICIPANT_NOT_FOUND));
 	}
 
 	@Override
@@ -89,7 +103,7 @@ public class MeetingServiceImpl implements MeetingService {
 			ElasticsearchEventType.SAVE);
 		meetingOutboxService.saveMeetingOutbox(outbox);
 
-		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
+		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
 		meeting.getParticipants().add(participant);
 
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
@@ -237,8 +251,14 @@ public class MeetingServiceImpl implements MeetingService {
 			try {
 				String eventPayload = objectMapper.writeValueAsString(deleteEvent);
 
+				EventWrapper<?> wrapper = EventWrapper.of(MEETING_DELETE, eventPayload);
 				MeetingPaymentOutbox paymentOutbox =
-					MeetingPaymentOutbox.create(PaymentEventType.MEETING_DELETE, meetingId, eventPayload);
+					MeetingPaymentOutbox.create(
+						MEETING_DELETE,
+						meetingId,
+						wrapper.uuId(),
+						objectMapper.writeValueAsString(wrapper)
+					);
 				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
 			} catch (Exception e) {
 				throw new MeetingException(MeetingExceptionCode.JSON_SERIALIZATION_ERROR);
@@ -284,57 +304,95 @@ public class MeetingServiceImpl implements MeetingService {
 	@Override
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
-		RLock lock = redissonClient.getLock("lock:meeting:free:" + meetingId);
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
-		;
-		// 이미 참가했으면 예외처리
-		if (meeting.getParticipants()
-			.stream()
-			.anyMatch(p -> p.getUserId().equals(userId))
-		) {
-			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
-		}
+		RLock lock = redissonClient.getLock("lock:meeting:" + meetingId);
 
-		// 모임 활성화 확인
-		isMeetingOpen(meeting);
-
-		// 유저 자격 확인
-		UserClientResponseDto user = userClient.getUser(userId);
-		if (user.getScore() < meeting.getMinEnterScore()) {
-			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
-		}
+		String message = "";
+		String status = "";
 
 		// (분산락) 인원 추가
 		boolean locked = false;
 		try {
 			locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
 
-			if (locked) {
-				log.info("Lock acquired");
+			if (!locked) {
+				log.info("Lock acquire failed");
+			}
+			log.info("Lock acquired");
 
-				// 참가자 수 확인
-				if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-					throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+			Meeting meeting = getMeetingById(meetingId);
+
+			// 이미 참가했으면 예외처리
+			if (meeting.getParticipants()
+				.stream()
+				.anyMatch(p -> p.getUserId().equals(userId))
+			) {
+				throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
+			}
+
+			// 모임 활성화 확인
+			isMeetingOpen(meeting);
+
+			// 유저 자격 확인
+			UserClientResponseDto user = userClient.getUser(userId);
+			if (user.getScore() < meeting.getMinEnterScore()) {
+				throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
+			}
+
+			// 참가자 수 확인
+			if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+				throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+			}
+			meeting.addMeetingParticipant();
+
+			boolean success;
+			// 참가비 무료일 경우 즉시 참가자 추가
+			if (meeting.getParticipationFee() == 0) {
+				MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
+
+				meeting.getParticipants().add(participant);
+				// 참가 완료 이벤트 발행
+				success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+					new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+					MEETING_PARTICIPANT_JOIN,
+					PARTICIPANT_JOIN_KEY
+				);
+				if (success) {
+					status = "COMPLETED";
+					message = "참가 완료";
 				}
-				meeting.addMeetingParticipant();
+			} else {
+				// 참가 신청 이벤트 발행
+				success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+					new ParticipantEvents.Register(meetingId, userId),
+					MEETING_PARTICIPANT_REGISTER,
+					PARTICIPANT_REGISTER_KEY
+				);
+				if (success) {
+					status = "PENDING";
+					message = "결제 요청 완료";
+				}
+			}
 
-				// 트랜잭션 커밋 이후에 락 해제
-				TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-					@Override
-					public void afterCommit() {
+			if (!success) {
+				throw new RuntimeException("Message publishing failed");
+			}
+
+			// 트랜잭션 커밋 이후에 락 해제
+			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+				@Override
+				public void afterCommit() {
+					lock.unlock();
+				}
+
+				// 롤백, 커밋 실패한 경우 락 해제
+				@Override
+				public void afterCompletion(int status) {
+					if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
 						lock.unlock();
 					}
-
-					// 롤백, 커밋 실패한 경우 락 해제
-					@Override
-					public void afterCompletion(int status) {
-						if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
-							lock.unlock();
-						}
-					}
-				});
-			}
+				}
+			});
 		} catch (InterruptedException e) {
 			// 인터럽트 발생 시 예외 발생 명시
 			Thread.currentThread().interrupt();
@@ -344,42 +402,8 @@ public class MeetingServiceImpl implements MeetingService {
 			if (locked && lock.isHeldByCurrentThread()) {
 				lock.unlock();
 				log.info("Unlocked");
+				throw e;
 			}
-		}
-
-		String status = "";
-		String message = "";
-		boolean success = false;
-		// 참가비 무료일 경우 즉시 참가자 추가
-		if (meeting.getParticipationFee() == 0) {
-			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting.getId(), userId);
-
-			meeting.getParticipants().add(participant);
-			// 참가 완료 이벤트 발행
-			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
-				MEETING_PARTICIPANT_JOIN,
-				PARTICIPANT_JOIN_KEY
-			);
-			if (success) {
-				status = "COMPLETED";
-				message = "참가 완료";
-			}
-		} else {
-			// 참가 신청 이벤트 발행
-			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-				new ParticipantEvents.Register(meetingId, userId),
-				MEETING_PARTICIPANT_REGISTER,
-				PARTICIPANT_REGISTER_KEY
-			);
-			if (success) {
-				status = "PENDING";
-				message = "결제 요청 완료";
-			}
-		}
-
-		if (!success) {
-			throw new RuntimeException("Message publishing failed");
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
@@ -390,7 +414,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional(readOnly = true)
 	public ParticipantResponseDto getParticipant(Long meetingId, Long userId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		MeetingParticipant participant = meeting.getParticipants()
 			.stream()
@@ -405,7 +429,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional(readOnly = true)
 	public List<ParticipantResponseDto> getParticipants(Long meetingId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		List<MeetingParticipant> participants = meeting.getParticipants();
 
@@ -418,7 +442,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantResponseDto deleteParticipant(Long userId, Long meetingId) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 		if (meeting.getHostUserId().equals(userId)) {
 			throw new MeetingException(MeetingExceptionCode.HOST_CANCEL_FORBIDDEN);
 		}
@@ -426,7 +450,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		UserClientResponseDto user = userClient.getUser(userId);
 
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		MeetingParticipant participant = getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		// 6시간 전이면 취소/환불 불가
 		if (LocalDateTime.now().isAfter(meeting.getMeetingDate().minusHours(6))) {
@@ -435,7 +459,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		// 인원 감소, 참가자 삭제
 		meeting.removeMeetingParticipant();
-		meetingRepository.removeParticipant(participant.getId());
+		meeting.getParticipants().remove(participant);
 
 		// 참가비 있을 경우만 환불 요청 이벤트
 		boolean success;
@@ -476,7 +500,7 @@ public class MeetingServiceImpl implements MeetingService {
 	@Transactional
 	public ParticipantResponseDto updateParticipantStatus(Long userId, Long meetingId, double lat, double lng) {
 
-		Meeting meeting = meetingReader.getMeetingById(meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
 		// 모임 활성화 확인
 		isMeetingOpen(meeting);
@@ -489,7 +513,7 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
 		}
 
-		MeetingParticipant participant = meetingReader.getParticipantByMeetingIdAndUserId(meetingId, userId);
+		MeetingParticipant participant = getParticipantByMeetingIdAndUserId(meetingId, userId);
 
 		if (participant.getAttendanceStatus()) {
 			throw new MeetingException(MeetingExceptionCode.ALREADY_ATTENDED);

@@ -1,14 +1,21 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
+import com.example.momo.domain.meeting.application.MeetingOutboxService;
+import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.springEvent.MeetingEvents;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -24,6 +31,9 @@ public class MeetingEventPublisher {
 
 	@Qualifier("participantRabbitTemplate")
 	private final RabbitTemplate rabbitTemplate;
+	private final ObjectMapper objectMapper;
+	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
+	private final EntityManager entityManager;
 
 	/**
 	 * 발행하는 이벤트 목록 ( EventWrapper<?> 타입으로 발행 )
@@ -36,17 +46,36 @@ public class MeetingEventPublisher {
 	 */
 
 	// 일반 발행
-	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
-		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
-		rabbitTemplate.convertAndSend(
-			PARTICIPANT_EVENTS,
-			routingKey,
-			wrapper
-		);
+	@Transactional
+	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType,
+		String routingKey) {
+		try {
+			EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
+			MeetingPaymentOutbox outbox = MeetingPaymentOutbox.create(
+				eventType,
+				event.meetingId(),
+				wrapper.uuId(),
+				objectMapper.writeValueAsString(wrapper)
+			);
+
+			meetingPaymentOutboxService.savePaymentOutbox(outbox);
+
+			rabbitTemplate.convertAndSend(
+				PARTICIPANT_EVENTS,
+				routingKey,
+				wrapper
+			);
+			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", event);
+		} catch (Exception e) {
+			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", event, e);
+			throw new RuntimeException(e);
+		}
 	}
 
 	// 정상 전달 확인 발행
-	public boolean publishWithConfirmParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
+	@Transactional
+	public boolean publishWithConfirmParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType,
+		String routingKey) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 
 		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
@@ -58,19 +87,32 @@ public class MeetingEventPublisher {
 			}
 		});
 
-		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
-		rabbitTemplate.convertAndSend(
-			PARTICIPANT_EVENTS,
-			routingKey,
-			wrapper,
-			correlationData
-		);
-
 		try {
-			log.info("confirm participant event");
-			return future.get(3, TimeUnit.SECONDS);
+			EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
+
+			MeetingPaymentOutbox outbox = MeetingPaymentOutbox.create(
+				eventType,
+				event.meetingId(),
+				wrapper.uuId(),
+				objectMapper.writeValueAsString(wrapper)
+			);
+
+			meetingPaymentOutboxService.savePaymentOutbox(outbox);
+
+			rabbitTemplate.convertAndSend(
+				PARTICIPANT_EVENTS,
+				routingKey,
+				wrapper,
+				correlationData
+			);
+			boolean result = future.get(2, TimeUnit.SECONDS);
+			if (result) {
+				meetingPaymentOutboxService.markEventAsPublished2(outbox.getEventUuid());
+				log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", event);
+			}
+			return result;
 		} catch (Exception e) {
-			log.error("confirm participant events time out", e);
+			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", event, e);
 			return false;
 		}
 	}

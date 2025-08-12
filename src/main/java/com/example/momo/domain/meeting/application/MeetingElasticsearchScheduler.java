@@ -28,7 +28,7 @@ public class MeetingElasticsearchScheduler {
 
 		for (MeetingElasticsearchOutbox outbox : unpublishedEvents) {
 			try {
-				Meeting meeting = meetingService.getMeetingEntity(outbox.getMeetingId());
+				Meeting meeting = meetingService.getMeetingById(outbox.getMeetingId());
 
 				if (outbox.getEventType().equals(ElasticsearchEventType.SAVE)) {
 					meetingService.createElasticMeeting(meeting);

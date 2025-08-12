@@ -36,6 +36,4 @@ public interface MeetingRepository {
 
 	Long countParticipants(Long userId, Long meetingId, Boolean attendance, LocalDateTime createdAt);
 
-	void removeParticipant(Long participantId);
-
 }
