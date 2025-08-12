@@ -24,4 +24,8 @@ public class ReminderKeyUtil {
 		return uniqueKey + ":" + alarmType.name();
 	}
 
+	public static String toUuidMarkKey(String today) {
+		return "uuid:mark:" + today;
+	}
+
 }

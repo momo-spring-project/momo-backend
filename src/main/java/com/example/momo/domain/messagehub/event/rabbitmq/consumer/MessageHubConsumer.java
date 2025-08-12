@@ -33,7 +33,7 @@ public class MessageHubConsumer {
 			return;
 		}
 		log.info("메세지 허브 리스너 접근 : {}", eventWrapper);
-		eventRoutingHandler.handleMessage(eventWrapper.type(), eventWrapper.data());
+		eventRoutingHandler.handleMessage(eventWrapper.uuId(), eventWrapper.type(), eventWrapper.data());
 
 	}
 

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
-import com.example.momo.domain.messagehub.application.service.RedisReminderService;
+import com.example.momo.domain.messagehub.application.service.MessageHubRedisService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.enums.MessageType;
 import com.example.momo.global.rabbitmq.dto.follow.FollowAlarmMessages;
@@ -39,11 +39,11 @@ public class MessageProvider {
 
 	private final MessageFormatUtil messageUtil;
 	private final TargetUserProvider targetUserProvider;
-	private final RedisReminderService redisReminderService;
+	private final MessageHubRedisService messageHubRedisService;
 	private final ObjectMapper objectMapper;
 
 	private void saveReminder(Long userId, Long meetingId, String meetingName, LocalDateTime meetingDate) {
-		redisReminderService.createReminderMessage(MeetingReminderMessage.builder()
+		messageHubRedisService.createReminderMessage(MeetingReminderMessage.builder()
 			.userId(userId)
 			.meetingId(meetingId)
 			.meetingName(meetingName)
@@ -52,7 +52,7 @@ public class MessageProvider {
 	}
 
 	private void deleteReminder(Long userId, Long meetingId) {
-		redisReminderService.deleteSentMessage(MeetingReminderMessage.builder()
+		messageHubRedisService.deleteSentMessage(MeetingReminderMessage.builder()
 			.userId(userId)
 			.meetingId(meetingId)
 			.build());

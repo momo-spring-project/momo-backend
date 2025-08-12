@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
-import com.example.momo.domain.messagehub.application.service.RedisReminderService;
+import com.example.momo.domain.messagehub.application.service.MessageHubRedisService;
 import com.example.momo.domain.messagehub.application.util.MessageFormatUtil;
 import com.example.momo.domain.messagehub.application.util.ReminderKeyUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 @RequiredArgsConstructor
 public class ReminderPollingScheduler {
-	private final RedisReminderService redisReminderService;
+	private final MessageHubRedisService messageHubRedisService;
 	private final MessageHubProducer hubPublisher;
 	private final MessageFormatUtil messageFormatUtil;
 
@@ -40,7 +40,7 @@ public class ReminderPollingScheduler {
 	 */
 	@Scheduled(fixedDelay = 60_000)
 	public void poll30minBeforeAlarms() {
-		List<MeetingReminderMessage> messages = redisReminderService.getUpcomingMessages(1000);
+		List<MeetingReminderMessage> messages = messageHubRedisService.getUpcomingMessages(1000);
 		int messageCount = messages.size();
 		log.debug("[30분전 알림] 조회된 메시지 수: {}", messageCount);
 		if (messageCount == 0) {
@@ -52,7 +52,7 @@ public class ReminderPollingScheduler {
 			.map(ReminderKeyUtil::toUniqueKey)
 			.collect(Collectors.toSet());
 
-		redisReminderService.deleteSentMessages(succeededMessageKeys);
+		messageHubRedisService.deleteSentMessages(succeededMessageKeys);
 		log.debug("[30분전 알림] 발송 완료 후 삭제된 메세지 수 : {}", succeededMessageKeys.size());
 
 	}
@@ -81,7 +81,7 @@ public class ReminderPollingScheduler {
 		Instant now = Instant.now();
 		log.debug("[하루전 알림] 실행 시간: {}", now);
 
-		List<MeetingReminderMessage> messages = redisReminderService.getTomorrowMessages(250);
+		List<MeetingReminderMessage> messages = messageHubRedisService.getTomorrowMessages(250);
 		int messageCount = messages.size();
 		log.debug("[하루전 알림] 조회된 메시지 수: {}", messageCount);
 		if (messageCount == 0) {
@@ -94,7 +94,7 @@ public class ReminderPollingScheduler {
 			.collect(Collectors.toSet());
 
 		if (!succeededKeys.isEmpty()) {
-			redisReminderService.updateSentMessages(succeededKeys, AlarmType.DAY);
+			messageHubRedisService.updateSentMessages(succeededKeys, AlarmType.DAY);
 		}
 	}
 
@@ -120,6 +120,6 @@ public class ReminderPollingScheduler {
 	@Scheduled(cron = "0 0 02-06 * * *", zone = "Asia/Seoul")
 	public void deleteOldRemindersByZSetScore() {
 
-		redisReminderService.deleteOldRemindersByDate(1000);
+		messageHubRedisService.deleteOldRemindersByDate(1000);
 	}
 }

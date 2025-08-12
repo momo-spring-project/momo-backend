@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 @Repository
-public class RedisReminderRepository {
+public class MessageHubRedisRepository {
 
 	private final StringRedisTemplate redisTemplate;
 	private final RedisTemplate<String, MeetingReminderMessage> redisReminderTemplate;
@@ -87,6 +87,18 @@ public class RedisReminderRepository {
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, keys.toArray());
 	}
 
+	public boolean isUuidYesterdayKeyExist(String uuid, String yesterdayKey) {
+		return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(yesterdayKey, uuid));
+	}
+
+	public Long saveUuidKeyWithTodayKey(String uuid, String todayKey) {
+
+		Long savedUuid = redisTemplate.opsForSet().add(todayKey, uuid);
+
+		redisTemplate.expire(todayKey, Duration.ofDays(2));
+
+		return savedUuid;
+	}
 }
 
 

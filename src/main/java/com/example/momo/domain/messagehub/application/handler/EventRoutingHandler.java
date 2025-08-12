@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
+import com.example.momo.domain.messagehub.application.service.MessageHubRedisService;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
 
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,15 @@ public class EventRoutingHandler {
 
 	private final MessageHubProducer messagePublisher;
 
+	private final MessageHubRedisService messageHubRedisService;
+
 	// 전체 로직 흐름 처리
-	public void handleMessage(String type, Object object) {
+	public void handleMessage(String uuid, String type, Object object) {
+		//uuid 중복 확인
+		if (messageHubRedisService.isUuidExistOrSave(uuid)) {
+			return;
+		}
+
 		MessageDto dto = createMessageDto(type, object);
 
 		if (dto == null) {
@@ -39,21 +47,28 @@ public class EventRoutingHandler {
 	// 각 도메인으로 1차 구분
 	private MessageDto createMessageDto(String type, Object object) {
 		String domain = extractDomain(type).toLowerCase();
-
-		switch (domain) {
-			case "meeting" -> {
-				return messageProvider.processMeetingMessage(type, object);
+		try {
+			switch (domain) {
+				case "meeting" -> {
+					return messageProvider.processMeetingMessage(type, object);
+				}
+				case "payment" -> {
+					return messageProvider.processPaymentMessage(type, object);
+				}
+				case "follow" -> {
+					return messageProvider.processFollowMessage(type, object);
+				}
+				default -> {
+					log.warn("지원하지 않는 이벤트 타입: type={}", type);
+					return null;
+				}
 			}
-			case "payment" -> {
-				return messageProvider.processPaymentMessage(type, object);
-			}
-			case "follow" -> {
-				return messageProvider.processFollowMessage(type, object);
-			}
-			default -> {
-				log.warn("지원하지 않는 이벤트 타입: type={}", type);
-				return null;
-			}
+		} catch (IllegalArgumentException e) {
+			log.error("알림 타입 불일치 : type={}", type);
+			return null;
+		} catch (Exception e) {
+			log.error("알 수 없는 예외 발생 : type={}", type);
+			return null;
 		}
 
 	}
