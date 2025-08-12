@@ -90,9 +90,10 @@ public class PaymentEventConsumer {
 
 			// 결제 비즈니스
 			log.info("[결제 시작] meetingId={}, userId={}", meetingId, userId);
-			CardPaymentTestRequestDto req = CardPaymentTestRequestDto.builder()
+			CardPaymentTestRequestDto request = CardPaymentTestRequestDto.builder()
 				.meetingId(meetingId).build();
-			paymentService.createTestKeyInPayment(req, userId);
+			String corr = wrapper.uuId(); //Register의 uuid
+			paymentService.createTestKeyInPayment(request, userId, corr);
 
 			// 성공 -> ACK
 			ch.basicAck(tag, false);
@@ -173,7 +174,8 @@ public class PaymentEventConsumer {
 			// 환불 처리
 			RefundRequestDto refundRequest = new RefundRequestDto(
 				String.format("사용자 %s님의 참가 취소", ev.participantNickname()));
-			paymentService.refundPayment(payment.getId(), ev.userId(), refundRequest);
+			String corr = wrapper.uuId();
+			paymentService.refundPayment(payment.getId(), ev.userId(), refundRequest, corr);
 
 			// 성공 -> ACK
 			ch.basicAck(tag, false);

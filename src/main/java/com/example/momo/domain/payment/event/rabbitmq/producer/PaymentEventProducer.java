@@ -74,6 +74,8 @@ public class PaymentEventProducer {
 				message -> {
 					message.getMessageProperties()
 						.setHeader("x-outbox-id", outbox.getId());
+					message.getMessageProperties().
+						setHeader("x-correlation-id", wrapper.uuId());
 					return message;
 				},
 				correlationData

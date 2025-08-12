@@ -12,10 +12,14 @@ import com.example.momo.domain.payment.enums.PaymentStatus;
 
 public interface PaymentService {
 
+	PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId);
+
 	//테스트 key-in 결제
-	PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto dto, Long userId);
+	PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto dto, Long userId, String correlationUuid);
 
 	//환불 처리
+	PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request, String correlationUuid);
+
 	PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request);
 
 	//조회 메서드들
