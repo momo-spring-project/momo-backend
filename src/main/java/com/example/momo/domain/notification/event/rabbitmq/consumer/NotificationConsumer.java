@@ -30,12 +30,12 @@ public class NotificationConsumer {
 	public void consumeMain(EventWrapper<?> wrapper, Message message) {
 
 		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
-			log.error("알림 컨슈머 접근 실패 - 타입 불일치");
+			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
 			return;
 		}
-		MessageHubNotificationMessage notificationMessage = mapping(wrapper.data());
+		MessageHubNotificationMessage notificationMessage = mapping(wrapper.type(), wrapper.data());
 		if (!validateNotificationMessage(notificationMessage)) {
-			log.error("알림 컨슈머 접근 실패 - 형변환 실패");
+			log.error("알림 컨슈머 접근 실패 - 데이터 유실 dto ={}", notificationMessage);
 			return;
 		}
 
@@ -46,11 +46,12 @@ public class NotificationConsumer {
 		notificationHandler.handleNotification(notificationMessage, message);
 	}
 
-	private MessageHubNotificationMessage mapping(Object object) {
+	private MessageHubNotificationMessage mapping(String type, Object object) {
 
 		try {
 			return objectMapper.convertValue(object, MessageHubNotificationMessage.class);
 		} catch (IllegalArgumentException exception) {
+			log.error("알림 컨슈머 접근 실패 - 형변환 실패 타입 불일치 type={} object={}", type, object);
 			return null;
 		}
 	}

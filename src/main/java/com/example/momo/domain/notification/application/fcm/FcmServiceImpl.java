@@ -12,6 +12,7 @@ import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.domain.notification.application.fcm.sender.FcmSender;
 import com.example.momo.domain.notification.domain.FcmToken;
 import com.example.momo.domain.notification.domain.FcmTokenRepository;
+import com.example.momo.domain.notification.enums.SendStatus;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 
@@ -44,6 +45,7 @@ public class FcmServiceImpl implements FcmService {
 		}
 	}
 
+	//FCM 전체 흐름 처리
 	@Override
 	public boolean processFcmIfTokenExists(FcmMessageDto messageDto) {
 
@@ -56,8 +58,8 @@ public class FcmServiceImpl implements FcmService {
 			return false;
 		}
 
-		//전송 실패 리스트 생성 -> 실패한 토큰 삭제 예정
-		List<FcmToken> failedList = new ArrayList<>();
+		//실패한 토큰 삭제 예정 리스트
+		List<FcmToken> tokensToDelete = new ArrayList<>();
 
 		//모두 전송 실패시 메세지큐 생성 예정
 		boolean successAtLeastOnce = false;
@@ -65,25 +67,29 @@ public class FcmServiceImpl implements FcmService {
 		for (FcmToken fcmToken : tokens) {
 
 			//플랫폼 분리(Android, IOS, WEB...)
-			FcmSender fcmSender = getOrSkipSender(fcmToken, failedList);
+			FcmSender fcmSender = getOrSkipSender(fcmToken, tokensToDelete);
 			if (fcmSender == null)
 				continue;
 
 			messageDto.updateToken(fcmToken.getToken());
 
-			//메세지 플랫폼 서비스로 전송 후 성공/실패 반환
-			boolean success = sendMessage(fcmSender, messageDto);
+			//메세지 플랫폼 서비스로 전송 후 토큰 유효성 체크
+			SendStatus sendStatus = sendMessage(fcmSender, messageDto);
+
+			//실패시 처리 안함
+			if (sendStatus == SendStatus.FAILURE) {
+				continue;
+			}
 
 			//하나라도 성공 시 메세지큐 저장 X
-			if (success) {
-				successAtLeastOnce = true;
-			} else {
-				failedList.add(fcmToken);
+			switch (sendStatus) {
+				case SUCCESS -> successAtLeastOnce = true;
+				case DELETE_TOKEN -> tokensToDelete.add(fcmToken);
 			}
 		}
 
 		// 실패 토큰 DB 삭제
-		deleteFailedTokens(failedList);
+		deleteFailedTokens(tokensToDelete);
 
 		//토큰은 있지만 모든 토큰에 전송 실패했을 경우 메세지큐 저장
 		if (!successAtLeastOnce) {
@@ -95,28 +101,34 @@ public class FcmServiceImpl implements FcmService {
 
 	@Override
 	public void deleteToken(Long userId, String deviceId) {
+
 		fcmTokenRepository.deleteToken(userId, deviceId);
 	}
 
-	private boolean sendMessage(FcmSender sender, FcmMessageDto messageDto) {
+	//메세지 전송 후 예외 처리
+	private SendStatus sendMessage(FcmSender sender, FcmMessageDto messageDto) {
 		try {
 			//플랫폼 Sender 에 send 메서드로 전송
 			sender.send(messageDto);
-			return true;
+			return SendStatus.SUCCESS;
 
 		} catch (FirebaseMessagingException e) {
 			MessagingErrorCode code = e.getMessagingErrorCode();
 
-			if (code == MessagingErrorCode.INVALID_ARGUMENT || code == MessagingErrorCode.UNREGISTERED) {
+			if (code == MessagingErrorCode.INVALID_ARGUMENT
+				|| code == MessagingErrorCode.UNREGISTERED
+				|| code == MessagingErrorCode.SENDER_ID_MISMATCH) {
 				log.warn("유효하지 않은 토큰: token={}, code={}", messageDto.getToken(), code);
+				return SendStatus.DELETE_TOKEN;
 			} else {
 				log.warn("FCM 전송 실패 (Firebase 예외): token={}, code={}", messageDto.getToken(), code, e);
+				return SendStatus.FAILURE;
 			}
 
 		} catch (Exception e) {
 			log.warn("FCM 전송 실패 (기타 예외): token={}, error={}", messageDto.getToken(), e.getMessage(), e);
+			return SendStatus.FAILURE;
 		}
-		return false;
 	}
 
 	//지원하는 플랫폼 서비스 생성
