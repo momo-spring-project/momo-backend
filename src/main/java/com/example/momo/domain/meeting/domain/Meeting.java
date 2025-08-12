@@ -13,11 +13,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -79,8 +79,9 @@ public class Meeting extends BaseEntity {
 	private Double minEnterScore = 0.0;
 
 	@Builder.Default
-	@OneToMany(cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, orphanRemoval = true)
-	@JoinColumn(name = "meeting_id")
+	@OneToMany(mappedBy = "meetingId", cascade = {CascadeType.PERSIST,
+		CascadeType.REMOVE}, fetch = FetchType.LAZY, orphanRemoval = true)
+	//@JoinColumn(name = "meeting_id")
 	private List<MeetingParticipant> participants = new ArrayList<>();
 
 	@Column(nullable = false, name = "participation_fee")

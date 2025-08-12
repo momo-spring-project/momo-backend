@@ -213,7 +213,6 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		List<Long> participants = meeting.getParticipants().stream().map(MeetingParticipant::getId).toList();
-		meeting.removeMeeting();
 		meeting.delete();
 
 		// 모임 삭제 메세지 mq 발행
@@ -226,7 +225,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		// 모임 삭제시 참가자들 환불 mq 발행
 		// 상태가 아직 진행중, 참가자가 존재 시 환불 이벤트 발행
-		if (!meeting.getParticipants().isEmpty() &&
+		if (!participants.isEmpty() &&
 			meeting.getStatus().equals(MeetingStatus.IN_PROGRESS)) {
 
 			MeetingMessageEvents.Delete deleteEvent = new MeetingMessageEvents.Delete(
@@ -247,6 +246,8 @@ public class MeetingServiceImpl implements MeetingService {
 
 			eventPublisher.publishEvent(deleteEvent);
 		}
+
+		meeting.removeMeeting();
 
 		MeetingElasticsearchOutbox elasticsearchOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
 			ElasticsearchEventType.DELETE);
