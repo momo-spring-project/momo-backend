@@ -34,7 +34,7 @@ public class UserRating extends BaseCreateEntity {
 	@Column(nullable = false, name = "rating_score")
 	private Integer ratingScore;
 
-	public UserRating(Long reviewerId, Long targetUserId, Long meetingId, Integer ratingScore) {
+	UserRating(Long reviewerId, Long targetUserId, Long meetingId, Integer ratingScore) {
 		this.reviewerId = reviewerId;
 		this.targetUserId = targetUserId;
 		this.meetingId = meetingId;

@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -16,17 +17,20 @@ import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantCountClientResponseDto;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MeetingClient {
+
+	private final WebClient webClient;
+
+	public MeetingClient(@Qualifier("internalWebClient") WebClient webClient) {
+		this.webClient = webClient;
+	}
 
 	private final static String MEETING_SERVICE_BASE_URI = "/meetings";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-	private final WebClient webClient;
 
 	/**
 	 * 단일 모임 정보 조회

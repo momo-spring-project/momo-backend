@@ -10,5 +10,11 @@ public interface MeetingPaymentOutboxService {
 
 	void markEventAsPublished(Long meetingId);
 
+	void markEventAsPublished2(String eventUuid);
+
 	List<MeetingPaymentOutbox> getUnpublishedPaymentOutbox();
+
+	void markEventAsProcessed(String uuId);
+
+	List<MeetingPaymentOutbox> getUnProcessedPaymentOutbox();
 }

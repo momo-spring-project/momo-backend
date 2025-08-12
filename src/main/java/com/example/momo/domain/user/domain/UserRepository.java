@@ -43,8 +43,6 @@ public interface UserRepository {
 
 	Slice<User> findFollowersByUserId(Long userId, Pageable pageable);
 
-	int deleteUserFollow(Long followerId, Long followingId);
-
 	// ==================== 사용자 저장 및 단일 조회 ====================
 
 	void save(User user);

@@ -10,4 +10,8 @@ public interface MeetingPaymentOutboxRepository {
 	List<MeetingPaymentOutbox> findUnpublishedEvents();
 
 	Optional<MeetingPaymentOutbox> findById(Long id);
+
+	Optional<MeetingPaymentOutbox> findByEventUuid(String eventUuid);
+
+	List<MeetingPaymentOutbox> findUnProcessedEvents();
 }

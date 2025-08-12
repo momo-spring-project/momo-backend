@@ -1,10 +1,8 @@
 package com.example.momo.domain.auth.event.config;
 
-
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Exchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
@@ -32,10 +30,12 @@ public class AuthRabbitMQConfig {
 	}
 
 	@Bean
-	public Queue authUserDLQ(){ return new Queue(AUTH_USER_DLQ,true); }
+	public Queue authUserDLQ() {
+		return new Queue(AUTH_USER_DLQ, true);
+	}
 
 	@Bean
-	public DirectExchange authUserDLX(){
+	public DirectExchange authUserDLX() {
 		return new DirectExchange(AUTH_USER_DLX, true, false);
 	}
 
@@ -44,7 +44,7 @@ public class AuthRabbitMQConfig {
 		return BindingBuilder
 			.bind(authUserEventsQueue())
 			.to(new TopicExchange(RabbitExchangeNames.USER_EVENTS, true, false))
-			.with(RoutingKeys.USER_WITHDRAWN);
+			.with(RoutingKeys.USER_WITHDRAWN_KEY);
 	}
 
 	@Bean

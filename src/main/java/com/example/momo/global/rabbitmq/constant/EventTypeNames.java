@@ -5,6 +5,10 @@ public class EventTypeNames {
 
 	public static final String EVENT_TYPE = "eventType";
 
+	// User 이벤트 타입
+	public static final String USER_WITHDRAWN = "user.withdrawn";
+	public static final String USER_FOLLOWED = "user.followed";
+
 	// Meeting 이벤트 타입
 	public static final String MEETING_CREATE = "meeting.create";
 	public static final String MEETING_UPDATE = "meeting.update";

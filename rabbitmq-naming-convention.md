@@ -52,8 +52,8 @@ public class RabbitExchangeNames {
 
 // RoutingKeys.java
 public class RoutingKeys {
-	public static final String USER_CREATED = "user.created";
-	public static final String USER_WITHDRAWN = "user.withdrawn";
+	public static final String USER_CREATED_KEY = "user.created.key";
+	public static final String USER_WITHDRAWN_KEY = "user.withdrawn.key";
 }
 
 // QueueNames.java

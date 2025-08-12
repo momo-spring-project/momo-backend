@@ -3,6 +3,7 @@ package com.example.momo.domain.auth.event.consumer;
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Recover;
@@ -10,12 +11,11 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.application.dto.event.AuthEventMessage;
 import com.example.momo.domain.auth.event.config.AuthRabbitMQConfig;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.auth.slack.SlackNotifier;
-import com.example.momo.domain.user.domain.User;
-import com.example.momo.global.rabbitmq.dto.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,38 +36,129 @@ public class AuthUserEventConsumer {
 	)
 	@RabbitHandler
 	@Transactional
-	public void handleUserEvent(UserEventMessage message) {
-		if (message.eventType().equals("user.withdrawn")) {
-			handleUserWithdrawn(message);
-			return;
-			// 필요한 이벤트들 추가 -> 케이스 많아지면 switch 문으로 변경
+	public void handleUserEvent(EventWrapper<?> eventWrapper,
+		@Header(value = "correlationId", required = false) String correlationId) {
+
+		// correlationId가 없으면 기본값 생성
+		if (correlationId == null) {
+			correlationId = "unknown-" + eventWrapper.uuId();
 		}
 
-		throw new RuntimeException("지원하지 않는 이벤트 타입:" + message.eventType());
+		// 1. EventWrapper 기본 검증
+		if (eventWrapper == null) {
+			log.error("[{}] EventWrapper가 null입니다", correlationId);
+			throw new IllegalArgumentException("EventWrapper cannot be null");
+		}
+
+		// 2. type 검증
+		String eventType = eventWrapper.type();
+		if (eventType == null || eventType.trim().isEmpty()) {
+			log.error("[{}] 이벤트 타입이 null이거나 비어있습니다: eventId={}",
+				correlationId, eventWrapper.uuId());
+			throw new IllegalArgumentException("Event type cannot be null or empty");
+		}
+
+		// 3. data 검증
+		if (eventWrapper.data() == null) {
+			log.error("[{}] 이벤트 데이터가 null입니다: eventType={}, eventId={}",
+				correlationId, eventType, eventWrapper.uuId());
+			throw new IllegalArgumentException("Event data cannot be null");
+		}
+
+		log.info("[{}] 이벤트 처리 시작: eventType={}, eventId={}",
+			correlationId, eventType, eventWrapper.uuId());
+
+		switch (eventType) {
+			case "user.withdrawn" -> handleUserWithdrawn(eventWrapper, correlationId);
+			default -> {
+				log.error("[{}] 지원하지 않는 이벤트 타입: {}", correlationId, eventType);
+				throw new UnsupportedOperationException("지원하지 않는 이벤트 타입: " + eventType);
+			}
+		}
 	}
 
 	/**
 	 * 메시지 소비를 3번 시도하고 실패하면 DLQ로 이동
 	 */
 	@Recover
-	public void recover(Exception e, UserEventMessage message) {
-		// Retryable 의 최대 횟수를 모두 실패하면 error 로그를 남김.
-		log.error("User 이벤트 처리 실패: eventType={}, error={}", message.eventType(), e.getMessage(), e);
+	public void recover(Exception e, EventWrapper<?> eventWrapper, String correlationId) {
+		// correlationId가 없으면 기본값
+		if (correlationId == null) {
+			correlationId = "unknown-" + eventWrapper.uuId();
+		}
 
-		// Slack 메시지를 보냄
-		slackNotifier.notifyMessageConsumeFailure(this.getClass().getSimpleName(), message.eventType(),
-			AuthRabbitMQConfig.AUTH_USER_EVENTS_QUEUE,  e);
-		// Slack 메시지를 보내고 DLQ로 이동
-		throw new AmqpRejectAndDontRequeueException("Retry 실패, DLQ로 이동: eventType=" + message.eventType(), e);
+		log.error("[{}] User 이벤트 처리 실패: eventType={}, eventId={}, error={}",
+			correlationId, eventWrapper.type(), eventWrapper.uuId(), e.getMessage(), e);
+
+		// Slack 알림에도 correlationId 포함
+		slackNotifier.notifyMessageConsumeFailure(
+			this.getClass().getSimpleName(),
+			eventWrapper.type() + " (correlationId: " + correlationId + ")",
+			AuthRabbitMQConfig.AUTH_USER_EVENTS_QUEUE,
+			e
+		);
+
+		throw new AmqpRejectAndDontRequeueException(
+			"Retry 실패, DLQ로 이동: eventType=" + eventWrapper.type() + ", correlationId=" + correlationId, e);
 	}
 
-	private void handleUserWithdrawn(UserEventMessage message) {
-		UserEventMessage.UserWithdrawnData data = (UserEventMessage.UserWithdrawnData)message.data();
+	/**
+	 * 회원탈퇴 이벤트 처리
+	 */
+	private void handleUserWithdrawn(EventWrapper<?> eventWrapper, String correlationId) {
+		try {
+			// 데이터 타입 캐스팅 검증
+			if (!(eventWrapper.data() instanceof UserEventMessage.UserWithdrawnData)) {
+				log.error("[{}] 잘못된 데이터 타입: expected=UserWithdrawnData, actual={}",
+					correlationId, eventWrapper.data().getClass().getSimpleName());
+				throw new IllegalArgumentException("잘못된 데이터 타입입니다");
+			}
 
-		log.info("회원탈퇴 이벤트 수신: userId={}, email={}", data.userId(), data.email());
+			UserEventMessage.UserWithdrawnData data = (UserEventMessage.UserWithdrawnData)eventWrapper.data();
 
-		userSocialRepository.deleteAllByUserId(data.userId());
+			// 필수 필드 검증
+			validateUserWithdrawnData(data, correlationId);
 
-		log.info("계정({})에 연동된 소셜 로그인을 모두 삭제했습니다.", data.email());
+			log.info("[{}] 회원탈퇴 이벤트 수신: userId={}, email={}, eventId={}",
+				correlationId, data.userId(), data.email(), eventWrapper.uuId());
+
+			// 비즈니스 로직 실행
+			userSocialRepository.deleteAllByUserId(data.userId());
+
+			log.info("[{}] 계정({})에 연동된 소셜 로그인을 모두 삭제했습니다.",
+				correlationId, data.email());
+
+		} catch (ClassCastException e) {
+			log.error("[{}] 데이터 캐스팅 실패: {}", correlationId, e.getMessage());
+			throw new IllegalArgumentException("이벤트 데이터 형식이 올바르지 않습니다", e);
+		} catch (Exception e) {
+			log.error("[{}] 소셜 로그인 삭제 실패: error={}", correlationId, e.getMessage());
+			throw e;
+		}
+	}
+
+	/**
+	 * UserWithdrawnData 필수 필드 검증
+	 */
+	private void validateUserWithdrawnData(UserEventMessage.UserWithdrawnData data, String correlationId) {
+		if (data.userId() == null) {
+			log.error("[{}] userId가 null입니다", correlationId);
+			throw new IllegalArgumentException("userId는 필수입니다");
+		}
+
+		if (data.userId() <= 0) {
+			log.error("[{}] 잘못된 userId: {}", correlationId, data.userId());
+			throw new IllegalArgumentException("userId는 양수여야 합니다");
+		}
+
+		if (data.email() == null || data.email().trim().isEmpty()) {
+			log.error("[{}] email이 null이거나 비어있습니다: userId={}", correlationId, data.userId());
+			throw new IllegalArgumentException("email은 필수입니다");
+		}
+
+		if (data.nickname() == null || data.nickname().trim().isEmpty()) {
+			log.error("[{}] nickname이 null이거나 비어있습니다: userId={}", correlationId, data.userId());
+			throw new IllegalArgumentException("nickname은 필수입니다");
+		}
 	}
 }

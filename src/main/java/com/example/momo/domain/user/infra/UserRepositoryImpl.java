@@ -79,11 +79,6 @@ public class UserRepositoryImpl implements UserRepository {
 		return userJpaRepository.findFollowersByUserId(userId, pageable);
 	}
 
-	@Override
-	public int deleteUserFollow(Long followerId, Long followingId) {
-		return userJpaRepository.deleteUserFollow(followerId, followingId);
-	}
-
 	// ==================== 저장 ====================
 
 	@Override
