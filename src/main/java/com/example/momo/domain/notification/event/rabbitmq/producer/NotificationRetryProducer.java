@@ -21,20 +21,12 @@ public class NotificationRetryProducer {
 	public void publishRetry(MessageHubNotificationMessage message, int nextAttempts) {
 		rabbitTemplate.convertAndSend(
 			NOTIFICATION_EVENTS_RETRY,
-			NOTIFICATION_SENT_RETRY,
+			NOTIFICATION_SENT_RETRY_KEY,
 			message,
 			m -> {
 				m.getMessageProperties().getHeaders().put(NOTIFICATION_RETRY_HEADER, nextAttempts);
 				return m;
 			}
-		);
-	}
-
-	public void publishToDlq(MessageHubNotificationMessage message) {
-		rabbitTemplate.convertAndSend(
-			NOTIFICATION_EVENTS_DLX,
-			NOTIFICATION_SENT_DLX,
-			message
 		);
 	}
 }

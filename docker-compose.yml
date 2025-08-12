@@ -106,6 +106,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
+    hostname: rabbitmq
     ports:
       - "5672:5672"     # AMQP (Spring에서 연결)
       - "15672:15672"   # RabbitMQ Web 관리 콘솔
@@ -125,6 +126,20 @@ services:
       - grafana-storage:/var/lib/grafana
       - ./monitoring/datasources:/etc/grafana/provisioning/datasources
     restart: unless-stopped
+
+  # FCM
+  firebase:
+    build: .
+    container_name: firebase
+    env_file:
+      - .env
+    environment:
+      FIREBASE_CREDENTIALS: ${FIREBASE_CREDENTIALS}
+    depends_on:
+      - rabbitmq
+      - redis
+    ports:
+      - "8081:8080"
 
 volumes:
   grafana-storage:

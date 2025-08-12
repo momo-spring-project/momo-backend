@@ -3,16 +3,12 @@ package com.example.momo.global.rabbitmq.dto.meeting;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.global.rabbitmq.constant.EventTypeNames;
-import com.example.momo.global.rabbitmq.dto.messagehub.DomainAlarmMessage;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-
 public class MeetingAlarmMessages {
 
 	/**
 	 * 모임 이벤트 마커 인터페이스입니다.
 	 */
-	public interface MeetingAlarmMessage extends DomainAlarmMessage {
+	public interface MeetingAlarmMessage {
 		Long meetingId();
 	}
 
@@ -28,7 +24,6 @@ public class MeetingAlarmMessages {
 	 * @param longitude 경도
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventTypeNames.MEETING_CREATE)
 	public record Create(
 		Long hostUserId,
 		Long meetingId,
@@ -49,7 +44,6 @@ public class MeetingAlarmMessages {
 	 * @param userIdList 관련 유저 ID 목록(Host 유저 ID 포함)
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventTypeNames.MEETING_UPDATE)
 	public record Update(
 		Long meetingId,
 		String meetingName,
@@ -65,7 +59,6 @@ public class MeetingAlarmMessages {
 	 * @param meetingName 삭제된 모임 이름
 	 * @param userIdList 관련 유저 ID 목록(Host 유저 ID 포함)
 	 */
-	@JsonTypeName(EventTypeNames.MEETING_DELETE)
 	public record Delete(
 		Long hostUserId,
 		Long meetingId,
@@ -84,7 +77,6 @@ public class MeetingAlarmMessages {
 	 * @param participantNickname 참여한 유저 닉네임
 	 * @param meetingDate 모임 시작 날짜/시간
 	 */
-	@JsonTypeName(EventTypeNames.MEETING_JOIN)
 	public record Join(
 		Long meetingId,
 		Long hostUserId,
@@ -103,7 +95,6 @@ public class MeetingAlarmMessages {
 	 * @param userId 취소한 유저 ID
 	 * @param participantNickname 취소한 유저 닉네임
 	 */
-	@JsonTypeName(EventTypeNames.MEETING_CANCEL)
 	public record Cancel(
 		Long meetingId,
 		Long hostUserId,
