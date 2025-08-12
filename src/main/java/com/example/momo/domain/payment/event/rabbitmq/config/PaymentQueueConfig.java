@@ -50,9 +50,15 @@ public class PaymentQueueConfig {
 			.build();
 	}
 
+	/**
+	 * 모임 삭제 이벤트를 수신하는 큐
+	 * - 발행처: meeting.exchange (Topic)
+	 * - 라우팅키: meeting.deleted
+	 * - 실패 메시지는 Payment 전용 DLX로 이동
+	 */
 	@Bean
 	public Queue paymentMeetingDeletedQueue() {
-		return QueueBuilder.durable("payment.meeting.deleted.queue")
+		return QueueBuilder.durable(QueueNames.PAYMENT_MEETING_DELETED)
 			.withArgument("x-dead-letter-exchange", RabbitExchangeNames.DLX_PAYMENT)
 			.withArgument("x-dead-letter-routing-key", RoutingKeys.PAYMENT_DLQ)
 			.build();
@@ -83,8 +89,8 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantRegisteredBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantRegisteredQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_REGISTER);
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_REGISTER_KEY);
 	}
 
 	/**
@@ -96,10 +102,17 @@ public class PaymentQueueConfig {
 	public Binding paymentParticipantCanceledBinding() {
 		return BindingBuilder
 			.bind(paymentParticipantCanceledQueue())
-			.to(new DirectExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
-			.with(RoutingKeys.PARTICIPANT_CANCEL_REFUND);
+			.to(new TopicExchange(RabbitExchangeNames.PARTICIPANT_EVENTS))
+			.with(RoutingKeys.PARTICIPANT_CANCEL_KEY);
 	}
 
+	/**
+	 * 'meeting.deleted' 이벤트 바인딩
+	 * Exchange: meeting.exchange (TopicExchange)
+	 * RoutingKey: meeting.deleted
+	 * - Meeting 서비스가 모임 삭제 시 publish하는 이벤트를 Payment 도메인이 수신
+	 * - TopicExchange를 쓰므로 필요하면 'meeting.*' 같은 패턴으로 확장 가능
+	 */
 	@Bean
 	public Binding meetingDeletedBinding() {
 		return BindingBuilder
@@ -121,28 +134,4 @@ public class PaymentQueueConfig {
 			.with(RoutingKeys.PAYMENT_DLQ);
 	}
 
-	// ===========================
-	// 추후 구현 예정 Queue
-	// ===========================
-
-	/**
-	 * 모임 삭제 이벤트 큐 (추후 구현)
-	 * - 모임이 삭제되면 모든 참가자의 결제를 환불
-	 *
-	 * @Bean
-	 * public Queue paymentMeetingDeletedQueue() {
-	 *     return QueueBuilder.durable(QueueNames.PAYMENT_MEETING_DELETED)
-	 *         .withArgument("x-dead-letter-exchange", RabbitExchangeNames.X_DLX_PAYMENT)
-	 *         .withArgument("x-dead-letter-routing-key", RoutingKeys.PAYMENT_DLQ)
-	 *         .build();
-	 * }
-	 *
-	 * @Bean
-	 * public Binding paymentMeetingDeletedBinding() {
-	 *     return BindingBuilder
-	 *         .bind(paymentMeetingDeletedQueue())
-	 *         .to(new DirectExchange(RabbitExchangeNames.MEETING_EVENTS))
-	 *         .with(RoutingKeys.MEETING_DELETED);
-	 * }
-	 */
 }

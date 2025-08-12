@@ -1,10 +1,11 @@
 package com.example.momo.domain.payment.event.rabbitmq.consumer;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 
-import java.io.IOException;
 import java.util.List;
 
+import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
@@ -15,8 +16,11 @@ import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.domain.payment.exception.PaymentException;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,13 @@ import lombok.extern.slf4j.Slf4j;
  * Payment 도메인의 RabbitMQ 이벤트 Consumer
  * - 참가자 등록/취소 이벤트 처리
  * - 모임 삭제 이벤트 처리
+ *
+ * 처리 정책:
+ *  - 성공/멱등: 직접 ACK
+ *  - 비즈니스 예외(PaymentException): ACK (재처리 불필요, 실패 이벤트는 서비스 내부 outbox로 발행)
+ *  - 즉시 DLQ(재시도 불필요): AmqpRejectAndDontRequeueException 던짐
+ *      - NULL, 타입 불일치, 역직렬화 실패, 필수 필드 누락
+ *  - 시스템/일시적 오류: RuntimeException 던짐 -> 컨테이너 재시도 후 DLQ
  */
 @Slf4j
 @Component
@@ -34,223 +45,222 @@ public class PaymentEventConsumer {
 
 	private final PaymentRepository paymentRepository;
 	private final PaymentService paymentService;
+	private final ObjectMapper objectMapper;
 
 	/**
-	 * ① 참가자 등록 이벤트 처리 - 결제 생성
-	 * Queue: payment.participant.registered.queue
-	 * Event: ParticipantEvents.Register (meetingId, userId)
-	 *
-	 * Meeting에서 참가 신청 시 발행하는 이벤트
-	 * 결제 처리 후 payment.completed 또는 payment.failed 이벤트 발행
+	 * 1) 참가자 등록 -> 결제 생성
 	 */
 	@RabbitListener(
 		queues = PAYMENT_PARTICIPANT_REGISTER,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleParticipantRegister(ParticipantEvents.Register event,
-		Channel channel,
-		Message message) {
-		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+	public void handleParticipantRegister(EventWrapper<?> wrapper, Channel ch, Message msg) {
+		long tag = msg.getMessageProperties().getDeliveryTag();
+		Long meetingId = null, userId = null;
 
-		log.info("[결제 시작] 참가자 등록 이벤트 수신 - meetingId: {}, userId: {}",
-			event.meetingId(), event.userId());
-
+		// NULL payload: ack 후 드랍
+		if (wrapper == null || wrapper.data() == null) {
+			log.warn("[register] null payload - ack & drop (no dlq) ");
+			safeAck(ch, tag);
+			return;
+		}
 		try {
-			// 이미 결제 완료된 경우 체크 (중복 방지)
-			if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
-				event.meetingId(), event.userId(), PaymentStatus.COMPLETED)) {
-				log.warn("이미 결제 완료됨 – meetingId={}, userId={}",
-					event.meetingId(), event.userId());
-				channel.basicAck(deliveryTag, false);
-				return;
+
+			// 즉시 DLQ: 타입 불일치
+			if (!MEETING_PARTICIPANT_REGISTER.equals(wrapper.type())) {
+				throw new AmqpRejectAndDontRequeueException(
+					"[register] wrong type: " + wrapper.type());
 			}
 
-			// 결제 실행 (Service에서 결제 생성 및 처리)
-			// createTestKeyInPayment 내부에서:
-			// - 성공 시: payment.completed 이벤트 발행
-			// - 실패 시: payment.failed 이벤트 발행
-			CardPaymentTestRequestDto request = CardPaymentTestRequestDto.builder()
-				.meetingId(event.meetingId())
-				.build();
+			// 즉시 DLQ: 역직렬화 실패
+			final ParticipantEvents.Register ev;
+			try {
+				ev = objectMapper.convertValue(wrapper.data(), ParticipantEvents.Register.class);
+			} catch (Exception cvt) {
+				throw new AmqpRejectAndDontRequeueException("[register] deserialize fail", cvt);
+			}
 
-			paymentService.createTestKeyInPayment(request, event.userId());
+			meetingId = ev.meetingId();
+			userId = ev.userId();
 
-			channel.basicAck(deliveryTag, false);
-			log.info("[결제 처리 완료] meetingId: {}, userId: {}",
-				event.meetingId(), event.userId());
+			// 즉시 DLQ: 필수 필드 누락
+			if (meetingId == null || userId == null) {
+				throw new AmqpRejectAndDontRequeueException("[register] missing fields");
+			}
+
+			// 결제 비즈니스
+			log.info("[결제 시작] meetingId={}, userId={}", meetingId, userId);
+			CardPaymentTestRequestDto req = CardPaymentTestRequestDto.builder()
+				.meetingId(meetingId).build();
+			paymentService.createTestKeyInPayment(req, userId);
+
+			// 성공 -> ACK
+			ch.basicAck(tag, false);
+			log.info("[결제 완료] meetingId={}, userId={}", meetingId, userId);
+
+		} catch (PaymentException be) {
+			// 비즈니스 예외 -> ACK
+			log.warn("[결제 비즈니스 예외] meetingId={}, userId={}, err={}", meetingId, userId, be.getMessage());
+			safeAck(ch, tag);
+
+		} catch (AmqpRejectAndDontRequeueException reject) {
+			// 즉시 DLQ
+			throw reject;
 
 		} catch (Exception ex) {
-			log.error("[결제 처리 실패] meetingId={}, userId={}, error={}",
-				event.meetingId(), event.userId(), ex.getMessage());
-			handleMessageFailure(channel, deliveryTag, event.meetingId(), event.userId());
+			// 시스템/일시적 오류 -> 재시도 후 DLQ
+			throw new RuntimeException(ex);
 		}
 	}
 
 	/**
-	 * ② 참가자 취소 이벤트 처리 - 개별 환불
-	 * Queue: payment.participant.canceled.queue
-	 * Event: ParticipantEvents.CancelRefund (meetingId, userId, hostUserId, participantNickname)
-	 *
-	 * Meeting에서 참가 취소 시 발행하는 이벤트
-	 * 환불 처리 후 payment.refunded 이벤트 발행
+	 * 2) 참가자 취소 -> 개별 환불
 	 */
 	@RabbitListener(
 		queues = PAYMENT_PARTICIPANT_CANCEL,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleParticipantCancelRefund(ParticipantEvents.CancelRefund event,
-		Channel channel,
-		Message message) {
-		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+	public void handleParticipantCancel(EventWrapper<?> wrapper, Channel ch, Message msg) {
+		long tag = msg.getMessageProperties().getDeliveryTag();
 
-		log.info("[환불 시작] 참가자 취소 이벤트 수신 - meetingId: {}, userId: {}, nickname: {}",
-			event.meetingId(), event.userId(), event.participantNickname());
+		// NULL payload: ack 후 드랍
+		if (wrapper == null || wrapper.data() == null) {
+			log.warn("[cancel] null payload - ack & drop (no dlq)");
+			safeAck(ch, tag);
+			return;
+		}
 
 		try {
-			// 완료된 결제 조회
-			Payment payment = paymentRepository.findByMeetingIdAndUserIdAndStatus(
-					event.meetingId(), event.userId(), PaymentStatus.COMPLETED)
-				.orElse(null);
 
+			// 즉시 DLQ: 타입 불일치
+			if (!MEETING_PARTICIPANT_CANCEL.equals(wrapper.type())) {
+				throw new AmqpRejectAndDontRequeueException("[cancel] wrong type: " + wrapper.type());
+			}
+
+			// 즉시 DLQ: 역직렬화 실패
+			final ParticipantEvents.Cancel ev;
+			try {
+				ev = objectMapper.convertValue(wrapper.data(), ParticipantEvents.Cancel.class);
+			} catch (Exception cvt) {
+				throw new AmqpRejectAndDontRequeueException("[cancel] deserialize fail", cvt);
+			}
+
+			// 즉시 DLQ: 필수 필드 누락
+			if (ev.meetingId() == null || ev.userId() == null) {
+				throw new AmqpRejectAndDontRequeueException("[cancel] missing fields");
+			}
+
+			log.info("[환불 시작] meetingId={}, userId={}, refundRequired={}",
+				ev.meetingId(), ev.userId(), ev.refundRequired());
+
+			// 무료/환불 불필요 -> ACK
+			if (!ev.refundRequired()) {
+				ch.basicAck(tag, false);
+				return;
+			}
+
+			// 완료 결제 조회
+			Payment payment = paymentRepository.findByMeetingIdAndUserIdAndStatus(
+				ev.meetingId(), ev.userId(), PaymentStatus.COMPLETED).orElse(null);
+
+			// 환불할 결제 없음 -> ACK
 			if (payment == null) {
-				log.warn("환불할 결제 내역 없음 - meetingId: {}, userId: {}",
-					event.meetingId(), event.userId());
-				channel.basicAck(deliveryTag, false);
+				log.warn("[환불] no completed payment. meetingId={}, userId={}", ev.meetingId(), ev.userId());
+				ch.basicAck(tag, false);
 				return;
 			}
 
 			// 환불 처리
-			// refundPayment 내부에서:
-			// 1. 토스 API 호출하여 환불
-			// 2. payment.refunded 이벤트 발행
-			// 3. 결제 레코드 삭제 (재결제 가능하도록)
 			RefundRequestDto refundRequest = new RefundRequestDto(
-				String.format("사용자 %s님의 참가 취소", event.participantNickname())
-			);
+				String.format("사용자 %s님의 참가 취소", ev.participantNickname()));
+			paymentService.refundPayment(payment.getId(), ev.userId(), refundRequest);
 
-			paymentService.refundPayment(payment.getId(), event.userId(), refundRequest);
+			// 성공 -> ACK
+			ch.basicAck(tag, false);
+			log.info("[환불 완료] paymentId={}, amount={}", payment.getId(), payment.getAmount());
 
-			channel.basicAck(deliveryTag, false);
-			log.info("[환불 완료] paymentId: {}, meetingId: {}, userId: {}, amount: {}원",
-				payment.getId(), event.meetingId(), event.userId(), payment.getAmount());
+		} catch (PaymentException be) {
+			// 비즈니스 예외 -> ACK
+			log.warn("[환불 비즈니스 예외] {}", be.getMessage());
+			safeAck(ch, tag);
+
+		} catch (AmqpRejectAndDontRequeueException reject) {
+			// 즉시 DLQ
+			throw reject;
 
 		} catch (Exception ex) {
-			log.error("[환불 실패] meetingId={}, userId={}, error={}",
-				event.meetingId(), event.userId(), ex.getMessage());
-			handleMessageFailure(channel, deliveryTag, event.meetingId(), event.userId());
+			// 시스템/일시적 오류 -> 재시도 후 DLQ
+			throw new RuntimeException(ex);
 		}
 	}
 
 	/**
-	 * ③ 모임 삭제 이벤트 처리 - 전체 참가자 환불
-	 * Queue: payment.meeting.deleted.queue
-	 * Event: MeetingMessageEvents.Delete (meetingId, meetingName, userIdList)
-	 *
-	 * Meeting 삭제 시 발행하는 이벤트
-	 * 모든 참가자의 결제를 환불 처리
+	 * 3) 모임 삭제 -> 전체 환불
 	 */
 	@RabbitListener(
-		queues = "payment.meeting.deleted.queue",
+		queues = PAYMENT_MEETING_DELETED,
 		containerFactory = "paymentListenerContainerFactory"
 	)
-	public void handleMeetingDeleted(MeetingMessageEvents.Delete event,
-		Channel channel,
-		Message message) {
-		long deliveryTag = message.getMessageProperties().getDeliveryTag();
-
-		log.info("[모임 삭제 환불 시작] meetingId: {}, meetingName: {}, 참가자 수: {}명",
-			event.meetingId(), event.meetingName(),
-			event.userIdList() != null ? event.userIdList().size() : 0);
+	public void handleMeetingDeleted(MeetingMessageEvents.Delete event, Channel ch, Message msg) {
+		long tag = msg.getMessageProperties().getDeliveryTag();
 
 		try {
-			// 해당 모임의 모든 완료된 결제 조회
-			List<Payment> completedPayments = paymentRepository
-				.findByMeetingIdAndStatus(event.meetingId(), PaymentStatus.COMPLETED);
+			// 즉시 DLQ: NULL/필수 누락
+			if (event == null || event.meetingId() == null) {
+				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] null event or missing meetingId");
+			}
 
-			if (completedPayments.isEmpty()) {
-				log.info("환불할 결제 내역 없음 - meetingId: {}", event.meetingId());
-				channel.basicAck(deliveryTag, false);
+			log.info("[모임 삭제 환불] meetingId={}, meetingName={}, 참가자={}명",
+				event.meetingId(), event.meetingName(),
+				event.userIdList() != null ? event.userIdList().size() : 0);
+
+			List<Payment> completed = paymentRepository.findByMeetingIdAndStatus(
+				event.meetingId(), PaymentStatus.COMPLETED);
+
+			if (completed.isEmpty()) {
+				ch.basicAck(tag, false);
 				return;
 			}
 
-			log.info("환불 대상: {}건, meetingId: {}",
-				completedPayments.size(), event.meetingId());
-
-			// 환불 처리 결과 추적
-			int successCount = 0;
-			int failCount = 0;
-
-			for (Payment payment : completedPayments) {
+			int ok = 0, fail = 0;
+			for (Payment payment : completed) {
 				try {
-					// 개별 환불 처리
 					RefundRequestDto refundRequest = new RefundRequestDto(
-						String.format("모임 '%s' 삭제로 인한 자동 환불", event.meetingName())
-					);
-
-					paymentService.refundPayment(
-						payment.getId(),
-						payment.getUserId(),
-						refundRequest
-					);
-
-					successCount++;
-					log.info("[환불 성공] paymentId: {}, userId: {}, amount: {}원",
-						payment.getId(), payment.getUserId(), payment.getAmount());
-
+						String.format("모임 '%s' 삭제로 인한 자동 환불", event.meetingName()));
+					paymentService.refundPayment(payment.getId(), payment.getUserId(), refundRequest);
+					ok++;
 				} catch (Exception refundEx) {
-					failCount++;
-					log.error("[환불 실패] paymentId: {}, userId: {}, error: {}",
-						payment.getId(), payment.getUserId(), refundEx.getMessage());
-
-					// 실패 건은 별도 처리 필요 (수동 환불 대상)
+					fail++;
+					log.error("[환불 실패] paymentId={}, err={}", payment.getId(), refundEx.getMessage(), refundEx);
 					recordRefundFailure(payment, event.meetingId(), refundEx.getMessage());
 				}
 			}
 
-			log.info("[모임 삭제 환불 완료] meetingId: {}, 성공: {}건, 실패: {}건",
-				event.meetingId(), successCount, failCount);
+			log.info("[모임 삭제 환불 완료] 성공:{}건, 실패:{}건", ok, fail);
+			// 부분 실패여도 ACK (환불 실패건은 별도 관리)
+			ch.basicAck(tag, false);
 
-			// 일부 실패가 있어도 메시지는 ACK (실패 건은 별도 관리)
-			channel.basicAck(deliveryTag, false);
-
+		} catch (AmqpRejectAndDontRequeueException reject) {
+			throw reject;
 		} catch (Exception ex) {
-			log.error("[모임 삭제 환불 처리 중 예외] meetingId: {}, error: {}",
-				event.meetingId(), ex.getMessage());
-			handleMessageFailure(channel, deliveryTag, event.meetingId(), null);
+			// 시스템/일시적 오류 -> 재시도 후 DLQ
+			throw new RuntimeException(ex);
 		}
 	}
 
-	/**
-	 * 메시지 처리 실패 시 공통 처리
-	 * DLQ로 전송하여 나중에 재처리 가능하도록 함
-	 */
-	private void handleMessageFailure(Channel channel, long deliveryTag,
-		Long meetingId, Long userId) {
-		try {
-			// DLQ로 전송 (requeue=false)
-			channel.basicNack(deliveryTag, false, false);
-			log.warn("메시지를 DLQ로 전송 - meetingId: {}, userId: {}", meetingId, userId);
+	// ===== helpers =====
 
-		} catch (Exception e) {
-			try {
-				// DLQ 전송도 실패하면 재큐잉
-				channel.basicNack(deliveryTag, false, true);
-				log.error("DLQ 전송 실패, 재큐잉 - meetingId: {}, userId: {}", meetingId, userId);
-
-			} catch (IOException io) {
-				log.error("메시지 NACK 실패 - meetingId: {}, userId: {}", meetingId, userId, io);
-			}
-		}
-	}
-
-	/**
-	 * 환불 실패 기록
-	 * TODO: 별도 테이블에 저장하여 관리자가 수동으로 처리할 수 있도록 함
-	 */
 	private void recordRefundFailure(Payment payment, Long meetingId, String errorMessage) {
-		// TODO: RefundFailureRecord 엔티티 생성 및 저장
-		// TODO: 관리자 알림 발송
-		log.error("[환불 실패 기록] paymentId: {}, meetingId: {}, userId: {}, error: {}",
+		// TODO: RefundFailureRecord 엔티티 저장 및 관리자 알림
+		log.error("[환불 실패 기록] paymentId={}, meetingId={}, userId={}, error={}",
 			payment.getId(), meetingId, payment.getUserId(), errorMessage);
+	}
+
+	private void safeAck(Channel ch, long tag) {
+		try {
+			ch.basicAck(tag, false);
+		} catch (Exception e) {
+			log.error("ACK 실패", e);
+		}
 	}
 }

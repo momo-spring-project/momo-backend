@@ -1,6 +1,8 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import com.example.momo.global.rabbitmq.dto.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.example.momo.global.springEvent.MeetingEvents;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -12,6 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_REGISTER;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
 @Slf4j
@@ -23,26 +26,27 @@ public class MeetingEventPublisher {
 	private final RabbitTemplate rabbitTemplate;
 
 	/**
-	 * 발행하는 이벤트 목록 ( 앞의 ParticipantEvents 생략 )
-	 * : Register, Join, CancelRefund, CancelNotification
+	 * 발행하는 이벤트 목록 ( EventWrapper<?> 타입으로 발행 )
+	 * : Register, Join, Cancel
 	 * RoutingKeys 상수
-	 * : 카멜 케이스 -> 대문자 스네이크 케이스 (예시: PARTICIPANT_CANCEL_REFUND)
+	 * : 글로벌 RoutingKeys 참고 ( 예시 : PARTICIPANT_JOIN_KEY )
 	 * <p>
 	 * 일반 발행 -> 유실 가능
 	 * 정상 전달 확인 발행 -> 유실되면 false 리턴, 유저 재시도
 	 */
 
 	// 일반 발행
-	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event) {
+	public void publishParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
+		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
-			event.routingKey(),
-			event
+			routingKey,
+			wrapper
 		);
 	}
 
 	// 정상 전달 확인 발행
-	public boolean publishWithConfirmParticipantEvents(ParticipantEvents.ParticipantEvent event) {
+	public boolean publishWithConfirmParticipantEvents(ParticipantEvents.ParticipantEvent event, String eventType, String routingKey) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 
 		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
@@ -54,10 +58,11 @@ public class MeetingEventPublisher {
 			}
 		});
 
+		EventWrapper<?> wrapper = EventWrapper.of(UUID.randomUUID().toString(), eventType, event);
 		rabbitTemplate.convertAndSend(
 			PARTICIPANT_EVENTS,
-			event.routingKey(),
-			event,
+			routingKey,
+			wrapper,
 			correlationData
 		);
 

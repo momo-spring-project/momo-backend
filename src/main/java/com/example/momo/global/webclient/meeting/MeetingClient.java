@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -16,17 +17,20 @@ import com.example.momo.global.webclient.meeting.dto.MeetingClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantClientResponseDto;
 import com.example.momo.global.webclient.meeting.dto.ParticipantCountClientResponseDto;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class MeetingClient {
+
+	private final WebClient webClient;
+
+	public MeetingClient(@Qualifier("internalWebClient") WebClient webClient) {
+		this.webClient = webClient;
+	}
 
 	private final static String MEETING_SERVICE_BASE_URI = "/meetings";
 	private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-	private final WebClient webClient;
 
 	/**
 	 * 단일 모임 정보 조회
@@ -62,11 +66,11 @@ public class MeetingClient {
 		}
 	}
 
-	public ParticipantClientResponseDto getParticipant(Long meetingId, Long participantId) {
+	public ParticipantClientResponseDto getParticipant(Long meetingId, Long userId) {
 		try {
 			ApiResponse<ParticipantClientResponseDto> response = webClient
 				.get()
-				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/{participantId}", meetingId, participantId)
+				.uri(MEETING_SERVICE_BASE_URI + "/{meetingId}/participants/{userId}", meetingId, userId)
 				.retrieve()
 				.bodyToMono(new ParameterizedTypeReference<ApiResponse<ParticipantClientResponseDto>>() {
 				})
@@ -77,17 +81,17 @@ public class MeetingClient {
 				return null;
 			}
 
-			log.debug("참석자 조회 성공: meetingId={}, participantId={}", meetingId, participantId);
+			log.debug("참석자 조회 성공: meetingId={}, participantId={}", meetingId, userId);
 			return response.getData();
 
 		} catch (WebClientResponseException e) {
 			if (e.getStatusCode().value() == 404) {
-				log.debug("참석자를 찾을 수 없습니다: meetingId={}, participantId={}", meetingId, participantId);
+				log.debug("참석자를 찾을 수 없습니다: meetingId={}, participantId={}", meetingId, userId);
 				return null;
 			}
 
 			log.error("참석자 조회 실패: meetingId={}, participantId={}, status={}, error={}",
-				meetingId, participantId, e.getStatusCode(), e.getMessage());
+				meetingId, userId, e.getStatusCode(), e.getMessage());
 			throw new MeetingClientException("참석자 조회 중 오류가 발생했습니다: " + e.getMessage());
 		}
 	}
