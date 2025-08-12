@@ -34,8 +34,9 @@ public class NotificationConsumer {
 			return;
 		}
 		MessageHubNotificationMessage notificationMessage = mapping(wrapper.data());
-		if (notificationMessage == null) {
+		if (!validateNotificationMessage(notificationMessage)) {
 			log.error("알림 컨슈머 접근 실패 - 형변환 실패");
+			return;
 		}
 
 		int retryCount = calculateRetryCount(message);
@@ -57,6 +58,13 @@ public class NotificationConsumer {
 	private static int calculateRetryCount(Message message) {
 		Object object = message.getMessageProperties().getHeaders().get(NOTIFICATION_RETRY_HEADER);
 		return (object instanceof Number) ? ((Number)object).intValue() : 1;
+	}
+
+	private boolean validateNotificationMessage(MessageHubNotificationMessage notificationMessage) {
+		if (notificationMessage == null) {
+			return false;
+		}
+		return notificationMessage.getUserId() != null;
 	}
 
 }
