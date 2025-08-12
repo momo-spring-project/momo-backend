@@ -15,6 +15,8 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.retry.support.RetryTemplate;
 
+import com.example.momo.global.rabbitmq.constant.RoutingKeys;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -63,9 +65,30 @@ public class PaymentRabbitConfig {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setMessageConverter(messageConverter);
 
-		// 라우팅 실패 시 ReturnCallback이 동작하도록 설정
+		// 관측은 하되, 성공/실패 판단은 Confirm으로만
 		template.setMandatory(true);
 
+		// 라우팅 실패: 로그만 남기고 비즈니스 실패로 보지 않음
+		template.setReturnsCallback(ret -> {
+			String rk = ret.getRoutingKey();
+			// 환불 이벤트만: 소비자 없음 -> 정상 케이스로 간주 (로그만)
+			if (!RoutingKeys.PAYMENT_REFUNDED_KEY.equals(rk)) {
+				log.error("[Payment] UNROUTABLE message. ex={}, key={}, code={}, text={}",
+					ret.getExchange(), rk, ret.getReplyCode(), ret.getReplyText());
+			}
+		});
+		// 발행 성공/실패는 오직 Confirm으로 판단
+		template.setConfirmCallback((corr, ack, cause) -> {
+			String cid = corr != null ? corr.getId() : null;
+			if (ack) {
+				log.info("[Payment] Publish CONFIRMED cid={}", cid);
+			} else {
+				log.error("[Payment] Publish NACK cid={}, cause={}", cid, cause);
+
+			}
+		});
+
+		// 채널/네트워크 오류 재시도
 		// --- Retry 설정 (지수 백오프) ---
 		RetryTemplate retry = new RetryTemplate();
 		ExponentialBackOffPolicy backOff = new ExponentialBackOffPolicy();
@@ -74,19 +97,6 @@ public class PaymentRabbitConfig {
 		backOff.setMaxInterval(10_000);    // 최대 대기 시간: 10초
 		retry.setBackOffPolicy(backOff);
 		template.setRetryTemplate(retry);
-		// Confirm/Return Callback (로깅용)
-		template.setConfirmCallback((correlationData, ack, cause) -> {
-			if (ack) {
-				log.info("Confirm 성공 - correlationId={}", correlationData.getId());
-			} else {
-				log.error("Confirm 실패 - correlationId={}, cause={}", correlationData.getId(), cause);
-			}
-		});
-
-		// --- 라우팅 실패 시 로그 출력 ---
-		template.setReturnsCallback(ret -> log.error(
-			"[Payment] 라우팅 실패 - exchange: {}, routingKey: {}, message: {}",
-			ret.getExchange(), ret.getRoutingKey(), ret.getMessage()));
 
 		return template;
 	}
