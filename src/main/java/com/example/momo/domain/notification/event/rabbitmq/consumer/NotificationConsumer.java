@@ -9,6 +9,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
+import com.example.momo.domain.notification.application.redis.NotificationRedisService;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
+	private final NotificationRedisService redisService;
 	private final ObjectMapper objectMapper;
 
 	@RabbitListener(
@@ -29,13 +31,12 @@ public class NotificationConsumer {
 	)
 	public void consumeMain(EventWrapper<?> wrapper, Message message) {
 
-		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
-			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
+		if (!validateNotificationMessage(wrapper)) {
 			return;
 		}
+
 		MessageHubNotificationMessage notificationMessage = mapping(wrapper.type(), wrapper.data());
-		if (!validateNotificationMessage(notificationMessage)) {
-			log.error("알림 컨슈머 접근 실패 - 데이터 유실 dto ={}", notificationMessage);
+		if (notificationMessage == null) {
 			return;
 		}
 
@@ -49,7 +50,15 @@ public class NotificationConsumer {
 	private MessageHubNotificationMessage mapping(String type, Object object) {
 
 		try {
-			return objectMapper.convertValue(object, MessageHubNotificationMessage.class);
+			MessageHubNotificationMessage notificationMessage = objectMapper.convertValue(object,
+				MessageHubNotificationMessage.class);
+
+			if (notificationMessage == null || notificationMessage.getUserId() == null) {
+				log.error("알림 컨슈머 접근 실패 - 데이터 유실 dto ={}", notificationMessage);
+				return null;
+			}
+
+			return notificationMessage;
 		} catch (IllegalArgumentException exception) {
 			log.error("알림 컨슈머 접근 실패 - 형변환 실패 타입 불일치 type={} object={}", type, object);
 			return null;
@@ -61,11 +70,19 @@ public class NotificationConsumer {
 		return (object instanceof Number) ? ((Number)object).intValue() : 1;
 	}
 
-	private boolean validateNotificationMessage(MessageHubNotificationMessage notificationMessage) {
-		if (notificationMessage == null) {
+	private boolean validateNotificationMessage(EventWrapper<?> wrapper) {
+		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
+			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
 			return false;
 		}
-		return notificationMessage.getUserId() != null;
+
+		if (redisService.isUuidExistOrSave(wrapper.uuId())) {
+			log.error("알림 컨슈머 중복발행 - UUID 중복");
+			return false;
+		}
+
+		return true;
+
 	}
 
 }

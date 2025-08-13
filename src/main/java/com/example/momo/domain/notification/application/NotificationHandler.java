@@ -4,12 +4,12 @@ import static com.example.momo.domain.notification.event.rabbitmq.producer.Notif
 
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.notification.application.dto.NotificationMessageDto;
 import com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer;
 import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
@@ -198,6 +199,11 @@ public class MessageHubRedisService {
 	}
 
 	public boolean isUuidExistOrSave(String uuid) {
+		if (StringUtils.isBlank(uuid)) {
+			log.info("메세지 허브 리스너 접근 실패 - UUID NULL");
+			return false;
+		}
+
 		LocalDate today = LocalDate.now(zone);
 		String todayKey = ReminderKeyUtil.toUuidMarkKey(today.format(basicIsoDate));
 		String yesterdayKey = ReminderKeyUtil.toUuidMarkKey(today.minusDays(1).format(basicIsoDate));
