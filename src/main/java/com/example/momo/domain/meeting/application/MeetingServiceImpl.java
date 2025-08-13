@@ -13,6 +13,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,6 @@ import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.enums.PaymentEventType;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
@@ -75,7 +77,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		Meeting meeting = meetingRepository.findById(meetingId)
 			.orElseThrow(() -> new MeetingException(MeetingExceptionCode.MEETING_NOT_FOUND));
-		if(meeting.getIsDeleted()){
+		if (meeting.getIsDeleted()) {
 			throw new MeetingException(MeetingExceptionCode.DELETED_MEETING);
 		}
 
@@ -307,9 +309,6 @@ public class MeetingServiceImpl implements MeetingService {
 
 		RLock lock = redissonClient.getLock("lock:meeting:" + meetingId);
 
-		String message = "";
-		String status = "";
-
 		// (분산락) 인원 추가
 		boolean locked = false;
 		try {
@@ -335,9 +334,9 @@ public class MeetingServiceImpl implements MeetingService {
 
 			// 유저 자격 확인
 			UserClientResponseDto user = userClient.getUser(userId);
-			if (user.getScore() < meeting.getMinEnterScore()) {
-				throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
-			}
+			 if (user.getScore() < meeting.getMinEnterScore()) {
+			 	throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
+			 }
 
 			// 참가자 수 확인
 			if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
@@ -345,37 +344,20 @@ public class MeetingServiceImpl implements MeetingService {
 			}
 			meeting.addMeetingParticipant();
 
-			boolean success;
 			// 참가비 무료일 경우 즉시 참가자 추가
 			if (meeting.getParticipationFee() == 0) {
 				MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
 
 				meeting.getParticipants().add(participant);
 				// 참가 완료 이벤트 발행
-				success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-					new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+				meetingEventPublisher.publishParticipantEvents(
+					new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), "temp"), // user.getNickname()
 					MEETING_PARTICIPANT_JOIN,
 					PARTICIPANT_JOIN_KEY
 				);
-				if (success) {
-					status = "COMPLETED";
-					message = "참가 완료";
-				}
 			} else {
-				// 참가 신청 이벤트 발행
-				success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-					new ParticipantEvents.Register(meetingId, userId),
-					MEETING_PARTICIPANT_REGISTER,
-					PARTICIPANT_REGISTER_KEY
-				);
-				if (success) {
-					status = "PENDING";
-					message = "결제 요청 완료";
-				}
-			}
-
-			if (!success) {
-				throw new RuntimeException("Message publishing failed");
+				// 참가 신청 이벤트 (아웃박스) 발행
+				eventPublisher.publishEvent(new MeetingMessageEvents.Register(meetingId, userId));
 			}
 
 			// 트랜잭션 커밋 이후에 락 해제
@@ -407,7 +389,7 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
-		return new ParticipantCreateResponseDto(status, message);
+		return new ParticipantCreateResponseDto("SUCCESS", "신청 완료");
 	}
 
 	@Override
@@ -462,9 +444,8 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.getParticipants().remove(participant);
 
 		// 참가비 있을 경우만 환불 요청 이벤트
-		boolean success;
 		if (meeting.getParticipationFee() == 0) {
-			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
+			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.Cancel(
 					meetingId,
 					userId,
@@ -476,21 +457,14 @@ public class MeetingServiceImpl implements MeetingService {
 				PARTICIPANT_CANCEL_KEY
 			);
 		} else {
-			success = meetingEventPublisher.publishWithConfirmParticipantEvents(
-				new ParticipantEvents.Cancel(
-					meetingId,
-					userId,
-					meeting.getHostUserId(),
-					user.getNickname(),
-					true,
-					meeting.getParticipationFee()
-				),
-				MEETING_PARTICIPANT_CANCEL,
-				PARTICIPANT_CANCEL_KEY
-			);
-		}
-		if (!success) {
-			throw new RuntimeException("Message publishing failed");
+			eventPublisher.publishEvent(new MeetingMessageEvents.Cancel(
+				meetingId,
+				userId,
+				meeting.getHostUserId(),
+				user.getNickname(),
+				true,
+				meeting.getParticipationFee()
+			));
 		}
 
 		return new ParticipantResponseDto(participant);

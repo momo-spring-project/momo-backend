@@ -58,6 +58,18 @@ public class MeetingMessageEvents {
 	}
 
 	/**
+	 * 사용자가 모임에 신청했을 때 발생하는 이벤트입니다.
+	 *
+	 * @param meetingId 모임 ID
+	 * @param userId 신청자 유저 ID
+	 */
+	public record Register(
+		Long meetingId,
+		Long userId
+	) implements MeetingMessageEvent {
+	}
+
+	/**
 	 * 사용자가 모임에 참여했을 때 발생하는 이벤트입니다.
 	 *
 	 * @param meetingId 모임 ID
@@ -80,8 +92,11 @@ public class MeetingMessageEvents {
 	 */
 	public record Cancel(
 		Long meetingId,
+		Long userId,
 		Long hostUserId,
-		String participantNickname
+		String participantNickname,
+		Boolean refundRequired,
+		Integer amount
 	) implements MeetingMessageEvent {
 	}
 }

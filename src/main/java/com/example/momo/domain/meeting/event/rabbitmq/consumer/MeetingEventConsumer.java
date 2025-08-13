@@ -48,7 +48,6 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentSuccessEvent(EventWrapper<?> event, Channel channel, Message message) {
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_COMPLETED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제완료, Received: {}", event);
@@ -56,6 +55,7 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		//meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 		log.info("[결제 완료 이벤트 수신] message: {}", event);
 
 		try {
@@ -72,7 +72,6 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAILED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentFailureEvent(EventWrapper<?> event, Channel channel, Message message) {
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_FAILED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제실패, Received: {}", event);
@@ -80,6 +79,7 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		//meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 		log.info("[결제 실패 이벤트 수신] event: {}", event);
 
 		try {
