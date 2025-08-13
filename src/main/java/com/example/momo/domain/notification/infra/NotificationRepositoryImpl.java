@@ -16,13 +16,14 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 	private final NotificationJpaRepository notificationJpaRepository;
 
 	@Override
-	public Notification save(Notification notification) {
+	public Notification saveNotification(Notification notification) {
 
 		return notificationJpaRepository.save(notification);
 	}
 
 	@Override
 	public List<Notification> findAllByUserId(Long userId) {
+
 		return notificationJpaRepository.findAllByUserId(userId);
 	}
 }

@@ -29,7 +29,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
-			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE_KEY,
 			event
 		);
 	}
@@ -43,7 +43,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
-			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE_KEY,
 			event
 		);
 	}
@@ -57,7 +57,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MESSAGE_HUB_EVENTS,
-			RoutingKeys.MESSAGE_HUB_ASSEMBLE,
+			RoutingKeys.MESSAGE_HUB_ASSEMBLE_KEY,
 			event
 		);
 	}
