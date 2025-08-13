@@ -5,28 +5,31 @@ import java.time.LocalDateTime;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
-public class MeetingResponseDto {
+@NoArgsConstructor
+public class MeetingResponseDto{
 
-	private final Long id;
-	private final Long hostUserId;
-	private final String title;
-	private final String description;
-	private final Integer categoryId;
-	private final int currentParticipantsCount;
-	private final int maxParticipantsCount;
-	private final LocalDateTime meetingDate;
-	private final LocalDateTime meetingEndDate;
-	private final String locationName;
-	private final Double latitude;
-	private final Double longitude;
-	private final Double minEnterScore;
-	private final int participationFee;
-	private final MeetingStatus status;
-	private final LocalDateTime createdAt;
-	private final LocalDateTime updatedAt;
+	private Long id;
+	private Long hostUserId;
+	private String title;
+	private String description;
+	private Integer categoryId;
+	private int currentParticipantsCount;
+	private int maxParticipantsCount;
+	private LocalDateTime meetingDate;
+	private LocalDateTime meetingEndDate;
+	private String locationName;
+	private Double latitude;
+	private Double longitude;
+	private Double minEnterScore;
+	private int participationFee;
+	private MeetingStatus status;
+	private LocalDateTime createdAt;
+	private LocalDateTime updatedAt;
 
 	public MeetingResponseDto(Meeting meeting) {
 		this.id = meeting.getId();
