@@ -1,7 +1,5 @@
 package com.example.momo.domain.notification.application;
 
-import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
-
 import org.springframework.amqp.core.Message;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,13 +43,13 @@ public class NotificationHandler {
 		}
 
 		if (!tryCreateNotificationId(event, dto)) {
-			handleNotificationRetry(event, raw);
+			notificationRetryProducer.notificationRetry(event, raw);
 			return;
 		}
 		if (notificationProvider.sendNotificationFromQueue(dto)) {
 			return;
 		}
-		handleNotificationRetry(event, raw);
+		notificationRetryProducer.notificationRetry(event, raw);
 
 	}
 
@@ -66,18 +64,6 @@ public class NotificationHandler {
 		event.updateNotificationId(id);
 		dto.updateNotificationId(id);
 		return true;
-	}
-
-	private void handleNotificationRetry(MessageHubNotificationMessage event, Message raw) {
-		//재시도/최종 실패 분기 (헤더에서 시도 횟수 읽기)
-		int attempts = ((Number)raw.getMessageProperties()
-			.getHeaders().getOrDefault(NOTIFICATION_RETRY_HEADER, 0)).intValue() + 1;
-
-		//재시도 횟수 이하거나 저장 안되어 있을 경우 재시도
-		if (event.getNotificationId() == null || attempts <= NOTIFICATION_MAX_RETRY) {
-			notificationRetryProducer.publishRetry(event, attempts);
-			return;
-		}
 	}
 
 }

@@ -24,6 +24,14 @@ public class MessageHubExchangeConfig {
 	}
 
 	@Bean
+	public DirectExchange hubRetryExchange() {
+
+		return ExchangeBuilder.directExchange(MESSAGE_HUB_EVENTS_RETRY)
+			.durable(true)
+			.build();
+	}
+
+	@Bean
 	public DirectExchange hubDlxExchange() {
 
 		return ExchangeBuilder.directExchange(DLX_MESSAGE_HUB)

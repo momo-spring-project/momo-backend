@@ -9,7 +9,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
-import com.example.momo.domain.notification.application.redis.NotificationRedisService;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
-	private final NotificationRedisService redisService;
 	private final ObjectMapper objectMapper;
 
 	@RabbitListener(
@@ -73,11 +71,6 @@ public class NotificationConsumer {
 	private boolean validateNotificationMessage(EventWrapper<?> wrapper) {
 		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
 			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
-			return false;
-		}
-
-		if (redisService.isUuidExistOrSave(wrapper.uuId())) {
-			log.error("알림 컨슈머 중복발행 - UUID 중복");
 			return false;
 		}
 

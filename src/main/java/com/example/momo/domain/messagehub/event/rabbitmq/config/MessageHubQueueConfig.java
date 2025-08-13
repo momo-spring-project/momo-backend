@@ -29,8 +29,16 @@ public class MessageHubQueueConfig {
 	public Queue hubQueue() {
 		return QueueBuilder.durable(MESSAGE_HUB_QUEUE)
 			.withArgument("x-dead-letter-exchange", DLX_MESSAGE_HUB)
-			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLX_KEY)
+			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLQ_KEY)
 			.withArgument("x-message-ttl", HUB_QUEUE_TTL_MS)
+			.build();
+	}
+
+	@Bean
+	public Queue hubRetryQueue() {
+		return QueueBuilder.durable(MESSAGE_HUB_QUEUE_RETRY)
+			.withArgument("x-dead-letter-exchange", MESSAGE_HUB_EVENTS)
+			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_KEY)
 			.build();
 	}
 
@@ -44,11 +52,25 @@ public class MessageHubQueueConfig {
 	//Binding
 
 	@Bean
+	public Binding hubMainBinding() {
+		return BindingBuilder.bind(hubQueue())
+			.to(new DirectExchange(MESSAGE_HUB_EVENTS))
+			.with(MESSAGE_HUB_ASSEMBLE_KEY); // 재유입 라우팅키
+	}
+
+	@Bean
+	public Binding hubRetryBinding() {
+		return BindingBuilder.bind(hubRetryQueue())
+			.to(new DirectExchange(MESSAGE_HUB_EVENTS_RETRY))
+			.with(MESSAGE_HUB_ASSEMBLE_RETRY_KEY);
+	}
+
+	@Bean
 	public Binding hubDlqBinding(
 	) {
 		return BindingBuilder.bind(hubDlq())
 			.to(new DirectExchange(DLX_MESSAGE_HUB))
-			.with(MESSAGE_HUB_ASSEMBLE_DLX_KEY);
+			.with(MESSAGE_HUB_ASSEMBLE_DLQ_KEY);
 	}
 
 	@Bean

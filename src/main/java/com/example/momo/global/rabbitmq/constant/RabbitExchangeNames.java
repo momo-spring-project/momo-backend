@@ -6,6 +6,7 @@ public class RabbitExchangeNames {
 
 	//Message Hub 관련 exchange
 	public static final String MESSAGE_HUB_EVENTS = "momo.message-hub.events";
+	public static final String MESSAGE_HUB_EVENTS_RETRY = "momo.message-hub.events.retry";
 	public static final String DLX_MESSAGE_HUB = "momo.dlx.message-hub";
 
 	//Notification 관련 exchange
