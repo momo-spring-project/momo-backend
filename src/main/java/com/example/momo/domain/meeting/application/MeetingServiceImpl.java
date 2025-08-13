@@ -107,7 +107,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(savedMeeting, outbox.getId()));
 
-		meetingProducer.createMeetingMQ(new MeetingAlarmMessages.Create(
+		EventWrapper<?> wrapper = EventWrapper.of(MEETING_CREATE, new MeetingAlarmMessages.Create(
 			meeting.getHostUserId(),
 			meeting.getId(),
 			meeting.getTitle(),
@@ -117,6 +117,8 @@ public class MeetingServiceImpl implements MeetingService {
 			meeting.getLongitude(),
 			meeting.getMeetingDate()
 		));
+
+		meetingProducer.createMeetingMQ(wrapper);
 
 		return new MeetingResponseDto(savedMeeting);
 	}
@@ -139,12 +141,14 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.updateMeeting(request);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
+		EventWrapper<?> wrapper = EventWrapper.of(MEETING_UPDATE, new MeetingAlarmMessages.Update(
 			meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
 			meeting.getMeetingDate()
 		));
+
+		meetingProducer.updateMeetingMQ(wrapper);
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -176,12 +180,12 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.updateStatus(status);
 		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-		meetingProducer.updateMeetingMQ(new MeetingAlarmMessages.Update(
-			meeting.getId(),
+		EventWrapper<?> wrapper = EventWrapper.of(MEETING_UPDATE, new MeetingAlarmMessages.Update(meeting.getId(),
 			meeting.getTitle(),
 			meeting.getParticipants().stream().map(MeetingParticipant::getId).toList(),
-			meeting.getMeetingDate()
-		));
+			meeting.getMeetingDate()));
+
+		meetingProducer.updateMeetingMQ(wrapper);
 
 		return new MeetingResponseDto(meeting);
 	}
@@ -229,12 +233,15 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.delete();
 
 		// 모임 삭제 메세지 mq 발행
-		// meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
-		// 	meeting.getHostUserId(),
-		// 	meeting.getId(),
-		// 	meeting.getTitle(),
-		// 	participants
-		// ));
+
+		EventWrapper<?> mqWrapper = EventWrapper.of(MEETING_DELETE, new MeetingAlarmMessages.Delete(
+			meeting.getHostUserId(),
+			meeting.getId(),
+			meeting.getTitle(),
+			participants
+		));
+
+		meetingProducer.deleteMeetingMQ(mqWrapper);
 
 		// 모임 삭제시 참가자들 환불 mq 발행
 		// 상태가 아직 진행중, 참가자가 존재 시 환불 이벤트 발행
