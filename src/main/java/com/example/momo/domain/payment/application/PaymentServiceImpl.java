@@ -58,13 +58,20 @@ public class PaymentServiceImpl implements PaymentService {
 
 	// ==================== 결제 생성 ====================
 
+	@Override
+	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
+		// 컨트롤러에서 호출 시 correlation 없이 진행 (내부에서 새 UUID 생성됨)
+		return createTestKeyInPayment(request, userId, null);
+	}
+
 	/**
 	 * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
 	 * PENDING 결제가 있으면 재사용, 없으면 새로 생성
 	 */
 	@Override
 	@Transactional(noRollbackFor = PaymentException.class)
-	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
+	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId,
+		String correlationUuid) {
 		Long meetingId = request.getMeetingId();
 		Payment payment = null;
 
@@ -111,7 +118,8 @@ public class PaymentServiceImpl implements PaymentService {
 			LocalDateTime approvedAt = OffsetDateTime.parse(result.getApprovedAt()).toLocalDateTime();
 			payment.complete(result.getPaymentKey(), orderId, approvedAt);
 
-			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED_KEY);
+			Long outboxId = saveOutboxEvent(payment, "PAYMENT_COMPLETED", RoutingKeys.PAYMENT_COMPLETED_KEY,
+				correlationUuid);
 			eventPublisher.publishEvent(new PaymentEvents.Completed(
 				payment.getId(), payment.getUserId(), payment.getMeetingId(), payment.getAmount(), orderId, outboxId));
 
@@ -124,10 +132,10 @@ public class PaymentServiceImpl implements PaymentService {
 				payment.fail(pe.getMessage());
 			}
 			Long outboxId = saveFailedOutboxEvent(
-				payment != null ? payment.getId() : null, meetingId, userId, pe.getMessage());
+				payment != null ? payment.getId() : null, meetingId, userId, pe.getMessage(), correlationUuid);
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
 				payment != null ? payment.getId() : null, userId, meetingId, pe.getMessage(), outboxId));
-			throw pe; // 그대로 전파ㅂㅂ
+			throw pe; // 그대로 전파
 
 		} catch (Exception e) {
 			// 시스템/외부 예외도 '실패 이벤트' 발행
@@ -135,7 +143,7 @@ public class PaymentServiceImpl implements PaymentService {
 				payment.fail(e.getMessage());
 			}
 			Long outboxId = saveFailedOutboxEvent(
-				payment != null ? payment.getId() : null, meetingId, userId, e.getMessage());
+				payment != null ? payment.getId() : null, meetingId, userId, e.getMessage(), correlationUuid);
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
 				payment != null ? payment.getId() : null, userId, meetingId, e.getMessage(), outboxId));
 			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
@@ -144,12 +152,19 @@ public class PaymentServiceImpl implements PaymentService {
 
 	// ==================== 환불 처리 ====================
 
+	@Override
+	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request) {
+		// 컨트롤러에서 호출 시 correlation 없이 진행 (내부에서 새 UUID 생성됨)
+		return refundPayment(paymentId, userId, request, null);
+	}
+
 	/**
 	 * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
 	 */
 	@Override
 	@Transactional(noRollbackFor = PaymentException.class)
-	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request) {
+	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request,
+		String correlationUuid) {
 		Payment payment = null;
 
 		try {
@@ -184,7 +199,7 @@ public class PaymentServiceImpl implements PaymentService {
 
 			// Outbox 저장 및 도메인 이벤트 발행
 			Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED_KEY,
-				request.getReason());
+				request.getReason(), null);
 			eventPublisher.publishEvent(new PaymentEvents.Refunded(
 				payment.getId(),
 				payment.getUserId(),
@@ -203,7 +218,7 @@ public class PaymentServiceImpl implements PaymentService {
 				payment != null ? payment.getId() : null, userId, pe.getMessage());
 			recordRefundFailure(payment, payment != null ? payment.getMeetingId() : null, pe.getMessage());
 			throw pe;
-			
+
 		} catch (Exception e) {
 			log.error("[환불 실패-시스템] paymentId={}, userId={}, err={}",
 				payment != null ? payment.getId() : null, userId, e.getMessage(), e);
@@ -213,11 +228,12 @@ public class PaymentServiceImpl implements PaymentService {
 		}
 	}
 
-	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey) {
-		return saveOutboxEvent(payment, eventType, routingKey, null);
+	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey, String correlationUuid) {
+		return saveOutboxEvent(payment, eventType, routingKey, null, correlationUuid);
 	}
 
-	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey, String refundReason) {
+	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey, String refundReason,
+		String correlationUuid) {
 		try {
 			Object eventMessage;
 			// 1) 이벤트 DTO 구성 (outboxId는 헤더로 보내므로 DTO 필드는 null로 둬도 됨)
@@ -225,7 +241,7 @@ public class PaymentServiceImpl implements PaymentService {
 				case "PAYMENT_COMPLETED" -> eventMessage = new PaymentEventMessages.Completed(
 					payment.getId(), payment.getUserId(), payment.getMeetingId(),
 					payment.getAmount(),
-					payment.getOrderId() != null ? payment.getOrderId() : "", // orderId가 필요하면 저장
+					payment.getOrderId() != null ? payment.getOrderId() : "",
 					null
 				);
 				case "PAYMENT_FAILED" -> eventMessage = new PaymentEventMessages.Failed(
@@ -250,8 +266,10 @@ public class PaymentServiceImpl implements PaymentService {
 				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
 			};
 
-			// 3) Wrapper로 감싸기
-			EventWrapper<Object> wrapper = EventWrapper.of(wrapperType, eventMessage);
+			// 3) Wrapper로 감싸기(register uuid 재사용)
+			EventWrapper<Object> wrapper = (correlationUuid != null && !correlationUuid.isBlank())
+				? EventWrapper.of(correlationUuid, wrapperType, eventMessage)
+				: EventWrapper.of(wrapperType, eventMessage); // 방어적 fallback
 
 			// 4) Outbox payload에 Wrapper JSON 저장
 			String payload = objectMapper.writeValueAsString(wrapper);
@@ -272,13 +290,17 @@ public class PaymentServiceImpl implements PaymentService {
 		}
 	}
 
-	private Long saveFailedOutboxEvent(Long paymentId, Long meetingId, Long userId, String reason) {
+	private Long saveFailedOutboxEvent(Long paymentId, Long meetingId, Long userId, String reason,
+		String correlationUuid) {
 		try {
 			PaymentEventMessages.Failed msg = new PaymentEventMessages.Failed(
 				paymentId, userId, meetingId, (reason != null ? reason : "결제 실패"), null
 			);
 
-			EventWrapper<Object> wrapper = EventWrapper.of(EventTypeNames.PAYMENT_FAILED, msg);
+			// ★ 실패도 같은 uuid 유지
+			EventWrapper<Object> wrapper = (correlationUuid != null && !correlationUuid.isBlank())
+				? EventWrapper.of(correlationUuid, EventTypeNames.PAYMENT_FAILED, msg)
+				: EventWrapper.of(EventTypeNames.PAYMENT_FAILED, msg);
 			String payload = objectMapper.writeValueAsString(wrapper);
 
 			// Payment 엔티티가 없을 수 있으니, aggregateId를 안전하게 구성

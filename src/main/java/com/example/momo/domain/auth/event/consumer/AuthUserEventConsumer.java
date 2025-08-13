@@ -16,6 +16,7 @@ import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.auth.slack.SlackNotifier;
 import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthUserEventConsumer {
 	private final SlackNotifier slackNotifier;
 	private final UserSocialRepository userSocialRepository;
+	private final ObjectMapper objectMapper;
 
 	@Retryable(
 		retryFor = {RuntimeException.class},
@@ -107,14 +109,11 @@ public class AuthUserEventConsumer {
 	 */
 	private void handleUserWithdrawn(EventWrapper<?> eventWrapper, String correlationId) {
 		try {
-			// 데이터 타입 캐스팅 검증
-			if (!(eventWrapper.data() instanceof UserEventMessage.UserWithdrawnData)) {
-				log.error("[{}] 잘못된 데이터 타입: expected=UserWithdrawnData, actual={}",
-					correlationId, eventWrapper.data().getClass().getSimpleName());
-				throw new IllegalArgumentException("잘못된 데이터 타입입니다");
-			}
-
-			UserEventMessage.UserWithdrawnData data = (UserEventMessage.UserWithdrawnData)eventWrapper.data();
+			// ObjectMapper를 사용해서 LinkedHashMap -> UserWithdrawnData 변환
+			UserEventMessage.UserWithdrawnData data = objectMapper.convertValue(
+				eventWrapper.data(),
+				UserEventMessage.UserWithdrawnData.class
+			);
 
 			// 필수 필드 검증
 			validateUserWithdrawnData(data, correlationId);
@@ -128,9 +127,6 @@ public class AuthUserEventConsumer {
 			log.info("[{}] 계정({})에 연동된 소셜 로그인을 모두 삭제했습니다.",
 				correlationId, data.email());
 
-		} catch (ClassCastException e) {
-			log.error("[{}] 데이터 캐스팅 실패: {}", correlationId, e.getMessage());
-			throw new IllegalArgumentException("이벤트 데이터 형식이 올바르지 않습니다", e);
 		} catch (Exception e) {
 			log.error("[{}] 소셜 로그인 삭제 실패: error={}", correlationId, e.getMessage());
 			throw e;
