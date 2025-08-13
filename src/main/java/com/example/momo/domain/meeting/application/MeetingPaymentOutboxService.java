@@ -8,9 +8,7 @@ public interface MeetingPaymentOutboxService {
 
 	void savePaymentOutbox(MeetingPaymentOutbox outbox);
 
-	void markEventAsPublished(Long meetingId);
-
-	void markEventAsPublished2(String eventUuid);
+	void markEventAsPublished(String eventUuid);
 
 	List<MeetingPaymentOutbox> getUnpublishedPaymentOutbox();
 

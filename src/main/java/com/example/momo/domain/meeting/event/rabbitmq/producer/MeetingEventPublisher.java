@@ -1,21 +1,23 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
@@ -93,7 +95,7 @@ public class MeetingEventPublisher {
 				correlationData
 			);
 			future.get(2, TimeUnit.SECONDS);
-			meetingPaymentOutboxService.markEventAsPublished2(outbox.getEventUuid());
+			meetingPaymentOutboxService.markEventAsPublished(outbox.getEventUuid());
 			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", event);
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", event, e);
