@@ -8,6 +8,8 @@ import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -152,6 +154,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional(readOnly = true)
+	@Cacheable(value = "meeting", key = "#meetingId",cacheManager = "cacheManager")
 	public MeetingResponseDto getMeeting(Long meetingId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
@@ -303,6 +306,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional
+	@CacheEvict(value = "meeting", key = "#meetingId")
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
 
 		RLock lock = redissonClient.getLock("lock:meeting:" + meetingId);

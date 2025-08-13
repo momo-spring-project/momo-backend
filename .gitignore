@@ -44,3 +44,5 @@ gradle.properties
 src/main/resources/firebase/*
 src/main/resources/static/firebase/*
 
+### MAC 자동 생성 파일 ###
+.DS_Store
