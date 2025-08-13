@@ -1,28 +1,26 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import com.example.momo.domain.meeting.application.MeetingOutboxService;
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
-import com.example.momo.global.springEvent.MeetingEvents;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_REGISTER;
-import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -107,7 +105,7 @@ public class MeetingEventPublisher {
 			);
 			boolean result = future.get(2, TimeUnit.SECONDS);
 			if (result) {
-				meetingPaymentOutboxService.markEventAsPublished2(outbox.getEventUuid());
+				meetingPaymentOutboxService.markEventAsPublished(outbox.getEventUuid());
 				log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", event);
 			}
 			return result;
