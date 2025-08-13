@@ -27,7 +27,7 @@ public interface PaymentOutboxJpaRepository extends JpaRepository<PaymentOutbox,
 		WHERE status = 'FAILED'
 		  AND retry_count < :maxRetry
 		  AND (next_retry_at IS NULL OR next_retry_at <= NOW())
-		ORDER BY IFNULL(next_retry_at, '1970-01-01') ASC, created_at ASC
+		ORDER BY next_retry_at ASC, created_at ASC
 		LIMIT :limit
 		""", nativeQuery = true)
 	List<Long> pickRetryableFailedIds(@Param("maxRetry") int maxRetry,
