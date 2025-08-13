@@ -1,12 +1,11 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
-import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			MEETING_CREATE,
+			MEETING_CREATE_KEY,
 			event
 		);
 	}
@@ -42,7 +41,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			MEETING_UPDATE,
+			MEETING_UPDATE_KEY,
 			event
 		);
 	}
@@ -56,7 +55,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			MEETING_DELETE,
+			MEETING_DELETE_KEY,
 			event
 		);
 	}
@@ -70,7 +69,7 @@ public class MeetingProducer {
 
 		rabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
-			RoutingKeys.MEETING_DELETE_KEY,
+			MEETING_DELETE_KEY,
 			wrapper
 		);
 	}
