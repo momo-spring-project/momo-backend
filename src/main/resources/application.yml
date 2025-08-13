@@ -141,6 +141,10 @@ toss:
     client-key: ${TOSS_CLIENT_KEY}
     base-url: ${TOSS_BASE_URL}
 
+elasticsearch:
+  host: ${ELASTICSEARCH_HOST}
+  port: ${ELASTICSEARCH_PORT}
+
 # application.yml (정말 필요한 것만)
 webclient:
   internal:

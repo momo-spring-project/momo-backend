@@ -71,7 +71,7 @@ public class MeetingController {
 	public ResponseEntity<ApiResponse<MeetingResponseDto>> updateMeetingStatus(@PathVariable Long meetingId,
 		@RequestBody MeetingStatusUpdateRequestDto request, @AuthenticationPrincipal AuthUser authUser) {
 
-		MeetingResponseDto response = meetingService.updateMeetingStatus(meetingId, request.getStatus(),
+		MeetingResponseDto response = meetingService.updateMeetingStatus(meetingId, request.status(),
 			authUser.getId());
 		return ResponseEntity.ok(ApiResponse.success("모임 상태 변경이 성공적으로 완료되었습니다.", response));
 	}

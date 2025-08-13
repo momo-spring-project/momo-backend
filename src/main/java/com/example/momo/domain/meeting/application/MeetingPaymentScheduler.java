@@ -1,22 +1,22 @@
 package com.example.momo.domain.meeting.application;
 
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_CANCEL;
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_REGISTER;
 
 @Slf4j
 @Component
@@ -36,15 +36,23 @@ public class MeetingPaymentScheduler {
 
 		for (MeetingPaymentOutbox outbox : list) {
 
-			try {
-				MeetingMessageEvents.Delete event = objectMapper.readValue(outbox.getPayload(),
-					MeetingMessageEvents.Delete.class);
-				meetingProducer.deleteMeetingWithRefundsMQ(event);
-				meetingPaymentOutboxService.markEventAsPublished(outbox.getMeetingId());
-			} catch (Exception e) {
-				log.error(
-					"[Meeting] : MeetingPaymentScheduler.retryUnpublishedEvents - Meeting 취소시 환불 메세지 아웃박스 스케줄러 실패");
-				throw new RuntimeException(e);
+			if (outbox.getEventType().equals(MEETING_DELETE)) {
+				try {
+					EventWrapper<?> wrapper =
+						objectMapper.readValue(outbox.getPayload(),
+							new TypeReference<>() {
+							});
+
+					EventWrapper<?> retryWrapper = EventWrapper.of(wrapper.uuId(), MEETING_DELETE,
+						wrapper.data());
+
+					meetingProducer.deleteMeetingWithRefundsMQ(retryWrapper);
+					meetingPaymentOutboxService.markEventAsPublished(retryWrapper.uuId());
+				} catch (Exception e) {
+					log.error(
+						"[Meeting] : MeetingPaymentScheduler.retryUnpublishedEvents - Meeting 취소시 환불 메세지 아웃박스 스케줄러 실패 2");
+					throw new RuntimeException(e);
+				}
 			}
 		}
 	}
