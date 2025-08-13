@@ -29,7 +29,7 @@ public class EventLoggingAspect {
 		String methodName = point.getSignature().toShortString();
 		String type = extractType(point.getArgs());
 
-		log.info("[RabbitMQ 리스너 접근] , method={}, type={}", methodName, type);
+		log.info("[RabbitMQ 리스너 접근 :: {}] , location={}", type, methodName);
 	}
 
 	@AfterReturning("rabbitPublishMethods()")
@@ -40,7 +40,7 @@ public class EventLoggingAspect {
 		String routingKey = args.length > 1 ? String.valueOf(args[1]) : "?";
 		String type = extractType(args);
 
-		log.info("[RabbitMQ 퍼블리싱] ex={}, key={}, type={}", exchange, routingKey, type);
+		log.info("[RabbitMQ 퍼블리싱 :: {}] ex={}, key={}", type, exchange, routingKey);
 	}
 
 	private String extractType(Object[] args) {
