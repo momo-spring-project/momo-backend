@@ -36,26 +36,39 @@ public class PaymentOutbox {
 	@Column(nullable = false)
 	private String routingKey;
 
-	@Column(nullable = false, length = 65535)
+	@Column(nullable = false, columnDefinition = "MEDIUMTEXT")
 	private String payload;
 
 	@Column(nullable = false)
 	private LocalDateTime createdAt;
+
+	private LocalDateTime updatedAt;
 
 	private LocalDateTime publishedAt;
 
 	@Column(nullable = false)
 	private Boolean published = false;
 
+	@Column(nullable = false)
 	private Integer retryCount = 0;
 
 	@Column(unique = true)
 	private String correlationId;
 
 	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
 	private OutboxStatus status = OutboxStatus.PENDING;
 
+	@Column(columnDefinition = "TEXT")
 	private String failureReason;
+
+	/** 다음 재시도 시각 - 지수 백오프 계산값 저장 */
+	@Column(name = "next_retry_at")
+	private LocalDateTime nextRetryAt;
+
+	/** 선점한 워커 ID (단건 선점 버전에서는 사용하지 않아도 됨) */
+	@Column(name = "processor_id", length = 64)
+	private String processorId;
 
 	public static PaymentOutbox create(String eventType, String aggregateId,
 		String routingKey, String payload) {
@@ -65,23 +78,48 @@ public class PaymentOutbox {
 		outbox.routingKey = routingKey;
 		outbox.payload = payload;
 		outbox.createdAt = LocalDateTime.now();
+		outbox.updatedAt = outbox.createdAt;
 		outbox.correlationId = UUID.randomUUID().toString();
+		outbox.status = OutboxStatus.PENDING;
+		outbox.retryCount = 0;
+		outbox.published = false;
 		return outbox;
 	}
 
+	/** 발행 성공 처리 */
 	public void markAsPublished() {
 		this.status = OutboxStatus.PUBLISHED;
 		this.published = true;
 		this.publishedAt = LocalDateTime.now();
+		this.updatedAt = this.publishedAt;
+		this.nextRetryAt = null;
+		this.processorId = null;
 	}
 
+	/**
+	 * 발행 실패 처리 (지수 백오프 적용)
+	 * 베이스 10초 * 2^(retryCount-1) (최대 300초)
+	 */
 	public void markAsFailed(String reason) {
 		this.status = OutboxStatus.FAILED;
 		this.retryCount++;
 		this.failureReason = reason;
+		this.updatedAt = LocalDateTime.now();
+		this.processorId = null;
+
+		long baseSeconds = 10;
+		long delaySeconds = Math.min(
+			baseSeconds * (long)Math.pow(2, Math.max(0, retryCount - 1)),
+			300
+		);
+		this.nextRetryAt = LocalDateTime.now().plusSeconds(delaySeconds);
 	}
 
+	/** DLQ 처리 */
 	public void markAsDeadLettered() {
 		this.status = OutboxStatus.DEAD_LETTERED;
+		this.updatedAt = LocalDateTime.now();
+		this.nextRetryAt = null;
+		this.processorId = null;
 	}
 }
