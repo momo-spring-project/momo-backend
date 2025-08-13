@@ -60,8 +60,7 @@ public class MessageHubRedisService {
 		Instant meetingTime = meetingDate.atZone(ZoneId.systemDefault()).toInstant();
 
 		tryCreateReminderMessage(message, meetingTime.toEpochMilli());
-		log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
-			message.getUserId(), message.getMeetingId(), meetingDate);
+
 	}
 
 	//저장 재시도 후 실패시 로그 생성
@@ -71,6 +70,8 @@ public class MessageHubRedisService {
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
 				messageHubRedisRepository.saveMessage(uniqueKey, meetingTime, message);
+				log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
+					message.getUserId(), message.getMeetingId(), meetingTime);
 				break;
 			} catch (Exception e) {
 				if (attempt == maxAttempts) {
