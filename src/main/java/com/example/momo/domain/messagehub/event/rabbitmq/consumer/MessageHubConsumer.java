@@ -33,29 +33,20 @@ public class MessageHubConsumer {
 	@RabbitListener(
 		queues = MESSAGE_HUB_QUEUE,
 		containerFactory = "hubListenerContainerFactory")
-	public <T> void consumeWrapper(EventWrapper<T> eventWrapper, Message message) {
+	public void consumeWrapper(EventWrapper<?> eventWrapper, Message message) {
 
 		if (eventWrapper.type() == null || eventWrapper.data() == null) {
 			log.error("메세지 허브 리스너 접근 실패 - null");
 			return;
 		}
 
-		UuidStatus uuidStatus = messageHubRedisService.createMessageHubUuidOrExist(eventWrapper.uuId());
-
-		//UUID 중복 혹은 NULL
-		if (uuidStatus == UuidStatus.SKIP) {
-			return;
-		}
-
-		//UUID 저장 실패 - 재시도 발행
-		if (uuidStatus == UuidStatus.SAVE_FAIL) {
-			producer.messageHubRetry(eventWrapper, message);
+		if (!isValidUuid(eventWrapper, message)) {
 			return;
 		}
 
 		int retryCount = calculateRetryCount(message);
 		log.info("알림 컨슈머 접근 : Type = {} 시도 횟수 = {}", eventWrapper.type(), retryCount);
-		
+
 		eventRoutingHandler.handleMessage(eventWrapper.type(), eventWrapper.data());
 
 	}
@@ -63,6 +54,22 @@ public class MessageHubConsumer {
 	private static int calculateRetryCount(Message message) {
 		Object object = message.getMessageProperties().getHeaders().get(NOTIFICATION_RETRY_HEADER);
 		return (object instanceof Number) ? ((Number)object).intValue() : 1;
+	}
+
+	private boolean isValidUuid(EventWrapper<?> eventWrapper, Message message) {
+		UuidStatus uuidStatus = messageHubRedisService.createMessageHubUuidOrExist(eventWrapper.uuId());
+
+		//UUID 중복 혹은 NULL
+		if (uuidStatus == UuidStatus.SKIP) {
+			return false;
+		}
+
+		//UUID 저장 실패 - 재시도 발행
+		if (uuidStatus == UuidStatus.SAVE_FAIL) {
+			producer.messageHubRetry(eventWrapper, message);
+			return false;
+		}
+		return true;
 	}
 
 }

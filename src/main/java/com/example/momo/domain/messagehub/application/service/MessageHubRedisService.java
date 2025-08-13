@@ -209,7 +209,7 @@ public class MessageHubRedisService {
 		String todayKey = ReminderKeyUtil.toUuidMarkKey(today.format(basicIsoDate));
 		String yesterdayKey = ReminderKeyUtil.toUuidMarkKey(today.minusDays(1).format(basicIsoDate));
 
-		if (messageHubRedisRepository.isUuidYesterdayKeyExist(uuid, todayKey, yesterdayKey)) {
+		if (messageHubRedisRepository.isUuidExist(uuid, todayKey, yesterdayKey)) {
 			log.info("메세지 허브 리스너 UUID 중복 - uuid : {}", uuid);
 			return UuidStatus.SKIP;
 		}

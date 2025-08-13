@@ -9,6 +9,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
+import com.example.momo.domain.notification.application.redis.NotificationRedisService;
+import com.example.momo.domain.notification.enums.UuidStatus;
+import com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
 	private final ObjectMapper objectMapper;
+	private final NotificationRedisService redisService;
+	private final NotificationRetryProducer retryProducer;
 
 	@RabbitListener(
 		queues = NOTIFICATION_QUEUE,
@@ -33,7 +38,11 @@ public class NotificationConsumer {
 			return;
 		}
 
-		MessageHubNotificationMessage notificationMessage = mapping(wrapper.type(), wrapper.data());
+		if (!isValidUuid(wrapper, message)) {
+			return;
+		}
+
+		MessageHubNotificationMessage notificationMessage = mappingNotificationMessage(wrapper.type(), wrapper.data());
 		if (notificationMessage == null) {
 			return;
 		}
@@ -45,7 +54,7 @@ public class NotificationConsumer {
 		notificationHandler.handleNotification(notificationMessage, message);
 	}
 
-	private MessageHubNotificationMessage mapping(String type, Object object) {
+	private MessageHubNotificationMessage mappingNotificationMessage(String type, Object object) {
 
 		try {
 			MessageHubNotificationMessage notificationMessage = objectMapper.convertValue(object,
@@ -76,6 +85,22 @@ public class NotificationConsumer {
 
 		return true;
 
+	}
+
+	private boolean isValidUuid(EventWrapper<?> eventWrapper, Message message) {
+		UuidStatus uuidStatus = redisService.createNotificationUuidOrExist(eventWrapper.uuId());
+
+		//UUID 중복 혹은 NULL
+		if (uuidStatus == UuidStatus.SKIP) {
+			return false;
+		}
+
+		//UUID 저장 실패 - 재시도 발행
+		if (uuidStatus == UuidStatus.SAVE_FAIL) {
+			retryProducer.notificationRetry(eventWrapper, message);
+			return false;
+		}
+		return true;
 	}
 
 }

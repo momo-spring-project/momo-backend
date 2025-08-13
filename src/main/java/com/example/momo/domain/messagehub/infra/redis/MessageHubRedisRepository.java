@@ -91,14 +91,14 @@ public class MessageHubRedisRepository {
 		redisStringTemplate.exec();
 	}
 
-	public boolean isUuidYesterdayKeyExist(String uuid, String todayKey, String yesterdayKey) {
+	public boolean isUuidExist(String uuid, String todayKey, String yesterdayKey) {
 		return Boolean.TRUE.equals(redisStringTemplate.opsForSet().isMember(todayKey, uuid)) || Boolean.TRUE.equals(
 			redisStringTemplate.opsForSet().isMember(yesterdayKey, uuid));
 	}
 
 	public void saveUuidKeyWithTodayKey(String uuid, String todayKey) {
 
-		Long savedUuid = redisStringTemplate.opsForSet().add(todayKey, uuid);
+		redisStringTemplate.opsForSet().add(todayKey, uuid);
 
 		redisStringTemplate.expire(todayKey, Duration.ofDays(2));
 	}
