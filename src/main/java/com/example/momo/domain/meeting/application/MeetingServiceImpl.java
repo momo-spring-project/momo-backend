@@ -229,12 +229,12 @@ public class MeetingServiceImpl implements MeetingService {
 		meeting.delete();
 
 		// 모임 삭제 메세지 mq 발행
-		meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
-			meeting.getHostUserId(),
-			meeting.getId(),
-			meeting.getTitle(),
-			participants
-		));
+		// meetingProducer.deleteMeetingMQ(new MeetingAlarmMessages.Delete(
+		// 	meeting.getHostUserId(),
+		// 	meeting.getId(),
+		// 	meeting.getTitle(),
+		// 	participants
+		// ));
 
 		// 모임 삭제시 참가자들 환불 mq 발행
 		// 상태가 아직 진행중, 참가자가 존재 시 환불 이벤트 발행
@@ -248,9 +248,7 @@ public class MeetingServiceImpl implements MeetingService {
 			);
 
 			try {
-				String eventPayload = objectMapper.writeValueAsString(deleteEvent);
-
-				EventWrapper<?> wrapper = EventWrapper.of(MEETING_DELETE, eventPayload);
+				EventWrapper<?> wrapper = EventWrapper.of(MEETING_DELETE, deleteEvent);
 				MeetingPaymentOutbox paymentOutbox =
 					MeetingPaymentOutbox.create(
 						MEETING_DELETE,
@@ -259,11 +257,10 @@ public class MeetingServiceImpl implements MeetingService {
 						objectMapper.writeValueAsString(wrapper)
 					);
 				meetingPaymentOutboxService.savePaymentOutbox(paymentOutbox);
+				eventPublisher.publishEvent(wrapper);
 			} catch (Exception e) {
 				throw new MeetingException(MeetingExceptionCode.JSON_SERIALIZATION_ERROR);
 			}
-
-			eventPublisher.publishEvent(deleteEvent);
 		}
 
 		meeting.removeMeeting();
