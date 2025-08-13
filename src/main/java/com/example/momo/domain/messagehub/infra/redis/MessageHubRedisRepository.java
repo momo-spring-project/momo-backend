@@ -76,14 +76,19 @@ public class MessageHubRedisRepository {
 
 	//메세지 단건 삭제
 	public void deleteSentMessage(String uniqueKey) {
+		// 커넥션 바인딩 시작
+		redisStringTemplate.multi();
 		redisStringTemplate.opsForZSet().remove(ZSET_KEY, uniqueKey);
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKey);
+		redisStringTemplate.exec();
 	}
 
 	//메세지 다건 삭제
 	public void deleteSentMessages(Set<String> keys) {
+		redisStringTemplate.multi();
 		redisStringTemplate.opsForZSet().remove(ZSET_KEY, keys.toArray());
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, keys.toArray());
+		redisStringTemplate.exec();
 	}
 
 	public boolean isUuidYesterdayKeyExist(String uuid, String yesterdayKey) {

@@ -1,6 +1,5 @@
 package com.example.momo.domain.messagehub.event.rabbitmq.config;
 
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
@@ -24,6 +23,8 @@ public class MessageHubQueueConfig {
 
 	public static final int HUB_QUEUE_TTL_MS = 600_000;
 
+	//Queue
+
 	@Bean
 	public Queue hubQueue() {
 		return QueueBuilder.durable(MESSAGE_HUB_QUEUE)
@@ -40,6 +41,8 @@ public class MessageHubQueueConfig {
 			.build();
 	}
 
+	//Binding
+
 	@Bean
 	public Binding hubDlqBinding(
 	) {
@@ -52,35 +55,35 @@ public class MessageHubQueueConfig {
 	public Binding paymentCompleteHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(PAYMENT_EVENTS))
-			.with(PAYMENT_COMPLETED);
+			.with(PAYMENT_COMPLETED_KEY);
 	}
 
 	@Bean
 	public Binding paymentRefundHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(PAYMENT_EVENTS))
-			.with(PAYMENT_REFUNDED);
+			.with(PAYMENT_REFUNDED_KEY);
 	}
 
 	@Bean
 	public Binding meetingCreateHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(MEETING_EVENTS))
-			.with(MEETING_CREATE);
+			.with(MEETING_CREATE_KEY);
 	}
 
 	@Bean
 	public Binding meetingUpdateHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(MEETING_EVENTS))
-			.with(MEETING_UPDATE);
+			.with(MEETING_UPDATE_KEY);
 	}
 
 	@Bean
 	public Binding meetingDeleteHubBinding() {
 		return BindingBuilder.bind(hubQueue())
 			.to(new TopicExchange(MEETING_EVENTS))
-			.with(MEETING_DELETE);
+			.with(MEETING_DELETE_KEY);
 	}
 
 	@Bean
