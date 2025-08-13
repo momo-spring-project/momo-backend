@@ -15,10 +15,11 @@ public class OutboxExecutorConfig {
 	@Bean("outboxPublisherExecutor")
 	public Executor outboxPublisherExecutor() {
 		ThreadPoolTaskExecutor ex = new ThreadPoolTaskExecutor();
-		ex.setCorePoolSize(2);
-		ex.setMaxPoolSize(4);
-		ex.setQueueCapacity(50);
+		ex.setCorePoolSize(4);
+		ex.setMaxPoolSize(8);
+		ex.setQueueCapacity(64); //대기열: 최악 32건(두 스케줄 겹침)의 2배
 		ex.setThreadNamePrefix("outbox-");
+		ex.setWaitForTasksToCompleteOnShutdown(true); // 종료 시 graceful shutdown
 		ex.initialize();
 		return ex;
 	}

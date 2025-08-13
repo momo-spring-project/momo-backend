@@ -71,7 +71,7 @@ public class PaymentOutboxScheduler {
 
 	// ===== 내부 헬퍼 =====
 
-	/** 각 ID를 스레드풀에 태워 "가볍게 병렬" 발행 (runAsync, 기다리지 않고 즉시 반환) */
+	/** 각 ID를 스레드풀에 보내 병렬 발행 (runAsync, 기다리지 않고 즉시 반환) */
 	private void dispatchIdsAsync(String tag, List<Long> ids) {
 		for (Long id : ids) {
 			CompletableFuture.runAsync(() -> safePublish(tag, id), outboxPublisherExecutor);
