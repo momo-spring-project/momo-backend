@@ -7,7 +7,7 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,6 +24,18 @@ import lombok.extern.slf4j.Slf4j;
 @EnableRabbit
 @Configuration
 public class RabbitMQConfig {
+
+	@Value("${RABBITMQ_HOST}")
+	private String rabbitHost;
+
+	@Value("${RABBITMQ_PORT}")
+	private int rabbitPort;
+
+	@Value("${RABBITMQ_USER}")
+	private String rabbitUsername;
+
+	@Value("${RABBITMQ_PASS}")
+	private String rabbitPassword;
 
 	/**
 	 * 메시지 직렬화 컨버터
@@ -43,9 +55,15 @@ public class RabbitMQConfig {
 	 */
 	@Primary
 	@Bean
-	@ConfigurationProperties(prefix = "spring.rabbitmq")
 	public CachingConnectionFactory rabbitConnectionFactory() {
-		return new CachingConnectionFactory();
+		CachingConnectionFactory connectionFactory = new CachingConnectionFactory();
+		connectionFactory.setHost(rabbitHost);
+		connectionFactory.setPort(rabbitPort);
+		connectionFactory.setUsername(rabbitUsername);
+		connectionFactory.setPassword(rabbitPassword);
+		System.out.println("connectionFactory.getHost() = " + connectionFactory.getHost());
+		System.out.println("connectionFactory.getPort() = " + connectionFactory.getPort());
+		return connectionFactory;
 	}
 
 	/**

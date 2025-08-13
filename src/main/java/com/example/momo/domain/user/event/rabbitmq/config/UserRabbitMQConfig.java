@@ -32,8 +32,6 @@ public class UserRabbitMQConfig {
 		CachingConnectionFactory factory = new CachingConnectionFactory(
 			cachingConnectionFactory.getRabbitConnectionFactory());
 
-		factory.setHost("localhost");
-
 		// Publisher Confirm 설정 - 메시지 발행 성공/실패 확인
 		factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
 

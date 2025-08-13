@@ -53,7 +53,7 @@ spring:
         serverTimezone: Asia/Seoul
 
         # 보안 설정
-        useSSL: false                # # TODO: 운영단계에서는 true로 변경
+        useSSL: true
         allowPublicKeyRetrieval: true
 
         # 재연결 설정
@@ -70,9 +70,9 @@ spring:
         dialect: org.hibernate.dialect.MySQLDialect
 
         # SQL 로깅 (개발환경용)
-        format_sql: true            # TODO: 운영단계에서는 false로 변경
+        format_sql: false
         use_sql_comments: false
-        generate_statistics: false  # TODO: 운영에서는 false, 개발에서 성능 분석시만 true
+        generate_statistics: false
         session_factory:
           statement_inspector: com.example.momo.global.monitoring.query.inspector.QueryCountInspector
 
@@ -110,7 +110,7 @@ spring:
     encoding: UTF-8
     validate-on-migrate: true      # 마이그레이션 파일 변경 감지
     out-of-order: false           # 순서대로 실행 강제
-    group: false                  # 트랜잭션 단위로 개별 실행 TODO: 운영단계에서는 true로 변경
+    group: true                   # 트랜잭션 단위로 개별 실행
     mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
     clean-disabled: false         # TODO: 운영단계에서는 true로 변경 -> 가장 중요
     baseline-on-migrate: true
@@ -123,8 +123,8 @@ spring:
     encoding: UTF-8
 
   rabbitmq:
-    host: localhost
-    port: 5672
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
     publisher-confirm-type: correlated
