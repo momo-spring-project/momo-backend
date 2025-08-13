@@ -19,7 +19,7 @@ import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
@@ -220,9 +220,9 @@ public class PaymentEventConsumer {
 			}
 
 			// 즉시 DLQ: 역직렬화 실패
-			final MeetingMessageEvents.Delete ev;
+			final MeetingEvents.Delete ev;
 			try {
-				ev = objectMapper.convertValue(wrapper.data(), MeetingMessageEvents.Delete.class);
+				ev = objectMapper.convertValue(wrapper.data(), MeetingEvents.Delete.class);
 			} catch (Exception cvt) {
 				throw new AmqpRejectAndDontRequeueException("[meeting.deleted] deserialize fail", cvt);
 			}

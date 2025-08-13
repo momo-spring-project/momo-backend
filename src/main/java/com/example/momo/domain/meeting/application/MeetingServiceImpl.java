@@ -2,11 +2,9 @@ package com.example.momo.domain.meeting.application;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -41,7 +39,7 @@ import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
@@ -50,8 +48,6 @@ import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
@@ -244,7 +240,7 @@ public class MeetingServiceImpl implements MeetingService {
 		if (!meeting.getParticipants().isEmpty() &&
 			meeting.getStatus().equals(MeetingStatus.IN_PROGRESS)) {
 
-			MeetingMessageEvents.Delete deleteEvent = new MeetingMessageEvents.Delete(
+			MeetingEvents.Delete deleteEvent = new MeetingEvents.Delete(
 				meeting.getId(),
 				meeting.getTitle(),
 				participants
@@ -333,13 +329,11 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
 		}
 
-		meeting.addMeetingParticipant();
+		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
+		meeting.addMeetingParticipant(participant);
 
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
-			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
-
-			meeting.getParticipants().add(participant);
 			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), "temp"),
@@ -348,7 +342,7 @@ public class MeetingServiceImpl implements MeetingService {
 			);
 		} else {
 			// 참가 신청 이벤트 (아웃박스) 발행
-			eventPublisher.publishEvent(new MeetingMessageEvents.Register(meetingId, userId));
+			eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
@@ -403,8 +397,7 @@ public class MeetingServiceImpl implements MeetingService {
 		}
 
 		// 인원 감소, 참가자 삭제
-		meeting.removeMeetingParticipant();
-		meeting.getParticipants().remove(participant);
+		meeting.removeMeetingParticipant(participant);
 
 		// 참가비 있을 경우만 환불 요청 이벤트
 		if (meeting.getParticipationFee() == 0) {
@@ -420,7 +413,7 @@ public class MeetingServiceImpl implements MeetingService {
 				PARTICIPANT_CANCEL_KEY
 			);
 		} else {
-			eventPublisher.publishEvent(new MeetingMessageEvents.Cancel(
+			eventPublisher.publishEvent(new MeetingEvents.Cancel(
 				meetingId,
 				userId,
 				meeting.getHostUserId(),

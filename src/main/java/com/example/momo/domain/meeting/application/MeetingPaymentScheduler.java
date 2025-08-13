@@ -3,17 +3,19 @@ package com.example.momo.domain.meeting.application;
 import java.util.List;
 
 import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_CANCEL;
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.MEETING_PARTICIPANT_REGISTER;
@@ -37,8 +39,8 @@ public class MeetingPaymentScheduler {
 		for (MeetingPaymentOutbox outbox : list) {
 
 			try {
-				MeetingMessageEvents.Delete event = objectMapper.readValue(outbox.getPayload(),
-					MeetingMessageEvents.Delete.class);
+				MeetingEvents.Delete event = objectMapper.readValue(outbox.getPayload(),
+					MeetingEvents.Delete.class);
 				meetingProducer.deleteMeetingWithRefundsMQ(event);
 				meetingPaymentOutboxService.markEventAsPublished(outbox.getMeetingId());
 			} catch (Exception e) {
@@ -50,6 +52,7 @@ public class MeetingPaymentScheduler {
 	}
 
 	// 유실된 이벤트 롤백, 10분 주기
+	@Transactional
 	@Scheduled(fixedRate = 600_000)
 	public void rollbackLostMeetingEvents() {
 		List<MeetingPaymentOutbox> list = meetingPaymentOutboxService.getUnProcessedPaymentOutbox();
@@ -64,7 +67,8 @@ public class MeetingPaymentScheduler {
 							ParticipantEvents.Register.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						meeting.removeMeetingParticipant();
+						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
+						meeting.removeMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 ParticipantEvents.Register 롤백, outbox = {}", outbox);
 					}
 					case MEETING_PARTICIPANT_CANCEL -> {
@@ -73,7 +77,8 @@ public class MeetingPaymentScheduler {
 							ParticipantEvents.Cancel.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						meeting.addMeetingParticipant();
+						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
+						meeting.addMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 ParticipantEvents.Cancel 롤백, outbox = {}", outbox);
 					}
 				}

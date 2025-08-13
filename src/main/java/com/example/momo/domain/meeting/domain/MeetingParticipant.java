@@ -1,5 +1,6 @@
 package com.example.momo.domain.meeting.domain;
 
+import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.global.common.entity.BaseCreateEntity;
 
 import jakarta.persistence.*;

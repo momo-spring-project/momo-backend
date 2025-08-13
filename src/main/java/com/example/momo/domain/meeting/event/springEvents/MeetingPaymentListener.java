@@ -10,7 +10,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +30,7 @@ public class MeetingPaymentListener {
 
 	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void deleteMeetingEventListener(MeetingMessageEvents.Delete event) {
+	public void deleteMeetingEventListener(MeetingEvents.Delete event) {
 
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.deleteMeetingEventListener : Meeting Delete 이후 참가자 환불 메세지 발행");
@@ -47,7 +46,7 @@ public class MeetingPaymentListener {
 
 	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void registerParticipantEventListener(MeetingMessageEvents.Register event) {
+	public void registerParticipantEventListener(MeetingEvents.Register event) {
 
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.registerParticipantEventListener : 참가자 신청 메세지 발행");
@@ -67,7 +66,7 @@ public class MeetingPaymentListener {
 
 	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-	public void cancelParticipantEventListener(MeetingMessageEvents.Cancel event) {
+	public void cancelParticipantEventListener(MeetingEvents.Cancel event) {
 
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.cancelParticipantEventListener : 참가자 신청 메세지 발행");

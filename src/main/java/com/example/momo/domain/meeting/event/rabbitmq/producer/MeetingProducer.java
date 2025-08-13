@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.springEvent.meeting.MeetingMessageEvents;
+import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,7 @@ public class MeetingProducer {
 	/**
 	 * 모임 삭제 시 참가자들 환불 메세지 발행 메서드
 	 */
-	public void deleteMeetingWithRefundsMQ(MeetingMessageEvents.Delete event) {
+	public void deleteMeetingWithRefundsMQ(MeetingEvents.Delete event) {
 
 		log.info("[Meeting] - MeetingProducer.deleteMeetingWithRefundsMQ : Meeting Delete 시 참가자 환불 메세지 발행");
 
