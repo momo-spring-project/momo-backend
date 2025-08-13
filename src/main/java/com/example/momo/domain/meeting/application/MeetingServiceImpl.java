@@ -304,88 +304,51 @@ public class MeetingServiceImpl implements MeetingService {
 	 */
 
 	@Override
+	@Retryable(retryFor = {
+		ObjectOptimisticLockingFailureException.class}, backoff = @Backoff(delay = 150, multiplier = 3))
 	@Transactional
 	public ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId) {
 
-		RLock lock = redissonClient.getLock("lock:meeting:" + meetingId);
+		Meeting meeting = getMeetingById(meetingId);
 
-		// (분산락) 인원 추가
-		boolean locked = false;
-		try {
-			locked = lock.tryLock(3, 10, TimeUnit.SECONDS);
+		// 이미 참가했으면 예외처리
+		if (meeting.getParticipants()
+			.stream()
+			.anyMatch(p -> p.getUserId().equals(userId))
+		) {
+			throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
+		}
 
-			if (!locked) {
-				log.info("Lock acquire failed");
-			}
-			log.info("Lock acquired");
+		// 모임 활성화 확인
+		isMeetingOpen(meeting);
 
-			Meeting meeting = getMeetingById(meetingId);
+		// 유저 자격 확인
+		UserClientResponseDto user = userClient.getUser(userId);
+		if (user.getScore() < meeting.getMinEnterScore()) {
+			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
+		}
 
-			// 이미 참가했으면 예외처리
-			if (meeting.getParticipants()
-				.stream()
-				.anyMatch(p -> p.getUserId().equals(userId))
-			) {
-				throw new MeetingException(MeetingExceptionCode.ALREADY_PARTICIPATED);
-			}
+		// 참가자 수 확인
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
 
-			// 모임 활성화 확인
-			isMeetingOpen(meeting);
+		meeting.addMeetingParticipant();
 
-			// 유저 자격 확인
-			UserClientResponseDto user = userClient.getUser(userId);
-			 if (user.getScore() < meeting.getMinEnterScore()) {
-			 	throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
-			 }
+		// 참가비 무료일 경우 즉시 참가자 추가
+		if (meeting.getParticipationFee() == 0) {
+			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
 
-			// 참가자 수 확인
-			if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-				throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
-			}
-			meeting.addMeetingParticipant();
-
-			// 참가비 무료일 경우 즉시 참가자 추가
-			if (meeting.getParticipationFee() == 0) {
-				MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
-
-				meeting.getParticipants().add(participant);
-				// 참가 완료 이벤트 발행
-				meetingEventPublisher.publishParticipantEvents(
-					new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), "temp"), // user.getNickname()
-					MEETING_PARTICIPANT_JOIN,
-					PARTICIPANT_JOIN_KEY
-				);
-			} else {
-				// 참가 신청 이벤트 (아웃박스) 발행
-				eventPublisher.publishEvent(new MeetingMessageEvents.Register(meetingId, userId));
-			}
-
-			// 트랜잭션 커밋 이후에 락 해제
-			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-				@Override
-				public void afterCommit() {
-					lock.unlock();
-				}
-
-				// 롤백, 커밋 실패한 경우 락 해제
-				@Override
-				public void afterCompletion(int status) {
-					if (status != STATUS_COMMITTED && lock.isHeldByCurrentThread()) {
-						lock.unlock();
-					}
-				}
-			});
-		} catch (InterruptedException e) {
-			// 인터럽트 발생 시 예외 발생 명시
-			Thread.currentThread().interrupt();
-			throw new RuntimeException("Thread interrupted while acquiring lock", e);
-		} catch (Exception e) {
-			// 예외 발생 시 락 직접 해제
-			if (locked && lock.isHeldByCurrentThread()) {
-				lock.unlock();
-				log.info("Unlocked");
-				throw e;
-			}
+			meeting.getParticipants().add(participant);
+			// 참가 완료 이벤트 발행
+			meetingEventPublisher.publishParticipantEvents(
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), "temp"),
+				MEETING_PARTICIPANT_JOIN,
+				PARTICIPANT_JOIN_KEY
+			);
+		} else {
+			// 참가 신청 이벤트 (아웃박스) 발행
+			eventPublisher.publishEvent(new MeetingMessageEvents.Register(meetingId, userId));
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
