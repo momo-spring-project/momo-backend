@@ -68,11 +68,9 @@ public class MessageHubRedisService {
 		int maxAttempts = 3;
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				messageHubRedisRepository.saveZsetMessage(uniqueKey, meetingTime);
-				messageHubRedisRepository.saveHashMessage(uniqueKey, message);
+				messageHubRedisRepository.saveMessage(uniqueKey, meetingTime, message);
 				break;
 			} catch (Exception e) {
-				messageHubRedisRepository.deleteSentMessage(uniqueKey);
 				if (attempt == maxAttempts) {
 					log.error("[알림 예약 저장 실패] {}회 시도 - userId: {}, meetingId: {}",
 						attempt, message.getUserId(), message.getMeetingId());

@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
@@ -28,24 +27,24 @@ import lombok.RequiredArgsConstructor;
 @Repository
 public class MessageHubRedisRepository {
 
-	private final StringRedisTemplate redisTemplate;
+	private final RedisTemplate<String, String> redisStringTemplate;
 	private final RedisTemplate<String, MeetingReminderMessage> redisReminderTemplate;
 
-	//ZSET 저장
-	public void saveZsetMessage(String uniqueKey, long meetingTime) {
-		// ZSet 에는 고유키를 score 와 함께 저장
-		redisTemplate.opsForZSet().add(ZSET_KEY, uniqueKey, (double)meetingTime);
-	}
+	//메세지 저장 트랜잭션
+	public void saveMessage(String uniqueKey, long meetingTime, MeetingReminderMessage message) {
+		// 커넥션 바인딩 시작
+		redisStringTemplate.multi();
 
-	//HASH 저장
-	public void saveHashMessage(String uniqueKey, MeetingReminderMessage message) {
-		// Hash 에는 고유키로 전체 객체를 저장 (상세 데이터 관리)
+		redisStringTemplate.opsForZSet().add(ZSET_KEY, uniqueKey, (double)meetingTime);
 		redisReminderTemplate.opsForHash().put(HASH_KEY, uniqueKey, message);
+
+		// 모든 명령 큐잉 후 실행
+		redisStringTemplate.exec();
 	}
 
 	// Score 범위로 Key Set 조회
 	public Set<String> findUniqueKeysByScoreRange(ScoreRangeDto dto) {
-		return redisTemplate.opsForZSet()
+		return redisStringTemplate.opsForZSet()
 			.rangeByScore(ZSET_KEY, dto.fromScore(), dto.toScore(), 0, dto.maxCount());
 	}
 
@@ -63,39 +62,39 @@ public class MessageHubRedisRepository {
 	//발송 된(하루전알린) 알림으로 마킹(저장)
 	public void markAsSent(String sentKey, String[] members) {
 
-		redisTemplate.opsForSet().add(sentKey, members);
-		redisTemplate.expire(sentKey, Duration.ofDays(2));
+		redisStringTemplate.opsForSet().add(sentKey, members);
+		redisStringTemplate.expire(sentKey, Duration.ofDays(2));
 	}
 
 	//이미 발송된(하루전알림) 알림인지 확인
 	public boolean isSent(String sentKey, String sentMark) {
 
 		return Boolean.TRUE.equals(
-			redisTemplate.opsForSet().isMember(sentKey, sentMark)
+			redisStringTemplate.opsForSet().isMember(sentKey, sentMark)
 		);
 	}
 
 	//메세지 단건 삭제
 	public void deleteSentMessage(String uniqueKey) {
-		redisTemplate.opsForZSet().remove(ZSET_KEY, uniqueKey);
+		redisStringTemplate.opsForZSet().remove(ZSET_KEY, uniqueKey);
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKey);
 	}
 
 	//메세지 다건 삭제
 	public void deleteSentMessages(Set<String> keys) {
-		redisTemplate.opsForZSet().remove(ZSET_KEY, keys.toArray());
+		redisStringTemplate.opsForZSet().remove(ZSET_KEY, keys.toArray());
 		redisReminderTemplate.opsForHash().delete(HASH_KEY, keys.toArray());
 	}
 
 	public boolean isUuidYesterdayKeyExist(String uuid, String yesterdayKey) {
-		return Boolean.TRUE.equals(redisTemplate.opsForSet().isMember(yesterdayKey, uuid));
+		return Boolean.TRUE.equals(redisStringTemplate.opsForSet().isMember(yesterdayKey, uuid));
 	}
 
 	public Long saveUuidKeyWithTodayKey(String uuid, String todayKey) {
 
-		Long savedUuid = redisTemplate.opsForSet().add(todayKey, uuid);
+		Long savedUuid = redisStringTemplate.opsForSet().add(todayKey, uuid);
 
-		redisTemplate.expire(todayKey, Duration.ofDays(2));
+		redisStringTemplate.expire(todayKey, Duration.ofDays(2));
 
 		return savedUuid;
 	}
