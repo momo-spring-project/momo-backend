@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -70,24 +70,24 @@ public class MeetingPaymentScheduler {
 				String eventType = outbox.getEventType();
 				switch (eventType) {
 					case MEETING_PARTICIPANT_REGISTER -> {
-						ParticipantEvents.Register event = objectMapper.readValue(
+						MeetingEvents.Register event = objectMapper.readValue(
 							outbox.getPayload(),
-							ParticipantEvents.Register.class
+							MeetingEvents.Register.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
 						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
 						meeting.removeMeetingParticipant(participant);
-						log.info("[Meeting] : 유실된 ParticipantEvents.Register 롤백, outbox = {}", outbox);
+						log.info("[Meeting] : 유실된 MeetingEvents.Register 롤백, outbox = {}", outbox);
 					}
 					case MEETING_PARTICIPANT_CANCEL -> {
-						ParticipantEvents.Cancel event = objectMapper.readValue(
+						MeetingEvents.Cancel event = objectMapper.readValue(
 							outbox.getPayload(),
-							ParticipantEvents.Cancel.class
+							MeetingEvents.Cancel.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
 						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
 						meeting.addMeetingParticipant(participant);
-						log.info("[Meeting] : 유실된 ParticipantEvents.Cancel 롤백, outbox = {}", outbox);
+						log.info("[Meeting] : 유실된 MeetingEvents.Cancel 롤백, outbox = {}", outbox);
 					}
 				}
 			} catch (Exception e) {

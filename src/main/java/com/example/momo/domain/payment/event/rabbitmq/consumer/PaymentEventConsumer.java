@@ -18,8 +18,7 @@ import com.example.momo.domain.payment.domain.PaymentRepository;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
-import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
@@ -73,9 +72,9 @@ public class PaymentEventConsumer {
 			}
 
 			// 즉시 DLQ: 역직렬화 실패
-			final ParticipantEvents.Register ev;
+			final MeetingEvents.Register ev;
 			try {
-				ev = objectMapper.convertValue(wrapper.data(), ParticipantEvents.Register.class);
+				ev = objectMapper.convertValue(wrapper.data(), MeetingEvents.Register.class);
 			} catch (Exception cvt) {
 				throw new AmqpRejectAndDontRequeueException("[register] deserialize fail", cvt);
 			}
@@ -139,9 +138,9 @@ public class PaymentEventConsumer {
 			}
 
 			// 즉시 DLQ: 역직렬화 실패
-			final ParticipantEvents.Cancel ev;
+			final MeetingEvents.Cancel ev;
 			try {
-				ev = objectMapper.convertValue(wrapper.data(), ParticipantEvents.Cancel.class);
+				ev = objectMapper.convertValue(wrapper.data(), MeetingEvents.Cancel.class);
 			} catch (Exception cvt) {
 				throw new AmqpRejectAndDontRequeueException("[cancel] deserialize fail", cvt);
 			}

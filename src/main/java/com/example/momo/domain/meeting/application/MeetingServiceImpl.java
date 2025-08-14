@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RedissonClient;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -37,14 +37,12 @@ import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
-import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
-import com.example.momo.domain.meeting.event.springEvents.MeetingEvents;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
 import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
@@ -67,7 +65,6 @@ public class MeetingServiceImpl implements MeetingService {
 	private final CategoryClient categoryClient;
 	private final MeetingProducer meetingProducer;
 	private final MeetingOutboxService meetingOutboxService;
-	private final MeetingEventPublisher meetingEventPublisher;
 	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 	private final ObjectMapper objectMapper;
 
@@ -342,22 +339,42 @@ public class MeetingServiceImpl implements MeetingService {
 			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
 			meeting.addMeetingParticipant(participant);
 
-			MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			MeetingElasticsearchOutbox esOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
 				ElasticsearchEventType.SAVE);
-			meetingOutboxService.saveMeetingOutbox(outbox);
+			meetingOutboxService.saveMeetingOutbox(esOutbox);
 
-			eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+			eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, esOutbox.getId()));
 
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
 			// 참가 완료 이벤트 발행
-			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+			meetingProducer.publishParticipantEvents(
+				new MeetingEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
 				MEETING_PARTICIPANT_JOIN,
 				PARTICIPANT_JOIN_KEY
 			);
 		} else {
 			// 참가 신청 이벤트 (아웃박스) 발행
+			EventWrapper<?> wrapper = EventWrapper.of(
+				MEETING_PARTICIPANT_REGISTER,
+				new MeetingEvents.Register(
+					meetingId,
+					userId
+				)
+			);
+
+			try {
+				MeetingPaymentOutbox outbox = MeetingPaymentOutbox.create(
+					wrapper.type(),
+					meetingId,
+					wrapper.uuId(),
+					objectMapper.writeValueAsString(wrapper)
+				);
+				meetingPaymentOutboxService.savePaymentOutbox(outbox);
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+
 			eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
 		}
 
@@ -415,34 +432,61 @@ public class MeetingServiceImpl implements MeetingService {
 		// 인원 감소, 참가자 삭제
 		meeting.removeMeetingParticipant(participant);
 
-		MeetingElasticsearchOutbox outbox = new MeetingElasticsearchOutbox(meeting.getId(),
+		MeetingElasticsearchOutbox esOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
 			ElasticsearchEventType.SAVE);
-		meetingOutboxService.saveMeetingOutbox(outbox);
+		meetingOutboxService.saveMeetingOutbox(esOutbox);
 
-		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, esOutbox.getId()));
 
 		// 참가비 있을 경우만 환불 요청 이벤트
 		if (meeting.getParticipationFee() == 0) {
-			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Cancel(
-					meetingId,
-					userId,
-					meeting.getHostUserId(),
-					user.getNickname(),
-					false,
-					0),
-				MEETING_PARTICIPANT_CANCEL,
-				PARTICIPANT_CANCEL_KEY
-			);
-		} else {
-			eventPublisher.publishEvent(new MeetingEvents.Cancel(
+			MeetingEvents.Cancel event = new MeetingEvents.Cancel(
 				meetingId,
 				userId,
 				meeting.getHostUserId(),
 				user.getNickname(),
-				true,
-				meeting.getParticipationFee()
-			));
+				false, 0
+			);
+			EventWrapper<?> wrapper = EventWrapper.of(
+				MEETING_PARTICIPANT_CANCEL,
+				event
+			);
+			try {
+				MeetingPaymentOutbox outbox = MeetingPaymentOutbox.create(
+					wrapper.type(),
+					meetingId,
+					wrapper.uuId(),
+					objectMapper.writeValueAsString(wrapper)
+				);
+				meetingPaymentOutboxService.savePaymentOutbox(outbox);
+				eventPublisher.publishEvent(event);
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
+		} else {
+			MeetingEvents.Cancel event = new MeetingEvents.Cancel(
+				meetingId,
+				userId,
+				meeting.getHostUserId(),
+				user.getNickname(),
+				true, meeting.getParticipationFee()
+			);
+			EventWrapper<?> wrapper = EventWrapper.of(
+				MEETING_PARTICIPANT_CANCEL,
+				event
+			);
+			try {
+				MeetingPaymentOutbox outbox = MeetingPaymentOutbox.create(
+					wrapper.type(),
+					meetingId,
+					wrapper.uuId(),
+					objectMapper.writeValueAsString(wrapper)
+				);
+				meetingPaymentOutboxService.savePaymentOutbox(outbox);
+				eventPublisher.publishEvent(event);
+			} catch (JsonProcessingException e) {
+				throw new RuntimeException(e);
+			}
 		}
 
 		return new ParticipantResponseDto(participant);

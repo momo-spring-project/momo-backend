@@ -1,9 +1,8 @@
 package com.example.momo.domain.meeting.event.springEvents;
 
-import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,6 @@ public class MeetingPaymentListener {
 
 	private final MeetingPaymentOutboxService service;
 	private final MeetingProducer meetingProducer;
-	private final MeetingEventPublisher meetingEventPublisher;
 
 	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -57,9 +55,8 @@ public class MeetingPaymentListener {
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.registerParticipantEventListener : 참가자 신청 메세지 발행");
 
-			ParticipantEvents.Register message = new ParticipantEvents.Register(event.meetingId(), event.userId());
-			meetingEventPublisher.publishWithConfirmParticipantEvents(
-				message,
+			meetingProducer.publishWithConfirmParticipantEvents(
+				event,
 				MEETING_PARTICIPANT_REGISTER,
 				PARTICIPANT_REGISTER_KEY
 			);
@@ -77,16 +74,8 @@ public class MeetingPaymentListener {
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.cancelParticipantEventListener : 참가자 신청 메세지 발행");
 
-			ParticipantEvents.Cancel message = new ParticipantEvents.Cancel(
-				event.meetingId(),
-				event.userId(),
-				event.hostUserId(),
-				event.participantNickname(),
-				event.refundRequired(),
-				event.amount()
-			);
-			meetingEventPublisher.publishWithConfirmParticipantEvents(
-				message,
+			meetingProducer.publishWithConfirmParticipantEvents(
+				event,
 				MEETING_PARTICIPANT_CANCEL,
 				PARTICIPANT_CANCEL_KEY
 			);
