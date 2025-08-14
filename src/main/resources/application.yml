@@ -171,11 +171,11 @@ otel:
     name: ${spring.application.name}
   exporter:
     otlp:
-      endpoint: http://localhost:4317
+      endpoint: ${OTEL_COLLECTOR_ENDPOINT}
       protocol: grpc
   traces:
     exporter: otlp
-    sampler: always_on
+    sampler: always_on # Trace 에서 Scheduler 제거할 때 이거 되어있어서 해결이 안됐었나 싶음
 
 logging:
   level:

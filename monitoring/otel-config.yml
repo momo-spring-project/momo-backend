@@ -32,13 +32,13 @@ receivers:
 # 전송 설정
 exporters:
   otlp:
-    endpoint: jaeger-collector:4317
+    endpoint: ${JAEGER_ENDPOINT}
     tls:
       insecure: true
   prometheus:
-    endpoint: "0.0.0.0:8889"
+    endpoint: ${PROMETHEUS_ENDPOINT}
   loki:
-    endpoint: http://loki:3100/loki/api/v1/push
+    endpoint: ${LOKI_ENDPOINT}
     default_labels_enabled:
       exporter: true
       job: true
@@ -67,6 +67,11 @@ processors:
       - action: insert
         key: error
         value: "false"
+  filter/info:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'severity_text == "INFO"'
   batch:
     send_batch_size: 100
     timeout: 10s
@@ -84,9 +89,9 @@ service:
       exporters: [ prometheus ]
     logs:
       receivers: [ otlp ]
-      processors: [ batch ]
+      processors: [ batch, filter/info ]
       exporters: [ loki ]
-  telemetry: # 콜렉터 본인 파이프라인, metrics 는 localhost:8888/metrics 접속해서 확인 가능
+  telemetry: # 콜렉터 본인 파이프라인
     logs:
       level: debug
     metrics:

@@ -4,7 +4,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     uid: prometheus-datasource
-    url: http://prometheus:9090
+    url: ${GRAFANA_PROMETHEUS_DATA_SOURCE}
     access: proxy
     isDefault: true
     version: 1
@@ -13,7 +13,7 @@ datasources:
   - name: Loki
     type: loki
     uid: loki-datasource
-    url: http://loki:3100
+    url: ${GRAFANA_LOKI_DATA_SOURCE}
     access: proxy
     version: 1
     editable: true
@@ -21,7 +21,7 @@ datasources:
   - name: Jaeger
     type: jaeger
     uid: jaeger-datasource
-    url: http://jaeger-query:16686
+    url: ${GRAFANA_JAEGER_DATA_SOURCE}
     access: proxy
     version: 1
     editable: true
