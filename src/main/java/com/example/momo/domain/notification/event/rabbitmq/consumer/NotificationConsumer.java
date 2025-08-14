@@ -9,6 +9,9 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.notification.application.NotificationHandler;
+import com.example.momo.domain.notification.application.redis.NotificationRedisService;
+import com.example.momo.domain.notification.enums.UuidStatus;
+import com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.messagehub.MessageHubNotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 public class NotificationConsumer {
 	private final NotificationHandler notificationHandler;
 	private final ObjectMapper objectMapper;
+	private final NotificationRedisService redisService;
+	private final NotificationRetryProducer retryProducer;
 
 	@RabbitListener(
 		queues = NOTIFICATION_QUEUE,
@@ -29,13 +34,16 @@ public class NotificationConsumer {
 	)
 	public void consumeMain(EventWrapper<?> wrapper, Message message) {
 
-		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
-			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
+		if (!validateNotificationMessage(wrapper)) {
 			return;
 		}
-		MessageHubNotificationMessage notificationMessage = mapping(wrapper.type(), wrapper.data());
-		if (!validateNotificationMessage(notificationMessage)) {
-			log.error("알림 컨슈머 접근 실패 - 데이터 유실 dto ={}", notificationMessage);
+
+		if (!isValidUuid(wrapper, message)) {
+			return;
+		}
+
+		MessageHubNotificationMessage notificationMessage = mappingNotificationMessage(wrapper.type(), wrapper.data());
+		if (notificationMessage == null) {
 			return;
 		}
 
@@ -46,10 +54,18 @@ public class NotificationConsumer {
 		notificationHandler.handleNotification(notificationMessage, message);
 	}
 
-	private MessageHubNotificationMessage mapping(String type, Object object) {
+	private MessageHubNotificationMessage mappingNotificationMessage(String type, Object object) {
 
 		try {
-			return objectMapper.convertValue(object, MessageHubNotificationMessage.class);
+			MessageHubNotificationMessage notificationMessage = objectMapper.convertValue(object,
+				MessageHubNotificationMessage.class);
+
+			if (notificationMessage == null || notificationMessage.getUserId() == null) {
+				log.error("알림 컨슈머 접근 실패 - 데이터 유실 dto ={}", notificationMessage);
+				return null;
+			}
+
+			return notificationMessage;
 		} catch (IllegalArgumentException exception) {
 			log.error("알림 컨슈머 접근 실패 - 형변환 실패 타입 불일치 type={} object={}", type, object);
 			return null;
@@ -61,11 +77,30 @@ public class NotificationConsumer {
 		return (object instanceof Number) ? ((Number)object).intValue() : 1;
 	}
 
-	private boolean validateNotificationMessage(MessageHubNotificationMessage notificationMessage) {
-		if (notificationMessage == null) {
+	private boolean validateNotificationMessage(EventWrapper<?> wrapper) {
+		if (!MESSAGE_HUB_SENT.equals(wrapper.type())) {
+			log.error("알림 컨슈머 접근 실패 - 타입 불일치 type={}", wrapper.type());
 			return false;
 		}
-		return notificationMessage.getUserId() != null;
+
+		return true;
+
+	}
+
+	private boolean isValidUuid(EventWrapper<?> eventWrapper, Message message) {
+		UuidStatus uuidStatus = redisService.createNotificationUuidOrExist(eventWrapper.uuId());
+
+		//UUID 중복 혹은 NULL
+		if (uuidStatus == UuidStatus.SKIP) {
+			return false;
+		}
+
+		//UUID 저장 실패 - 재시도 발행
+		if (uuidStatus == UuidStatus.SAVE_FAIL) {
+			retryProducer.notificationRetry(eventWrapper, message);
+			return false;
+		}
+		return true;
 	}
 
 }

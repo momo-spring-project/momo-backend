@@ -38,7 +38,7 @@ public class FcmTokenRepositoryImpl implements FcmTokenRepository {
 	}
 
 	@Override
-	public void deleteToken(Long userId, String deviceId) {
-		fcmTokenJpaRepository.deleteByUserIdAndDeviceId(userId, deviceId);
+	public long deleteToken(Long userId, String deviceId) {
+		return fcmTokenJpaRepository.deleteByUserIdAndDeviceId(userId, deviceId);
 	}
 }

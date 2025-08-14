@@ -25,8 +25,8 @@ public class FirebaseConfig {
 	public FirebaseApp firebaseApp() throws Exception {
 		String credentials = System.getenv("FIREBASE_CREDENTIALS");
 		if (credentials == null || credentials.isBlank()) {
-			// 운영에서 바로 터뜨려 원인 파악 쉽게
-			throw new IllegalStateException("FIREBASE_CREDENTIALS 환경변수가 비어있습니다.");
+			log.error("FIREBASE_CREDENTIALS 환경변수가 비어있습니다.");
+			return null;
 		}
 
 		// .env 에서 이스케이프된 개행(\\n) → 실제 개행으로 복원
