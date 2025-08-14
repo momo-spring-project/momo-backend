@@ -14,7 +14,6 @@ CREATE TABLE payment_outbox
     status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
     failure_reason TEXT,
     next_retry_at  DATETIME,
-    processor_id   VARCHAR(64),
 
 
     -- 핵심 인덱스: status + next_retry_at

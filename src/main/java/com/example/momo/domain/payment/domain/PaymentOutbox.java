@@ -66,10 +66,6 @@ public class PaymentOutbox {
 	@Column(name = "next_retry_at")
 	private LocalDateTime nextRetryAt;
 
-	/** 선점한 워커 ID (단건 선점 버전에서는 사용하지 않아도 됨) */
-	@Column(name = "processor_id", length = 64)
-	private String processorId;
-
 	public static PaymentOutbox create(String eventType, String aggregateId,
 		String routingKey, String payload) {
 		PaymentOutbox outbox = new PaymentOutbox();
@@ -93,7 +89,7 @@ public class PaymentOutbox {
 		this.publishedAt = LocalDateTime.now();
 		this.updatedAt = this.publishedAt;
 		this.nextRetryAt = null;
-		this.processorId = null;
+
 	}
 
 	/**
@@ -105,7 +101,6 @@ public class PaymentOutbox {
 		this.retryCount++;
 		this.failureReason = reason;
 		this.updatedAt = LocalDateTime.now();
-		this.processorId = null;
 
 		long baseSeconds = 10;
 		long delaySeconds = Math.min(
@@ -120,6 +115,6 @@ public class PaymentOutbox {
 		this.status = OutboxStatus.DEAD_LETTERED;
 		this.updatedAt = LocalDateTime.now();
 		this.nextRetryAt = null;
-		this.processorId = null;
+
 	}
 }
