@@ -48,7 +48,6 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentSuccessEvent(EventWrapper<?> event, Channel channel, Message message) {
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_COMPLETED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제완료, Received: {}", event);
@@ -56,6 +55,7 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 		log.info("[결제 완료 이벤트 수신] message: {}", event);
 
 		try {
@@ -72,7 +72,6 @@ public class MeetingEventConsumer {
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_FAILED, containerFactory = "participantListenerContainerFactory")
 	public void handlePaymentFailureEvent(EventWrapper<?> event, Channel channel, Message message) {
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 
 		if (event.type() == null || !event.type().equals(PAYMENT_FAILED)) {
 			log.error("[참가자 이벤트 수신 오류] Required: 결제실패, Received: {}", event);
@@ -80,6 +79,7 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
+		//meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 		log.info("[결제 실패 이벤트 수신] event: {}", event);
 
 		try {
@@ -130,10 +130,6 @@ public class MeetingEventConsumer {
 			Meeting meeting = meetingService.getMeetingById(meetingId);
 			UserClientResponseDto user = userClient.getUser(userId);
 
-			// 참가자 추가
-			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
-			meeting.getParticipants().add(participant);
-
 			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(
 				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
@@ -154,7 +150,8 @@ public class MeetingEventConsumer {
 
 		try {
 			Meeting meeting = meetingService.getMeetingById(meetingId);
-			meeting.removeMeetingParticipant();
+			MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(meetingId, message.userId());
+			meeting.removeMeetingParticipant(participant);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 			throw e;

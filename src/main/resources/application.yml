@@ -155,7 +155,7 @@ management:
   tracing:
     enabled: true
     sampling:
-      probability: 1.0
+      probability: 0.1 # 10%의 트레이스만 수집
   metrics:
     export:
       otlp:
@@ -164,12 +164,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
-  endpoint:
-    prometheus:
-      enabled: false
-    logging:
-      enabled: false
+        include: health, info # actuator health, info 만 노출
 
 otel:
   service:
