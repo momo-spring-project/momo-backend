@@ -2,16 +2,13 @@ package com.example.momo.domain.payment.application;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.HttpClientErrorException;
 
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
@@ -58,25 +55,27 @@ public class PaymentServiceImpl implements PaymentService {
 
 	// ==================== 결제 생성 ====================
 
+	/**
+	 * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
+	 * PENDING 결제가 있으면 재사용, 없으면 새로 생성
+	 */
 	@Override
 	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId) {
 		// 컨트롤러에서 호출 시 correlation 없이 진행 (내부에서 새 UUID 생성됨)
 		return createTestKeyInPayment(request, userId, null);
 	}
 
-	/**
-	 * 테스트 Key-in 결제 처리 - 카드번호를 직접 입력하여 결제를 진행하는 테스트 전용 메서드
-	 * PENDING 결제가 있으면 재사용, 없으면 새로 생성
-	 */
 	@Override
 	@Transactional(noRollbackFor = PaymentException.class)
-	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request, Long userId,
+	public PaymentResponseDto createTestKeyInPayment(CardPaymentTestRequestDto request,
+		Long userId,
 		String correlationUuid) {
+
 		Long meetingId = request.getMeetingId();
 		Payment payment = null;
 
 		try {
-			// 1) 사전 검증
+			// 1) 테스트 키인지 검증
 			validateTestKey();
 
 			// 2) 조회
@@ -84,37 +83,33 @@ public class PaymentServiceImpl implements PaymentService {
 			UserClientResponseDto user = getUserViaClient(userId);
 			int amount = meeting.getParticipationFee();
 
-			// 3) 이미 결제 완료 멱등 체크
-			if (paymentRepository.existsByMeetingIdAndUserIdAndStatus(
-				meeting.getId(), user.getId(), PaymentStatus.COMPLETED)) {
-				throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
-			}
-
-			// 4) PENDING/FAILED 결제 재사용(또는 생성)
+			// 3) 결제 검증 / 실패 건 새 row 생성 제거: 기존 row 재사용하여 PENDING 전환
 			payment = paymentRepository.findByMeetingIdAndUserId(meeting.getId(), user.getId())
-				.filter(p -> p.getStatus() == PaymentStatus.PENDING || p.getStatus() == PaymentStatus.FAILED)
-				.orElseGet(() -> paymentRepository.save(
-					Payment.createPending(user.getId(), meeting.getId(), amount)));
+				.map(p -> {
+					if (p.getStatus() == PaymentStatus.COMPLETED) {
+						throw new PaymentException(PaymentErrorCode.ALREADY_PAID);
+					}
+					if (p.getStatus() == PaymentStatus.FAILED) {
+						p.reopenPending();
+					}
+					return p; // PENDING이면 그대로 재사용
+				})
+				.orElseGet(() -> paymentRepository.save(Payment.createPending(user.getId(), meeting.getId(), amount)));
 
-			if (payment.getStatus() == PaymentStatus.FAILED) {
-				payment = paymentRepository.save(Payment.createPending(userId, meeting.getId(), amount));
-			}
-
-			// 5) 무료 모임 차단
+			// 4) 무료 모임 차단
 			if (amount == 0) {
 				throw new PaymentException(PaymentErrorCode.FREE_MEETING_PARTICIPATION_FAILED);
 			}
 
-			// 6) 결제 수행
+			// 5) 결제 수행
 			String orderId = "order-" + UUID.randomUUID();
 			TossKeyInRequestDto tossRequest = buildKeyInRequest(request, meeting, amount, orderId);
 			TossPaymentResponseDto result = paymentClient.createTestKeyInPayment(tossRequest, orderId);
-
 			if (!"DONE".equals(result.getStatus())) {
 				throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
 			}
 
-			// 7) 완료 처리 + 성공 이벤트
+			// 6) 완료 처리 + 성공 이벤트
 			LocalDateTime approvedAt = OffsetDateTime.parse(result.getApprovedAt()).toLocalDateTime();
 			payment.complete(result.getPaymentKey(), orderId, approvedAt);
 
@@ -127,44 +122,39 @@ public class PaymentServiceImpl implements PaymentService {
 			return PaymentResponseDto.from(payment);
 
 		} catch (PaymentException pe) {
-			// 비즈니스 예외도 '실패 이벤트' 발행
+			// 비즈니스 예외 결제 시 실패 이벤트 발행
 			if (payment != null && payment.getStatus() != PaymentStatus.FAILED) {
 				payment.fail(pe.getMessage());
 			}
+
 			Long outboxId = saveFailedOutboxEvent(
 				payment != null ? payment.getId() : null, meetingId, userId, pe.getMessage(), correlationUuid);
+
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
 				payment != null ? payment.getId() : null, userId, meetingId, pe.getMessage(), outboxId));
-			throw pe; // 그대로 전파
 
-		} catch (Exception e) {
-			// 시스템/외부 예외도 '실패 이벤트' 발행
-			if (payment != null && payment.getStatus() != PaymentStatus.FAILED) {
-				payment.fail(e.getMessage());
-			}
-			Long outboxId = saveFailedOutboxEvent(
-				payment != null ? payment.getId() : null, meetingId, userId, e.getMessage(), correlationUuid);
-			eventPublisher.publishEvent(new PaymentEvents.Failed(
-				payment != null ? payment.getId() : null, userId, meetingId, e.getMessage(), outboxId));
-			throw new PaymentException(PaymentErrorCode.TOSS_CONFIRM_FAILED);
-		}
+			throw pe; // 비즈니스 예외만 커밋
+
+		} // catch (Exception) 없음 -> OptimisticLockException 등은 전파되어 롤백
 	}
 
 	// ==================== 환불 처리 ====================
 
+	/**
+	 * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
+	 */
 	@Override
 	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request) {
 		// 컨트롤러에서 호출 시 correlation 없이 진행 (내부에서 새 UUID 생성됨)
 		return refundPayment(paymentId, userId, request, null);
 	}
 
-	/**
-	 * 결제 환불 처리 - 환불 후 재결제가 가능하도록 레코드 삭제
-	 */
 	@Override
 	@Transactional(noRollbackFor = PaymentException.class)
-	public PaymentResponseDto refundPayment(Long paymentId, Long userId, RefundRequestDto request,
+	public PaymentResponseDto refundPayment(Long paymentId, Long userId,
+		RefundRequestDto request,
 		String correlationUuid) {
+
 		Payment payment = null;
 
 		try {
@@ -183,23 +173,17 @@ public class PaymentServiceImpl implements PaymentService {
 
 			// 토스 환불 처리
 			if ("TOSS".equalsIgnoreCase(payment.getPaymentMethod())) {
-				try {
-					paymentClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
-				} catch (HttpClientErrorException e) {
-					log.error("[TOSS] 환불 실패: {}", e.getResponseBodyAsString());
-					throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
-				}
+				// 외부 4xx/5xx는 여기서 전파됨(WebClientResponseException) -> 시스템 예외이면 롤백
+				paymentClient.cancelPayment(payment.getPgTransactionId(), request.getReason());
 			}
 
 			// 환불 상태로 변경
 			payment.refund();
 
-			// 환불 응답 생성
-			PaymentResponseDto response = PaymentResponseDto.from(payment);
-
 			// Outbox 저장 및 도메인 이벤트 발행
 			Long outboxId = saveOutboxEvent(payment, "PAYMENT_REFUNDED", RoutingKeys.PAYMENT_REFUNDED_KEY,
-				request.getReason(), null);
+				request.getReason(), correlationUuid);
+
 			eventPublisher.publishEvent(new PaymentEvents.Refunded(
 				payment.getId(),
 				payment.getUserId(),
@@ -209,23 +193,20 @@ public class PaymentServiceImpl implements PaymentService {
 				outboxId
 			));
 
+			// 환불 응답 생성
+			PaymentResponseDto response = PaymentResponseDto.from(payment);
 			// 결제 레코드 삭제 (재결제 가능하도록)
 			paymentRepository.delete(payment);
 
 			return response;
+
 		} catch (PaymentException pe) {
 			log.warn("[환불 실패-비즈니스] paymentId={}, userId={}, msg={}",
 				payment != null ? payment.getId() : null, userId, pe.getMessage());
 			recordRefundFailure(payment, payment != null ? payment.getMeetingId() : null, pe.getMessage());
 			throw pe;
 
-		} catch (Exception e) {
-			log.error("[환불 실패-시스템] paymentId={}, userId={}, err={}",
-				payment != null ? payment.getId() : null, userId, e.getMessage(), e);
-			recordRefundFailure(payment, payment != null ? payment.getMeetingId() : null, e.getMessage());
-			throw new PaymentException(PaymentErrorCode.REFUND_FAILED);
-
-		}
+		} //catch (Exception) 제거 -> 시스템 예외는 롤백
 	}
 
 	private Long saveOutboxEvent(Payment payment, String eventType, String routingKey, String correlationUuid) {
@@ -236,6 +217,7 @@ public class PaymentServiceImpl implements PaymentService {
 		String correlationUuid) {
 		try {
 			Object eventMessage;
+
 			// 1) 이벤트 DTO 구성 (outboxId는 헤더로 보내므로 DTO 필드는 null로 둬도 됨)
 			switch (eventType) {
 				case "PAYMENT_COMPLETED" -> eventMessage = new PaymentEventMessages.Completed(
@@ -252,10 +234,10 @@ public class PaymentServiceImpl implements PaymentService {
 				case "PAYMENT_REFUNDED" -> eventMessage = new PaymentEventMessages.Refunded(
 					payment.getId(), payment.getUserId(), payment.getMeetingId(),
 					payment.getAmount(),
-					(refundReason != null && !refundReason.isBlank()) ? refundReason : "사유 미기재",
+					(refundReason != null && !refundReason.isBlank()) ? refundReason : "환불 사유 미기재",
 					null
 				);
-				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
+				default -> throw new IllegalArgumentException("알 수 없는 event type: " + eventType);
 			}
 
 			// 2) EventTypeNames와 매핑
@@ -263,13 +245,13 @@ public class PaymentServiceImpl implements PaymentService {
 				case "PAYMENT_COMPLETED" -> EventTypeNames.PAYMENT_COMPLETED; // "payment.completed"
 				case "PAYMENT_FAILED" -> EventTypeNames.PAYMENT_FAILED;    // "payment.failed"
 				case "PAYMENT_REFUNDED" -> EventTypeNames.PAYMENT_REFUNDED;  // "payment.refunded"
-				default -> throw new IllegalArgumentException("Unknown event type: " + eventType);
+				default -> throw new IllegalArgumentException("알 수 없는 event type: " + eventType);
 			};
 
-			// 3) Wrapper로 감싸기(register uuid 재사용)
+			// 3) Wrapper로 감싸기(미팅 측에서 보낸 uuid 재사용)
 			EventWrapper<Object> wrapper = (correlationUuid != null && !correlationUuid.isBlank())
 				? EventWrapper.of(correlationUuid, wrapperType, eventMessage)
-				: EventWrapper.of(wrapperType, eventMessage); // 방어적 fallback
+				: EventWrapper.of(wrapperType, eventMessage); // fallback 기본값 생성
 
 			// 4) Outbox payload에 Wrapper JSON 저장
 			String payload = objectMapper.writeValueAsString(wrapper);
@@ -280,10 +262,12 @@ public class PaymentServiceImpl implements PaymentService {
 				routingKey,
 				payload
 			);
+
 			PaymentOutbox saved = outboxRepository.save(outbox);
 			log.debug("Outbox 이벤트 저장(Wrapper) - type: {}, paymentId: {}", eventType, payment.getId());
 
 			return saved.getId();
+
 		} catch (Exception e) {
 			log.error("Outbox 저장 실패", e);
 			throw new RuntimeException("이벤트 저장 실패", e);
@@ -331,65 +315,25 @@ public class PaymentServiceImpl implements PaymentService {
 		return page.map(PaymentResponseDto::from);
 	}
 
-	/**
-	 * 모임별 결제 내역 조회
-	 */
 	@Override
 	@Transactional(readOnly = true)
-	public List<PaymentResponseDto> getPaymentsByMeetingId(Long meetingId) {
-		// 모임 존재 여부 확인 (Client 사용)
-		MeetingClientResponseDto meeting = meetingClient.getMeeting(meetingId);
-		if (meeting == null) {
-			throw new PaymentException(PaymentErrorCode.MEETING_NOT_FOUND);
-		}
+	public TossPaymentResponseDto getPgPayment(Long paymentId, Long userId) {
+		Payment payment = paymentRepository.findById(paymentId)
+			.orElseThrow(() -> new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
-		return paymentRepository.findByMeetingId(meetingId)
-			.stream()
-			.map(PaymentResponseDto::from)
-			.collect(Collectors.toList());
-	}
-
-	/**
-	 * 사용자별 결제 내역 조회
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public List<PaymentResponseDto> getPaymentsByUserId(Long userId) {
-		// 사용자 존재 여부 확인 (Client 사용)
-		UserClientResponseDto user = userClient.getUser(userId);
-		if (user == null) {
+		// 본인 결제만 조회 허용
+		if (!payment.getUserId().equals(userId)) {
 			throw new PaymentException(PaymentErrorCode.USER_NOT_FOUND);
 		}
-		return paymentRepository.findByUserId(userId)
-			.stream()
-			.map(PaymentResponseDto::from)
-			.collect(Collectors.toList());
+
+		// PG 결제키가 없으면(아직 생성 전/삭제됨) 조회 불가
+		if (payment.getPgTransactionId() == null || payment.getPgTransactionId().isBlank()) {
+			throw new PaymentException(PaymentErrorCode.PAYMENT_NOT_FOUND);
+		}
+
+		//  토스 단건 조회 호출
+		return paymentClient.getPayment(payment.getPgTransactionId());
 	}
-
-	/**
-	 * 사용자의 모임 결제 여부 확인
-	 */
-	@Override
-	@Transactional(readOnly = true)
-	public boolean validateUserPayment(Long userId, Long meetingId) {
-		return paymentRepository.existsByMeetingIdAndUserIdAndStatus(
-			meetingId, userId, PaymentStatus.COMPLETED);
-	}
-
-	// /**
-	//  * 관리자용 전체 조회 메서드
-	//  */
-	// @Override
-	// @Transactional(readOnly = true)
-	// public Page<PaymentResponseDto> searchPayments(Long meetingId,
-	// 	Long userId,
-	// 	PaymentStatus status,
-	// 	Pageable pageable) {
-	//
-	// 	Page<Payment> page = paymentRepository.searchPayments(meetingId, userId, status, pageable);
-	// 	return page.map(PaymentResponseDto::from);
-	// }
-
 	// ==================== Private Helper 메서드 ====================
 
 	/**
@@ -452,8 +396,9 @@ public class PaymentServiceImpl implements PaymentService {
 		Long paymentId = (payment != null ? payment.getId() : null);
 		Long userId = (payment != null ? payment.getUserId() : null);
 
-		// TODO: 필요 시 RefundFailureRecord 저장 로직으로 대체
+		// 로그만 처리 (관리자 수동 환불로 처리)
 		log.error("[환불 실패 기록] paymentId={}, meetingId={}, userId={}, error={}",
 			paymentId, meetingId, userId, errorMessage);
 	}
+
 }

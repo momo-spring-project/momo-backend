@@ -19,6 +19,7 @@ import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.webclient.payment.dto.TossPaymentResponseDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,6 +51,16 @@ public class PaymentController {
 		return ResponseEntity.ok(ApiResponse.success("내 결제 내역 조회 완료", page));
 	}
 
+	//토스 조회 api 활용 내 결제 내역 조회
+	@GetMapping("/{paymentId}/pg")
+	public ResponseEntity<ApiResponse<TossPaymentResponseDto>> getPgPayment(
+		@PathVariable Long paymentId,
+		@AuthenticationPrincipal AuthUser authUser
+	) {
+		TossPaymentResponseDto dto = paymentService.getPgPayment(paymentId, authUser.getId());
+		return ResponseEntity.ok(ApiResponse.success("PG 결제 조회 완료", dto));
+	}
+
 	// 환불 처리
 	@PostMapping("/{paymentId}/refund")
 	public ResponseEntity<ApiResponse<PaymentResponseDto>> refundPayment(
@@ -60,18 +71,4 @@ public class PaymentController {
 		return ResponseEntity.ok(ApiResponse.success("환불이 완료되었습니다.", response));
 	}
 
-	// /**
-	//  * 관리자용 다중 조건 검색 ex)
-	//  * /search?meetingId=1&userId=3&status=COMPLETED&page=0&size=20&sort=paidAt,desc
-	//  */
-	// @GetMapping("/search")
-	// public ResponseEntity<ApiResponse<Page<PaymentResponseDto>>> searchPayments(
-	// 	@RequestParam(required = false) Long meetingId,
-	// 	@RequestParam(required = false) Long userId,
-	// 	@RequestParam(required = false) PaymentStatus status,
-	// 	Pageable pageable) {
-	//
-	// 	Page<PaymentResponseDto> page = paymentService.searchPayments(meetingId, userId, status, pageable);
-	// 	return ResponseEntity.ok(ApiResponse.success("결제 내역 검색 완료", page));
-	// }
 }
