@@ -12,5 +12,5 @@ public interface FcmTokenRepository {
 
 	Optional<FcmToken> findByUserIdAndDeviceId(Long userId, String deviceId);
 
-	void deleteToken(Long userId, String deviceId);
+	long deleteToken(Long userId, String deviceId);
 }

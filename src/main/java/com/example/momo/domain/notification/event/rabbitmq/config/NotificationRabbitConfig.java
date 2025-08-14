@@ -52,7 +52,7 @@ public class NotificationRabbitConfig {
 	public Queue notificationQueue() {
 		return QueueBuilder.durable(NOTIFICATION_QUEUE)
 			.withArgument("x-dead-letter-exchange", DLX_NOTIFICATION)
-			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLX_KEY)
+			.withArgument("x-dead-letter-routing-key", NOTIFICATION_SENT_DLQ_KEY)
 			.withArgument("x-message-ttl", NOTIFICATION_TTL_MS)
 			.build();
 	}
@@ -73,6 +73,7 @@ public class NotificationRabbitConfig {
 
 	@Bean
 	public TopicExchange notificationRetryExchange() {
+
 		return new TopicExchange(NOTIFICATION_EVENTS_RETRY);
 	}
 

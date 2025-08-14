@@ -123,12 +123,14 @@ public class Meeting extends BaseEntity {
 		this.status = request.status();
 	}
 
-	public void addMeetingParticipant() {
+	public void addMeetingParticipant(MeetingParticipant participant) {
 		this.currentParticipantsCount++;
+		this.participants.add(participant);
 	}
 
-	public void removeMeetingParticipant() {
+	public void removeMeetingParticipant(MeetingParticipant participant) {
 		this.currentParticipantsCount--;
+		this.participants.remove(participant);
 	}
 
 	public void removeMeeting() {

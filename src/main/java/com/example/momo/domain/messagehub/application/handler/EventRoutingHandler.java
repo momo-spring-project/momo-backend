@@ -4,7 +4,6 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.dto.MessageDto;
 import com.example.momo.domain.messagehub.application.provider.MessageProvider;
-import com.example.momo.domain.messagehub.application.service.MessageHubRedisService;
 import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
 
 import lombok.RequiredArgsConstructor;
@@ -26,14 +25,8 @@ public class EventRoutingHandler {
 
 	private final MessageHubProducer messagePublisher;
 
-	private final MessageHubRedisService messageHubRedisService;
-
 	// 전체 로직 흐름 처리
-	public void handleMessage(String uuid, String type, Object object) {
-		//uuid 중복 확인
-		if (messageHubRedisService.isUuidExistOrSave(uuid)) {
-			return;
-		}
+	public void handleMessage(String type, Object object) {
 
 		MessageDto dto = createMessageDto(type, object);
 
