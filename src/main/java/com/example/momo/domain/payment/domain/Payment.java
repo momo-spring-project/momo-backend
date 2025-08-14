@@ -129,13 +129,13 @@ public class Payment extends BaseCreateEntity {
 		this.refundedAt = LocalDateTime.now();
 	}
 
-	// 타임아웃 처리
-	public void expire() {
-		if (this.status != PaymentStatus.PENDING) {
-			throw new IllegalStateException("PENDING 상태에서만 만료 처리가 가능합니다.");
+	// 상태 전이 메서드 추가
+	public void reopenPending() {
+		if (this.status != PaymentStatus.FAILED) {
+			throw new IllegalStateException("FAILED 상태에서만 PENDING으로 전환할 수 있습니다.");
 		}
-		this.status = PaymentStatus.EXPIRED;
-		this.failedAt = LocalDateTime.now();
-		this.failReason = "결제 시간 초과";
+		this.status = PaymentStatus.PENDING;
+		this.failedAt = null;
+		this.failReason = null;
 	}
 }

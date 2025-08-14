@@ -6,13 +6,14 @@ public class RoutingKeys {
 	public static final String USER_FOLLOWED_KEY = "user.followed.key";
 
 	// Message Hub 관련 Key
-	public static final String MESSAGE_HUB_ASSEMBLE_KEY = "message-hub.assemble";
-	public static final String MESSAGE_HUB_ASSEMBLE_DLX_KEY = "message-hub.assemble.dlx";
+	public static final String MESSAGE_HUB_ASSEMBLE_KEY = "message-hub.assemble.key";
+	public static final String MESSAGE_HUB_ASSEMBLE_RETRY_KEY = "message-hub.assemble.retry.key";
+	public static final String MESSAGE_HUB_ASSEMBLE_DLQ_KEY = "message-hub.assemble.dlq.key";
 
 	//Notification 관련 key
-	public static final String NOTIFICATION_SENT_KEY = "notification.sent";
-	public static final String NOTIFICATION_SENT_DLX_KEY = "notification.sent.dlx";
-	public static final String NOTIFICATION_SENT_RETRY_KEY = "notification.sent.retry";
+	public static final String NOTIFICATION_SENT_KEY = "notification.sent.key";
+	public static final String NOTIFICATION_SENT_DLQ_KEY = "notification.sent.dlq.key";
+	public static final String NOTIFICATION_SENT_RETRY_KEY = "notification.sent.retry.key";
 
 	// Meeting
 	public static final String PARTICIPANT_REGISTER_KEY = "participant.registered";

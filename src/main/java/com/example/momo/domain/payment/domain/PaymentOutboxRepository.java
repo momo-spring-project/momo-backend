@@ -4,23 +4,23 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.data.domain.Pageable;
-
-import com.example.momo.domain.payment.enums.OutboxStatus;
-
 public interface PaymentOutboxRepository {
 
 	PaymentOutbox save(PaymentOutbox outbox);
 
 	Optional<PaymentOutbox> findById(Long id);
 
+	// 스케줄러용(선점 없음)
+	List<Long> pickPendingIds(int limit);
+
+	List<Long> pickRetryableFailedIds(int maxRetry, int limit);
+
+	// 단건 선점(원자적)
+	int tryMarkProcessing(Long id, LocalDateTime now);
+
 	int deletePublishedBefore(LocalDateTime threshold);
 
 	int deleteDlqMessagesBefore(LocalDateTime threshold);
 
-	List<PaymentOutbox> findByStatusOrderByCreatedAt(OutboxStatus status, Pageable pageable);
-
-	List<PaymentOutbox> findByStatusAndRetryCountLessThan(OutboxStatus status, int maxRetry);
-
-	List<PaymentOutbox> findByStatusAndRetryCountGreaterThanEqual(OutboxStatus status, int retryCount);
+	int recoverStuckProcessingEvents(int timeoutMinutes);
 }

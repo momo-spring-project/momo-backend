@@ -100,9 +100,9 @@ public class FcmServiceImpl implements FcmService {
 	}
 
 	@Override
-	public void deleteToken(Long userId, String deviceId) {
+	public long deleteToken(Long userId, String deviceId) {
 
-		fcmTokenRepository.deleteToken(userId, deviceId);
+		return fcmTokenRepository.deleteToken(userId, deviceId);
 	}
 
 	//메세지 전송 후 예외 처리

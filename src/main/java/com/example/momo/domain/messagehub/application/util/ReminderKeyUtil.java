@@ -25,7 +25,7 @@ public class ReminderKeyUtil {
 	}
 
 	public static String toUuidMarkKey(String today) {
-		return "uuid:mark:" + today;
+		return "hub:uuid:" + today;
 	}
 
 }

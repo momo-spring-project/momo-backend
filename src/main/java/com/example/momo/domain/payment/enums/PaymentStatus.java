@@ -5,7 +5,6 @@ public enum PaymentStatus {
 	COMPLETED("결제 완료"),     // 결제 완료
 	FAILED("결제 실패"),        // 결제 실패
 	REFUNDED("환불 완료"),      // 환불된 상태
-	CANCELED("결제 취소"), //결제 취소(결제 전 포기)
 	EXPIRED("만료됨");          // 타임아웃으로 만료
 
 	private final String description;

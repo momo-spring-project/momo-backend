@@ -14,12 +14,6 @@ public interface PaymentRepository {
 
 	Optional<Payment> findById(Long id);
 
-	boolean existsByMeetingIdAndUserIdAndStatus(Long mId, Long uId, PaymentStatus st);
-
-	List<Payment> findByMeetingId(Long meetingId);
-
-	List<Payment> findByUserId(Long userId);
-
 	void delete(Payment payment);
 
 	// 단일 결제 조회 (unique constraint: meeting_id + user_id)
@@ -31,11 +25,5 @@ public interface PaymentRepository {
 	List<Payment> findByMeetingIdAndStatus(Long meetingId, PaymentStatus status);
 
 	Page<Payment> searchMyPayments(Long userId, PaymentStatus status, Pageable pageable);
-
-	//관리자 용 조건 검색
-	// Page<Payment> searchPayments(Long meetingId,
-	// 	Long userId,
-	// 	PaymentStatus status,
-	// 	Pageable pageable);
 
 }
