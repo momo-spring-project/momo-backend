@@ -4,8 +4,8 @@ import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
 import com.example.momo.domain.meeting.application.MeetingService;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingEventPublisher;
-import com.example.momo.global.rabbitmq.dto.meeting.ParticipantEvents;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
 import com.example.momo.global.webclient.user.UserClient;
@@ -32,7 +32,7 @@ public class MeetingEventConsumer {
 
 	private final MeetingService meetingService;
 	private final UserClient userClient;
-	private final MeetingEventPublisher meetingEventPublisher;
+	private final MeetingProducer meetingProducer;
 	private final ObjectMapper objectMapper;
 	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 
@@ -79,7 +79,7 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
-		//meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
+		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
 		log.info("[결제 실패 이벤트 수신] event: {}", event);
 
 		try {
@@ -131,8 +131,8 @@ public class MeetingEventConsumer {
 			UserClientResponseDto user = userClient.getUser(userId);
 
 			// 참가 완료 이벤트 발행
-			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
+			meetingProducer.publishParticipantEvents(
+				new MeetingEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
 				MEETING_PARTICIPANT_JOIN,
 				PARTICIPANT_JOIN_KEY
 			);
