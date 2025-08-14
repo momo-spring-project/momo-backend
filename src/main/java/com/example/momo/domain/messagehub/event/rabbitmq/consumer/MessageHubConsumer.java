@@ -1,11 +1,16 @@
 package com.example.momo.domain.messagehub.event.rabbitmq.consumer;
 
+import static com.example.momo.domain.notification.event.rabbitmq.producer.NotificationRetryProducer.*;
 import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
 
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.messagehub.application.handler.EventRoutingHandler;
+import com.example.momo.domain.messagehub.application.service.MessageHubRedisService;
+import com.example.momo.domain.messagehub.enums.UuidStatus;
+import com.example.momo.domain.messagehub.event.rabbitmq.producer.MessageHubProducer;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
@@ -22,19 +27,49 @@ import lombok.extern.slf4j.Slf4j;
 public class MessageHubConsumer {
 
 	private final EventRoutingHandler eventRoutingHandler;
+	private final MessageHubRedisService messageHubRedisService;
+	private final MessageHubProducer producer;
 
 	@RabbitListener(
 		queues = MESSAGE_HUB_QUEUE,
 		containerFactory = "hubListenerContainerFactory")
-	public <T> void consumeWrapper(EventWrapper<T> eventWrapper) {
+	public void consumeWrapper(EventWrapper<?> eventWrapper, Message message) {
 
 		if (eventWrapper.type() == null || eventWrapper.data() == null) {
 			log.error("메세지 허브 리스너 접근 실패 - null");
 			return;
 		}
-		log.info("메세지 허브 리스너 접근 : {}", eventWrapper);
-		eventRoutingHandler.handleMessage(eventWrapper.uuId(), eventWrapper.type(), eventWrapper.data());
 
+		if (!isValidUuid(eventWrapper, message)) {
+			return;
+		}
+
+		int retryCount = calculateRetryCount(message);
+		log.info("알림 컨슈머 접근 : Type = {} 시도 횟수 = {}", eventWrapper.type(), retryCount);
+
+		eventRoutingHandler.handleMessage(eventWrapper.type(), eventWrapper.data());
+
+	}
+
+	private static int calculateRetryCount(Message message) {
+		Object object = message.getMessageProperties().getHeaders().get(NOTIFICATION_RETRY_HEADER);
+		return (object instanceof Number) ? ((Number)object).intValue() : 1;
+	}
+
+	private boolean isValidUuid(EventWrapper<?> eventWrapper, Message message) {
+		UuidStatus uuidStatus = messageHubRedisService.createMessageHubUuidOrExist(eventWrapper.uuId());
+
+		//UUID 중복 혹은 NULL
+		if (uuidStatus == UuidStatus.SKIP) {
+			return false;
+		}
+
+		//UUID 저장 실패 - 재시도 발행
+		if (uuidStatus == UuidStatus.SAVE_FAIL) {
+			producer.messageHubRetry(eventWrapper, message);
+			return false;
+		}
+		return true;
 	}
 
 }

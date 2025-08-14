@@ -32,10 +32,10 @@ public class FcmController {
 	}
 
 	@DeleteMapping
-	public ResponseEntity<ApiResponse<Void>> deleteToken(@RequestBody FcmDeleteRequestDto dto,
+	public ResponseEntity<ApiResponse<Long>> deleteToken(@RequestBody FcmDeleteRequestDto dto,
 		@AuthenticationPrincipal AuthUser authUser) {
-		fcmService.deleteToken(authUser.getId(), dto.deviceId());
-		return ResponseEntity.ok(ApiResponse.success("삭제완료", null));
+		long deletedCount = fcmService.deleteToken(authUser.getId(), dto.deviceId());
+		return ResponseEntity.ok(ApiResponse.success("삭제완료", deletedCount));
 	}
 
 	@PostMapping("/send")

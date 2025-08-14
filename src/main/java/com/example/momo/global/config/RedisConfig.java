@@ -3,6 +3,7 @@ package com.example.momo.global.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -16,25 +17,49 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class RedisConfig {
 
 	@Bean
-	public RedisTemplate<String, MeetingReminderMessage> reminderRedisTemplate(
-		RedisConnectionFactory connectionFactory) {
+	public LettuceConnectionFactory redisConnectionFactory() {
+		LettuceConnectionFactory factory = new LettuceConnectionFactory();
+		factory.setShareNativeConnection(false);
+		return factory;
+	}
 
-		ObjectMapper objectMapper = new ObjectMapper();
-		objectMapper.registerModule(new JavaTimeModule());
-		objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+	@Bean
+	public RedisTemplate<String, MeetingReminderMessage> redisReminderTemplate(
+		RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
+
+		ObjectMapper objectMapperCopy = objectMapper.copy();
+		objectMapperCopy.registerModule(new JavaTimeModule());
+		objectMapperCopy.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
 		Jackson2JsonRedisSerializer<MeetingReminderMessage> serializer =
-			new Jackson2JsonRedisSerializer<>(objectMapper, MeetingReminderMessage.class);
+			new Jackson2JsonRedisSerializer<>(objectMapperCopy, MeetingReminderMessage.class);
 
 		RedisTemplate<String, MeetingReminderMessage> template = new RedisTemplate<>();
 		template.setConnectionFactory(connectionFactory);
+
+		//Key/Value
 		template.setKeySerializer(new StringRedisSerializer());
 		template.setValueSerializer(serializer);
-		// 이게 **핵심**!
+
+		// Hash
 		template.setHashKeySerializer(new StringRedisSerializer());
 		template.setHashValueSerializer(serializer);
+
+		template.setEnableTransactionSupport(true);
 		template.afterPropertiesSet();
 
+		return template;
+	}
+
+	@Bean
+	public RedisTemplate<String, String> redisStringTemplate(RedisConnectionFactory cf) {
+		RedisTemplate<String, String> template = new RedisTemplate<>();
+		template.setConnectionFactory(cf);
+		template.setKeySerializer(new StringRedisSerializer());
+		template.setValueSerializer(new StringRedisSerializer());
+
+		template.setEnableTransactionSupport(true);
+		template.afterPropertiesSet();
 		return template;
 	}
 }

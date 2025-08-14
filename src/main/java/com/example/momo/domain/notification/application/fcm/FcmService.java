@@ -34,8 +34,9 @@ public interface FcmService {
 	/**
 	 * 전달받은 deviceId 와 userId 로 토큰을 삭제합니다.
 	 *
-	 * @param userId     토큰을 삭제할 사용자 ID
-	 * @param deviceId   토큰을 삭제할 디바이스 ID
+	 * @param userId   토큰을 삭제할 사용자 ID
+	 * @param deviceId 토큰을 삭제할 디바이스 ID
+	 * @return 삭제 개수 반환
 	 */
-	void deleteToken(Long userId, String deviceId);
+	long deleteToken(Long userId, String deviceId);
 }

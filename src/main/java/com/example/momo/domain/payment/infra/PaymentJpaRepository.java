@@ -14,12 +14,6 @@ import com.example.momo.domain.payment.enums.PaymentStatus;
 
 public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 
-	boolean existsByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
-
-	List<Payment> findByMeetingId(Long meetingId);
-
-	List<Payment> findByUserId(Long userId);
-
 	// 단일 조회 (unique constraint 때문에 Optional)
 	Optional<Payment> findByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId, PaymentStatus status);
 
@@ -36,15 +30,5 @@ public interface PaymentJpaRepository extends JpaRepository<Payment, Long> {
 	Page<Payment> searchMyPayments(@Param("userId") Long userId,
 		@Param("status") PaymentStatus status,
 		Pageable pageable);
-
-	//관리자용 조건 검색
-	// @Query("SELECT p FROM Payment p WHERE " +
-	// 	"(:meetingId IS NULL OR p.meetingId = :meetingId) AND " +
-	// 	"(:userId IS NULL OR p.userId = :userId) AND " +
-	// 	"(:status IS NULL OR p.status = :status)")
-	// Page<Payment> searchPayments(@Param("meetingId") Long meetingId,
-	// 	@Param("userId") Long userId,
-	// 	@Param("status") PaymentStatus status,
-	// 	Pageable pageable);
 
 }

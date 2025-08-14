@@ -30,22 +30,6 @@ public class PaymentRepositoryImpl implements PaymentRepository {
 	}
 
 	@Override
-	public boolean existsByMeetingIdAndUserIdAndStatus(Long meetingId, Long userId,
-		PaymentStatus status) {
-		return paymentJpaRepository.existsByMeetingIdAndUserIdAndStatus(meetingId, userId, status);
-	}
-
-	@Override
-	public List<Payment> findByMeetingId(Long meetingId) {
-		return paymentJpaRepository.findByMeetingId(meetingId);
-	}
-
-	@Override
-	public List<Payment> findByUserId(Long userId) {
-		return paymentJpaRepository.findByUserId(userId);
-	}
-
-	@Override
 	public void delete(Payment payment) {
 		paymentJpaRepository.delete(payment);
 	}

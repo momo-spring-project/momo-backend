@@ -12,12 +12,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.application.dto.ScoreRangeDto;
 import com.example.momo.domain.messagehub.application.util.ReminderKeyUtil;
 import com.example.momo.domain.messagehub.enums.AlarmType;
+import com.example.momo.domain.messagehub.enums.UuidStatus;
 import com.example.momo.domain.messagehub.infra.redis.MessageHubRedisRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -58,8 +60,7 @@ public class MessageHubRedisService {
 		Instant meetingTime = meetingDate.atZone(ZoneId.systemDefault()).toInstant();
 
 		tryCreateReminderMessage(message, meetingTime.toEpochMilli());
-		log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
-			message.getUserId(), message.getMeetingId(), meetingDate);
+
 	}
 
 	//저장 재시도 후 실패시 로그 생성
@@ -68,11 +69,11 @@ public class MessageHubRedisService {
 		int maxAttempts = 3;
 		for (int attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
-				messageHubRedisRepository.saveZsetMessage(uniqueKey, meetingTime);
-				messageHubRedisRepository.saveHashMessage(uniqueKey, message);
+				messageHubRedisRepository.saveMessage(uniqueKey, meetingTime, message);
+				log.debug("[알림 예약 저장] 저장 완료 - userId: {}, meetingId: {}, meetingStartTime: {}",
+					message.getUserId(), message.getMeetingId(), meetingTime);
 				break;
 			} catch (Exception e) {
-				messageHubRedisRepository.deleteSentMessage(uniqueKey);
 				if (attempt == maxAttempts) {
 					log.error("[알림 예약 저장 실패] {}회 시도 - userId: {}, meetingId: {}",
 						attempt, message.getUserId(), message.getMeetingId());
@@ -199,17 +200,46 @@ public class MessageHubRedisService {
 
 	}
 
-	public boolean isUuidExistOrSave(String uuid) {
+	public UuidStatus createMessageHubUuidOrExist(String uuid) {
+		if (StringUtils.isBlank(uuid)) {
+			log.info("메세지 허브 리스너 접근 실패 - UUID NULL");
+			return UuidStatus.SKIP;
+		}
+
 		LocalDate today = LocalDate.now(zone);
 		String todayKey = ReminderKeyUtil.toUuidMarkKey(today.format(basicIsoDate));
 		String yesterdayKey = ReminderKeyUtil.toUuidMarkKey(today.minusDays(1).format(basicIsoDate));
 
-		if (messageHubRedisRepository.isUuidYesterdayKeyExist(uuid, yesterdayKey)) {
-			return true;
+		if (messageHubRedisRepository.isUuidExist(uuid, todayKey, yesterdayKey)) {
+			log.info("메세지 허브 리스너 UUID 중복 - uuid : {}", uuid);
+			return UuidStatus.SKIP;
 		}
 
-		Long savedUuid = messageHubRedisRepository.saveUuidKeyWithTodayKey(uuid, todayKey);
+		if (!tryCreateUuid(uuid, todayKey)) {
+			return UuidStatus.SAVE_FAIL;
+		}
 
-		return savedUuid != null && savedUuid == 0;
+		return UuidStatus.SUCCESS;
+	}
+
+	//저장 재시도 후 실패시 로그 생성
+	private boolean tryCreateUuid(String uuid, String todayKey) {
+		for (int attempt = 1; true; attempt++) {
+			try {
+				messageHubRedisRepository.saveUuidKeyWithTodayKey(uuid, todayKey);
+				return true;
+			} catch (Exception e) {
+				if (attempt == 3) {
+					log.info("메세지 허브 리스너 UUID 저장실패 - UUID : {}", uuid);
+					return false;
+				}
+				try {
+					Thread.sleep(100L * attempt);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt(); // 상태 복구
+					return false;
+				}
+			}
+		}
 	}
 }

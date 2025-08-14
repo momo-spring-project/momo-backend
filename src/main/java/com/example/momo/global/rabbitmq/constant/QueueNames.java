@@ -4,6 +4,7 @@ public class QueueNames {
 
 	//Message Hub 관련 queue
 	public static final String MESSAGE_HUB_QUEUE = "message-hub.queue";
+	public static final String MESSAGE_HUB_QUEUE_RETRY = "message-hub.queue.retry";
 	public static final String MESSAGE_HUB_QUEUE_DLQ = "message-hub.queue.dlq";
 
 	//Notification 관련 queue
@@ -18,5 +19,5 @@ public class QueueNames {
 	public static final String DLQ_PARTICIPANT = "participant.dlq";
 	public static final String PAYMENT_MEETING_DELETED = "payment.meeting.deleted.queue";
 	public static final String PAYMENT_DLQ = "payment.dlq.queue";
-	
+
 }
