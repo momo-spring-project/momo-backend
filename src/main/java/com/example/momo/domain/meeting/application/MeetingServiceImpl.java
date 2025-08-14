@@ -348,13 +348,11 @@ public class MeetingServiceImpl implements MeetingService {
 
 			eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, outbox.getId()));
 
-
-
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
 			// 참가 완료 이벤트 발행
 			meetingEventPublisher.publishParticipantEvents(
-				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), "temp"),
+				new ParticipantEvents.Join(meetingId, userId, meeting.getHostUserId(), user.getNickname()),
 				MEETING_PARTICIPANT_JOIN,
 				PARTICIPANT_JOIN_KEY
 			);
