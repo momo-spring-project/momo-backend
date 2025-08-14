@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.event.springEvents;
+package com.example.momo.global.rabbitmq.dto.meeting;
 
 import java.util.List;
 
@@ -78,6 +78,7 @@ public class MeetingEvents {
 	 */
 	public record Join(
 		Long meetingId,
+		Long userId,
 		Long hostUserId,
 		String participantNickname
 	) implements MeetingEvent {
