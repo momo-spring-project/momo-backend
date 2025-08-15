@@ -4,17 +4,19 @@ import static com.example.momo.domain.messagehub.application.util.ReminderKeyUti
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.messagehub.application.dto.MeetingReminderMessage;
 import com.example.momo.domain.messagehub.application.dto.ScoreRangeDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,17 +31,23 @@ public class MessageHubRedisRepository {
 
 	private final RedisTemplate<String, String> redisStringTemplate;
 	private final RedisTemplate<String, MeetingReminderMessage> redisReminderTemplate;
+	private final DefaultRedisScript<Void> saveReminderScript;
+	private final DefaultRedisScript<Void> deleteReminderScript;
+	private final ObjectMapper objectMapper;
 
-	//메세지 저장 트랜잭션
-	public void saveMessage(String uniqueKey, long meetingTime, MeetingReminderMessage message) {
+	public void saveMessage(String uniqueKey, long meetingTime, MeetingReminderMessage message) throws
+		Exception {
+
+		// json 매핑
+		String json = objectMapper.writeValueAsString(message);
 		// 커넥션 바인딩 시작
-		redisStringTemplate.multi();
-
-		redisStringTemplate.opsForZSet().add(ZSET_KEY, uniqueKey, (double)meetingTime);
-		redisReminderTemplate.opsForHash().put(HASH_KEY, uniqueKey, message);
-
-		// 모든 명령 큐잉 후 실행
-		redisStringTemplate.exec();
+		redisStringTemplate.execute(
+			saveReminderScript,
+			Arrays.asList(ZSET_KEY, HASH_KEY),
+			String.valueOf(meetingTime),
+			uniqueKey,
+			json
+		);
 	}
 
 	// Score 범위로 Key Set 조회
@@ -56,7 +64,7 @@ public class MessageHubRedisRepository {
 		return objects.stream()
 			.map(MeetingReminderMessage::of)
 			.filter(Objects::nonNull)
-			.collect(Collectors.toList());
+			.toList();
 	}
 
 	//발송 된(하루전알린) 알림으로 마킹(저장)
@@ -74,21 +82,22 @@ public class MessageHubRedisRepository {
 		);
 	}
 
-	//메세지 단건 삭제
+	// 단건 삭제
 	public void deleteSentMessage(String uniqueKey) {
-		// 커넥션 바인딩 시작
-		redisStringTemplate.multi();
-		redisStringTemplate.opsForZSet().remove(ZSET_KEY, uniqueKey);
-		redisReminderTemplate.opsForHash().delete(HASH_KEY, uniqueKey);
-		redisStringTemplate.exec();
+		redisStringTemplate.execute(
+			deleteReminderScript,
+			Arrays.asList(ZSET_KEY, HASH_KEY),
+			uniqueKey
+		);
 	}
 
-	//메세지 다건 삭제
+	// 다건 삭제
 	public void deleteSentMessages(Set<String> keys) {
-		redisStringTemplate.multi();
-		redisStringTemplate.opsForZSet().remove(ZSET_KEY, keys.toArray());
-		redisReminderTemplate.opsForHash().delete(HASH_KEY, keys.toArray());
-		redisStringTemplate.exec();
+		redisStringTemplate.execute(
+			deleteReminderScript,
+			Arrays.asList(ZSET_KEY, HASH_KEY),
+			keys.toArray()
+		);
 	}
 
 	public boolean isUuidExist(String uuid, String todayKey, String yesterdayKey) {
