@@ -11,7 +11,8 @@ CREATE TABLE payment_outbox
     published      BOOLEAN      NOT NULL DEFAULT FALSE,
     retry_count    INT          DEFAULT 0,
     correlation_id VARCHAR(255) UNIQUE,
-    status         VARCHAR(50)  NOT NULL DEFAULT 'PENDING',
+    status         ENUM('PENDING','PROCESSING','PUBLISHED','FAILED','DEAD_LETTERED')
+                   NOT NULL DEFAULT 'PENDING',
     failure_reason TEXT,
     next_retry_at  DATETIME,
 
