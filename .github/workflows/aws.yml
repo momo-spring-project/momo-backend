@@ -137,6 +137,10 @@ jobs:
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             REDIS_HOST=${{ secrets.REDIS_HOST }}
             REDIS_PORT=${{ secrets.REDIS_PORT }}
+            ELASTICSEARCH_HOST=${{ secrets.ELASTICSEARCH_HOST }}
+            ELASTICSEARCH_PORT=${{ secrets.ELASTICSEARCH_PORT }}
+            RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}
+            RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}
             RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}
             RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}
             NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
@@ -147,7 +151,10 @@ jobs:
             TOSS_CLIENT_KEY=${{ secrets.TOSS_CLIENT_KEY }}
             TOSS_BASE_URL=${{ secrets.TOSS_BASE_URL }}
             WEBCLIENT_SECRET_KEY=${{ secrets.WEBCLIENT_SECRET_KEY }}
+            WEBCLIENT_BASE_URL=${{ secrets.WEBCLIENT_BASE_URL }}
             SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
+            OTEL_COLLECTOR_ENDPOINT=${{ secrets.OTEL_COLLECTOR_ENDPOINT }}
             SPRING_PROFILES_ACTIVE=prod
           # GitHub Secrets에서 모든 환경변수를 가져와서 컨테이너에 주입
           # 이렇게 하면 application.yml의 ${변수}들이 모두 해결됨
