@@ -54,7 +54,7 @@ public class MessageHubQueueConfig {
 	@Bean
 	public Binding hubMainBinding() {
 		return BindingBuilder.bind(hubQueue())
-			.to(new DirectExchange(MESSAGE_HUB_EVENTS))
+			.to(new TopicExchange(MESSAGE_HUB_EVENTS))
 			.with(MESSAGE_HUB_ASSEMBLE_KEY); // 재유입 라우팅키
 	}
 
