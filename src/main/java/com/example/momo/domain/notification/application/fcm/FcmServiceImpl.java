@@ -54,7 +54,8 @@ public class FcmServiceImpl implements FcmService {
 
 		//token 이 없을경우 메세지큐 저장
 		if (tokens.isEmpty()) {
-			log.warn("유효한 토큰이 없습니다.: userId={}, content={}", messageDto.getUserId(), messageDto.getContent());
+			log.warn("FCM 전송 실패 - 유효한 토큰이 없습니다. : userId={}, content={}", messageDto.getUserId(),
+				messageDto.getContent());
 			return false;
 		}
 
