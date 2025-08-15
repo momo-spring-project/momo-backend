@@ -112,7 +112,7 @@ spring:
     out-of-order: false           # 순서대로 실행 강제
     group: true                   # 트랜잭션 단위로 개별 실행
     mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
-    clean-disabled: false         # TODO: 운영단계에서는 true로 변경 -> 가장 중요
+    clean-disabled: true          # TODO: 운영단계에서는 true로 변경 -> 가장 중요
     baseline-on-migrate: true
     fail-on-missing-locations: true # 마이그레이션 위치 누락시 실패
     placeholder-replacement: false  # 플레이스홀더 비활성화 (보안)
