@@ -17,10 +17,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class RedisConfig {
 
 	@Bean
-	public LettuceConnectionFactory redisConnectionFactory() {
-		LettuceConnectionFactory factory = new LettuceConnectionFactory();
-		factory.setShareNativeConnection(false);
-		return factory;
+	public LettuceConnectionFactory redisConnectionFactory(LettuceConnectionFactory redisConnectionFactory) {
+		redisConnectionFactory.setShareNativeConnection(false);
+		return redisConnectionFactory;
 	}
 
 	@Bean
