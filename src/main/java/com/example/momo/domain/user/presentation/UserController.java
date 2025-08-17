@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.user.application.UserService;
+import com.example.momo.domain.user.domain.UserService;
 import com.example.momo.domain.user.application.dto.RegisterRequestDto;
 import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.application.dto.UserCategoryUpdateRequestDto;

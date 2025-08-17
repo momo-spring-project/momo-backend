@@ -3,9 +3,10 @@ package com.example.momo.domain.meeting.event.rabbitmq.producer;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
+
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,6 +17,7 @@ import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;

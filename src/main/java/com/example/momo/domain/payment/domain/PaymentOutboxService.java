@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.application;
+package com.example.momo.domain.payment.domain;
 
 import java.time.LocalDateTime;
 import java.util.List;

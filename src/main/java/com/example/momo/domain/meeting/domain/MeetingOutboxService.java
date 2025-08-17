@@ -1,8 +1,6 @@
-package com.example.momo.domain.meeting.application;
+package com.example.momo.domain.meeting.domain;
 
 import java.util.List;
-
-import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
 
 public interface MeetingOutboxService {
 

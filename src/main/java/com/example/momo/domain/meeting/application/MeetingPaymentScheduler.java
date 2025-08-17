@@ -6,7 +6,10 @@ import java.util.List;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -75,7 +79,8 @@ public class MeetingPaymentScheduler {
 							MeetingEvents.Register.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
+						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(
+							event.meetingId(), event.userId());
 						meeting.removeMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 MeetingEvents.Register 롤백, outbox = {}", outbox);
 					}
@@ -85,7 +90,8 @@ public class MeetingPaymentScheduler {
 							MeetingEvents.Cancel.class
 						);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
+						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(
+							event.meetingId(), event.userId());
 						meeting.addMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 MeetingEvents.Cancel 롤백, outbox = {}", outbox);
 					}

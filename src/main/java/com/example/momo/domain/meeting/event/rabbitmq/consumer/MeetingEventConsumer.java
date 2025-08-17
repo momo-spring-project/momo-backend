@@ -1,7 +1,7 @@
 package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.application.MeetingService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
@@ -11,12 +11,15 @@ import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.rabbitmq.client.Channel;
 
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
@@ -121,7 +124,8 @@ public class MeetingEventConsumer {
 
 	protected void processPaymentSuccessEvent(EventWrapper<?> event) {
 
-		PaymentEventMessages.Completed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Completed.class);
+		PaymentEventMessages.Completed message = objectMapper.convertValue(event.data(),
+			PaymentEventMessages.Completed.class);
 
 		Long meetingId = message.meetingId();
 		Long userId = message.userId();
@@ -144,13 +148,15 @@ public class MeetingEventConsumer {
 
 	protected void processPaymentFailureEvent(EventWrapper<?> event) {
 
-		PaymentEventMessages.Failed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Failed.class);
+		PaymentEventMessages.Failed message = objectMapper.convertValue(event.data(),
+			PaymentEventMessages.Failed.class);
 
 		Long meetingId = message.meetingId();
 
 		try {
 			Meeting meeting = meetingService.getMeetingById(meetingId);
-			MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(meetingId, message.userId());
+			MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(meetingId,
+				message.userId());
 			meeting.removeMeetingParticipant(participant);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

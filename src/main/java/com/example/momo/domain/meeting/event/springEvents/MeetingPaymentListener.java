@@ -3,13 +3,14 @@ package com.example.momo.domain.meeting.event.springEvents;
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
+
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 

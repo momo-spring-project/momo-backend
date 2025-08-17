@@ -6,7 +6,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.payment.application.PaymentOutboxService;
+import com.example.momo.domain.payment.domain.PaymentOutboxService;
 import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;

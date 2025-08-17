@@ -1,4 +1,4 @@
-package com.example.momo.domain.category.application;
+package com.example.momo.domain.category.domain;
 
 import java.util.List;
 

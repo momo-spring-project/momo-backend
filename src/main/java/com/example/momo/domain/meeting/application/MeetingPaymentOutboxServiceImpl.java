@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxRepository;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
 
 import lombok.RequiredArgsConstructor;
 

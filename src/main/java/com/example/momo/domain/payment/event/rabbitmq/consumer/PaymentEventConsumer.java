@@ -10,7 +10,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.domain.payment.domain.PaymentService;
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.payment.application.PaymentService;
+import com.example.momo.domain.payment.domain.PaymentService;
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;

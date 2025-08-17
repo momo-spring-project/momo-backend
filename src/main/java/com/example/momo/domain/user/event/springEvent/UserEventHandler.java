@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.example.momo.domain.user.application.UserOutboxService;
+import com.example.momo.domain.user.domain.UserOutboxService;
 import com.example.momo.domain.user.event.rabbitmq.producer.UserEventProducer;
 
 import lombok.RequiredArgsConstructor;

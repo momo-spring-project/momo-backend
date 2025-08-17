@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.meeting.application.MeetingService;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.application.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.application.dto.request.MeetingStatusUpdateRequestDto;
 import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;

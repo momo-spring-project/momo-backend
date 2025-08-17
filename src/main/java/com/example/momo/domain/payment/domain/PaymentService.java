@@ -1,4 +1,4 @@
-package com.example.momo.domain.payment.application;
+package com.example.momo.domain.payment.domain;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
