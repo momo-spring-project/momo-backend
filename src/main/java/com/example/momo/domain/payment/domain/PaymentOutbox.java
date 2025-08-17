@@ -42,8 +42,10 @@ public class PaymentOutbox {
 	@Column(nullable = false)
 	private LocalDateTime createdAt;
 
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
+	@Column(name = "published_at")
 	private LocalDateTime publishedAt;
 
 	@Column(nullable = false)

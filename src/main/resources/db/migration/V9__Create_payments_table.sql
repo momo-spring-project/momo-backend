@@ -13,7 +13,8 @@ CREATE TABLE payments
     payment_method    VARCHAR(255) NOT NULL,
     pg_transaction_id VARCHAR(255) DEFAULT NULL,
     fail_reason       VARCHAR(255) DEFAULT NULL,
-    status ENUM('PENDING', 'COMPLETED', 'FAILED', 'CANCELED', 'REFUNDED', 'EXPIRED') NOT NULL,
+    status ENUM('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED', 'EXPIRED') NOT NULL,
 
     UNIQUE KEY uq_payment_meeting_user (meeting_id, user_id)
 );
+
