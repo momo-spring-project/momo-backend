@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: ap-northeast-2                   # 서울 리전
   ECR_REPOSITORY: momo                         # ECR 리포지토리 이름
-  ECS_SERVICE: momo-task-service-zjgsrepa      # ECS 서비스 이름
+  ECS_SERVICE: momo-task-service               # ECS 서비스 이름
   ECS_CLUSTER: momo-cluster                    # ECS 클러스터 이름
   ECS_TASK_DEFINITION: momo-task               # Task Definition 이름
   CONTAINER_NAME: momo                         # 컨테이너 이름
