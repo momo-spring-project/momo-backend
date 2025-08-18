@@ -1,39 +1,120 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        // Flyway 플러그인용 클래스패스에 flyway-core, flyway-mysql, mysql 드라이버 추가
+        classpath "org.flywaydb:flyway-core:11.7.2"
+        classpath "org.flywaydb:flyway-mysql:11.7.2"
+        classpath "mysql:mysql-connector-java:8.0.33"
+    }
+}
+
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '3.5.3'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.flywaydb.flyway' version '11.7.2'
 }
 
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
 configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-validation'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    testImplementation 'org.springframework.security:spring-security-test'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // elasticsearch
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+//    implementation 'org.elasticsearch:elasticsearch:8.18.1'
+
+    // WebClient를 위한 Spring WebFlux
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    //jwt 의존성
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
+    implementation 'io.jsonwebtoken:jjwt-jackson:0.12.3'
+
+    // queryDsl 의존성 추가
+    implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
+    annotationProcessor "com.querydsl:querydsl-apt:5.1.0:jakarta"
+    annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+    annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+    //websocket
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // Swagger
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8'
+
+    // Firebase
+    implementation 'com.google.firebase:firebase-admin:9.5.0'
+
+    // OpenTelemetry
+    implementation("io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter")
+    implementation("io.opentelemetry.proto:opentelemetry-proto:1.7.0-alpha")
+
+    // Spring Actuator
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'io.micrometer:micrometer-registry-otlp'
+
+    // RabbitMQ 지원 (spring-amqp + spring-rabbit)
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
+    // JSON 직렬화/역직렬화용 Jackson
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Slakc API
+    implementation 'com.slack.api:slack-api-client:1.27.2'
+
+    // Redis
+    implementation "org.springframework.boot:spring-boot-starter-data-redis"
+    implementation("org.redisson:redisson:3.50.0")
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.18.1")
+    }
+
+}
+
+flyway {
+    url = project.findProperty("flyway.url")
+    user = project.findProperty("flyway.user")
+    password = project.findProperty("flyway.password")
+    locations = ["filesystem:src/main/resources/db/migration"]
+    cleanDisabled = false
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }

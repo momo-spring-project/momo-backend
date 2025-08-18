@@ -1,0 +1,99 @@
+# 수신 설정
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  hostmetrics: # host metric 지표
+    collection_interval: 10s
+    root_path: /hostfs
+    scrapers:
+      cpu:
+      memory:
+      disk:
+      filesystem:
+        exclude_devices:
+          match_type: regexp
+          devices:
+            - '^/dev/loop.*'
+            - '^tmpfs$'
+            - '^overlay$'
+            - '^docker-desktop$'
+        exclude_mount_points:
+          match_type: regexp
+          mount_points:
+            - '^/mnt/wsl/.*'
+            - '^/mnt/wsl/docker-desktop-bind-mounts/.*'
+            - '^/mnt/wslg/.*'
+            - '^/var/lib/docker/.*'
+            - '^/run/docker/.*'
+      network:
+
+# 전송 설정
+exporters:
+  otlp:
+    endpoint: jaeger-collector:4317
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: true
+      job: true
+      instance: true
+  logging:
+    verbosity: detailed
+
+processors:
+  filter/ottl: # 노이즈 필터링
+    error_mode: ignore
+    traces:
+      span:
+        - 'name == "Ping"'
+        - 'name == "POST"'
+        - 'name == "Create connection"'
+        - 'name == "Load server variables"'
+        - "name == \"Set variable 'character_set_results'\""
+        - "name == \"Set transaction access mode 'read-only'\""
+        - "name == \"Set transaction access mode 'read-write'\""
+        - "name == \"Set variable 'autocommit'\""
+        - 'name == "Rollback"'
+        - 'name == "Transaction.commit"'
+        - 'IsMatch(name, ".*@@session.transaction_.*")'
+  attributes/error_flag: # 에러 라벨 삽입(Grafana 에서 에러 없는 경우 분류)
+    actions:
+      - action: insert
+        key: error
+        value: "false"
+  filter/info:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'severity_text == "INFO"'
+  batch:
+    send_batch_size: 100
+    timeout: 10s
+
+# 파이프라인 설정
+# 위에서 설정한 수신, 전송 설정 적용
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ batch, filter/ottl, attributes/error_flag ]
+      exporters: [ otlp, logging ]
+    metrics:
+      receivers: [ otlp, hostmetrics ]
+      exporters: [ prometheus ]
+    logs:
+      receivers: [ otlp ]
+      processors: [ batch, filter/info ]
+      exporters: [ loki ]
+  telemetry: # 콜렉터 본인 파이프라인, metrics 는 localhost:8888/metrics 접속해서 확인 가능
+    logs:
+      level: debug
+    metrics:
+      address: 0.0.0.0:8888
+      level: detailed

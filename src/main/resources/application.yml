@@ -1,0 +1,130 @@
+spring:
+  application:
+    name: momo
+
+  profiles:
+    active: auth
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # HikariCP 커넥션 풀 설정 (필수 설정만)
+    hikari:
+      minimum-idle: 5               # 최소 유지 커넥션 (줄임)
+      maximum-pool-size: 10         # 최대 커넥션 (줄임)
+      connection-timeout: 20000     # 20초
+      idle-timeout: 600000          # 10분
+
+      # MySQL 기본 최적화 설정
+      data-source-properties:
+        characterEncoding: UTF-8
+        useUnicode: true
+        serverTimezone: Asia/Seoul
+        useSSL: true
+        allowPublicKeyRetrieval: true
+
+  jpa:
+    hibernate:
+      ddl-auto: none                # Flyway 사용으로 인한 DDL 비활성화
+    properties:
+      hibernate:
+        # MySQL Dialect 명시적 설정
+        dialect: org.hibernate.dialect.MySQLDialect
+
+        # 성능 최적화 (꼭 필요한 것만)
+        default_batch_fetch_size: 16  # N+1 문제 완화
+        jdbc:
+          batch_size: 20              # 배치 처리 최적화
+          order_inserts: true         # INSERT 순서 최적화
+          order_updates: true         # UPDATE 순서 최적화
+
+    show-sql: true
+    open-in-view: false             # OSIV 비활성화 (성능 최적화)
+
+
+  flyway:
+    enabled: true                    # Flyway 활성화
+    locations: classpath:db/migration
+    encoding: UTF-8
+    validate-on-migrate: true      # 마이그레이션 파일 변경 감지
+    out-of-order: false           # 순서대로 실행 강제
+    group: true                   # 트랜잭션 단위로 개별 실행
+    mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
+    clean-disabled: true          # TODO: 운영단계에서는 true로 변경 -> 가장 중요
+    baseline-on-migrate: true
+    fail-on-missing-locations: true # 마이그레이션 위치 누락시 실패
+    placeholder-replacement: false  # 플레이스홀더 비활성화 (보안)
+    sql-migration-suffixes: [ ".sql" ] # SQL 파일 확장자 명시
+
+  messages:
+    basename: validations, messages
+    encoding: UTF-8
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USER}
+    password: ${RABBITMQ_PASS}
+    publisher-confirm-type: correlated
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      database: 0
+
+toss:
+  payments:
+    secret-key: ${TOSS_SECRET_KEY}
+    client-key: ${TOSS_CLIENT_KEY}
+    base-url: ${TOSS_BASE_URL}
+
+elasticsearch:
+  host: ${ELASTICSEARCH_HOST}
+  port: ${ELASTICSEARCH_PORT}
+
+# application.yml (정말 필요한 것만)
+webclient:
+  internal:
+    secret-key: ${WEBCLIENT_SECRET_KEY:default-secret-key}
+    base-url: ${WEBCLIENT_BASE_URL:http://localhost:8080}
+
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 0.1 # 10%의 트레이스만 수집
+  metrics:
+    export:
+      otlp:
+        enabled: true
+        step: 5s
+  endpoints:
+    web:
+      exposure:
+        include: health, info # actuator health, info 만 노출
+
+otel:
+  service:
+    name: ${spring.application.name}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_COLLECTOR_ENDPOINT}
+      protocol: grpc
+  traces:
+    exporter: otlp
+    sampler: always_on
+
+logging:
+  level:
+    root: INFO
+    com.example.momo: DEBUG
+    io.opentelemetry.exporter: DEBUG
+
+notification:
+  slack:
+    webhook:
+      url: ${SLACK_WEBHOOK_URL}

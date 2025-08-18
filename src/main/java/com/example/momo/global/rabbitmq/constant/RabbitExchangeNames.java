@@ -1,0 +1,25 @@
+package com.example.momo.global.rabbitmq.constant;
+
+public class RabbitExchangeNames {
+	// User 관련 exchange
+	public static final String USER_EVENTS = "momo.user.events";
+
+	//Message Hub 관련 exchange
+	public static final String MESSAGE_HUB_EVENTS = "momo.message-hub.events";
+	public static final String MESSAGE_HUB_EVENTS_RETRY = "momo.message-hub.events.retry";
+	public static final String DLX_MESSAGE_HUB = "momo.dlx.message-hub";
+
+	//Notification 관련 exchange
+	public static final String NOTIFICATION_EVENTS = "momo.notification.events";
+	public static final String DLX_NOTIFICATION = "momo.dlx.notification";
+	public static final String NOTIFICATION_EVENTS_RETRY = "momo.notification.events.retry";
+
+	// Meeting
+	public static final String MEETING_EVENTS = "momo.meeting.events";
+	public static final String PARTICIPANT_EVENTS = "momo.participant.events";
+	public static final String DLX_PARTICIPANT = "participant.dlx";
+
+	//payment
+	public static final String PAYMENT_EVENTS = "momo.payment.events";
+	public static final String DLX_PAYMENT = "momo.dlx.payment";
+}
