@@ -3,7 +3,7 @@ spring:
     name: momo
 
   profiles:
-    active: auth
+    include: auth
 
   datasource:
     url: ${DB_URL}
