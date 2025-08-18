@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
+import com.example.momo.domain.meeting.domain.MeetingOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 
 import lombok.RequiredArgsConstructor;

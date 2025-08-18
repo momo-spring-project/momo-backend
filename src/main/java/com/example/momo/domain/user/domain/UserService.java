@@ -1,4 +1,4 @@
-package com.example.momo.domain.user.application;
+package com.example.momo.domain.user.domain;
 
 import java.util.List;
 
@@ -15,7 +15,6 @@ import com.example.momo.domain.user.application.dto.UserPasswordUpdateRequestDto
 import com.example.momo.domain.user.application.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.application.dto.UserResponseDto;
 import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
-import com.example.momo.domain.user.domain.User;
 
 /**
  * 사용자 서비스 인터페이스

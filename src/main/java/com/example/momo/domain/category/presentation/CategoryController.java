@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.momo.domain.category.application.CategoryService;
+import com.example.momo.domain.category.domain.CategoryService;
 import com.example.momo.domain.category.application.dto.CategoryCreateRequestDto;
 import com.example.momo.domain.category.application.dto.CategoryResponseDto;
 import com.example.momo.domain.category.application.dto.CategoryUpdateRequestDto;

@@ -6,9 +6,6 @@ import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,15 +29,19 @@ import com.example.momo.domain.meeting.application.dto.response.ParticipantRespo
 import com.example.momo.domain.meeting.domain.Meeting;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
 import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
+import com.example.momo.domain.meeting.domain.MeetingOutboxService;
 import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
 import com.example.momo.domain.meeting.domain.MeetingRepository;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
@@ -48,11 +49,11 @@ import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-
-
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -154,7 +155,7 @@ public class MeetingServiceImpl implements MeetingService {
 
 	@Override
 	@Transactional(readOnly = true)
-	@Cacheable(value = "meeting", key = "#meetingId",cacheManager = "cacheManager")
+	@Cacheable(value = "meeting", key = "#meetingId", cacheManager = "cacheManager")
 	public MeetingResponseDto getMeeting(Long meetingId) {
 
 		Meeting meeting = meetingRepository.findById(meetingId).orElseThrow(() ->
@@ -332,18 +333,18 @@ public class MeetingServiceImpl implements MeetingService {
 			throw new MeetingException(MeetingExceptionCode.INSUFFICIENT_SCORE);
 		}
 
-			// 참가자 수 확인
-			if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
-				throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
-			}
-			MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
-			meeting.addMeetingParticipant(participant);
+		// 참가자 수 확인
+		if (meeting.getCurrentParticipantsCount() >= meeting.getMaxParticipantsCount()) {
+			throw new MeetingException(MeetingExceptionCode.MEETING_IS_FULL);
+		}
+		MeetingParticipant participant = MeetingParticipant.createParticipant(meeting, userId);
+		meeting.addMeetingParticipant(participant);
 
-			MeetingElasticsearchOutbox esOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
-				ElasticsearchEventType.SAVE);
-			meetingOutboxService.saveMeetingOutbox(esOutbox);
+		MeetingElasticsearchOutbox esOutbox = new MeetingElasticsearchOutbox(meeting.getId(),
+			ElasticsearchEventType.SAVE);
+		meetingOutboxService.saveMeetingOutbox(esOutbox);
 
-			eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, esOutbox.getId()));
+		eventPublisher.publishEvent(new MeetingElasticEvents.Save(meeting, esOutbox.getId()));
 
 		// 참가비 무료일 경우 즉시 참가자 추가
 		if (meeting.getParticipationFee() == 0) {
@@ -375,7 +376,7 @@ public class MeetingServiceImpl implements MeetingService {
 				throw new RuntimeException(e);
 			}
 
-			eventPublisher.publishEvent(new MeetingEvents.Register(meetingId, userId));
+			eventPublisher.publishEvent(wrapper);
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
@@ -459,7 +460,7 @@ public class MeetingServiceImpl implements MeetingService {
 					objectMapper.writeValueAsString(wrapper)
 				);
 				meetingPaymentOutboxService.savePaymentOutbox(outbox);
-				eventPublisher.publishEvent(event);
+				eventPublisher.publishEvent(wrapper);
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
 			}
@@ -483,7 +484,7 @@ public class MeetingServiceImpl implements MeetingService {
 					objectMapper.writeValueAsString(wrapper)
 				);
 				meetingPaymentOutboxService.savePaymentOutbox(outbox);
-				eventPublisher.publishEvent(event);
+				eventPublisher.publishEvent(wrapper);
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
 			}

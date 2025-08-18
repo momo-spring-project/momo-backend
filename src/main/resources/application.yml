@@ -11,55 +11,20 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
-    # HikariCP 커넥션 풀 설정 (중간 규모 트래픽 최적화)
+    # HikariCP 커넥션 풀 설정 (필수 설정만)
     hikari:
-      # 커넥션 풀 크기
-      minimum-idle: 10              # 최소 유지 커넥션
-      maximum-pool-size: 20         # 최대 커넥션 (개발/중간 규모에 적합)
-      pool-name: "MainHikariPool"   # 풀 이름 명시 (모니터링에 유용)
+      minimum-idle: 5               # 최소 유지 커넥션 (줄임)
+      maximum-pool-size: 10         # 최대 커넥션 (줄임)
+      connection-timeout: 20000     # 20초
+      idle-timeout: 600000          # 10분
 
-      # 타임아웃 설정
-      connection-timeout: 20000     # 20초 (커넥션 대기 시간)
-      idle-timeout: 600000          # 10분 (유휴 커넥션 유지 시간)
-
-      # Actuator 연동 준비 (모니터링용)
-      max-lifetime: 1800000         # 30분 (커넥션 최대 생존 시간)
-      validation-timeout: 5000      # 5초 (커넥션 유효성 검사 타임아웃)
-      leak-detection-threshold: 300000  # 5분 (커넥션 누수 감지)
-
-      # MySQL 최적화 설정
+      # MySQL 기본 최적화 설정
       data-source-properties:
-        # PreparedStatement 캐시 최적화
-        cachePrepStmts: true
-        prepStmtCacheSize: 250
-        prepStmtCacheSqlLimit: 2048
-        useServerPrepStmts: true
-
-        # 배치 처리 최적화 (QueryDSL과 JPA 배치 처리에 유리)
-        rewriteBatchedStatements: true
-        useLocalSessionState: true
-        cacheResultSetMetadata: true
-        cacheServerConfiguration: true
-        elideSetAutoCommits: true
-        maintainTimeStats: false
-
-        # 네트워크 및 타임아웃 설정
-        connectTimeout: 15000
-        socketTimeout: 300000
-
-        # 문자셋 및 지역화 (한국 시간대)
         characterEncoding: UTF-8
         useUnicode: true
         serverTimezone: Asia/Seoul
-
-        # 보안 설정
-        useSSL: false                # # TODO: 운영단계에서는 true로 변경
+        useSSL: true
         allowPublicKeyRetrieval: true
-
-        # 재연결 설정
-        autoReconnect: true
-        failOverReadOnly: false
-        maxReconnects: 3
 
   jpa:
     hibernate:
@@ -69,40 +34,16 @@ spring:
         # MySQL Dialect 명시적 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
-        # SQL 로깅 (개발환경용)
-        format_sql: true            # TODO: 운영단계에서는 false로 변경
-        use_sql_comments: false
-        generate_statistics: false  # TODO: 운영에서는 false, 개발에서 성능 분석시만 true
-        session_factory:
-          statement_inspector: com.example.momo.global.monitoring.query.inspector.QueryCountInspector
-
-        # 배치 처리 최적화 (QueryDSL 대량 처리에 유리)
-        jdbc:
-          batch_size: 50
-          batch_versioned_data: true
-          order_inserts: true
-          order_updates: true
-          fetch_size: 50
-
-        # 쿼리 최적화
+        # 성능 최적화 (꼭 필요한 것만)
         default_batch_fetch_size: 16  # N+1 문제 완화
-
-        # 캐시 설정 (성능 최적화 - JCache 의존성 필요시 활성화)
-        cache:
-          use_second_level_cache: false
-          use_query_cache: false
-
-        # QueryDSL 최적화
-        query:
-          in_clause_parameter_padding: true
-          plan_cache_max_size: 128
-          fail_on_pagination_over_collection_fetch: true  # 컬렉션 페이징 에러 감지
+        jdbc:
+          batch_size: 20              # 배치 처리 최적화
+          order_inserts: true         # INSERT 순서 최적화
+          order_updates: true         # UPDATE 순서 최적화
 
     show-sql: true
-
-    # JPA 추가 설정
     open-in-view: false             # OSIV 비활성화 (성능 최적화)
-    defer-datasource-initialization: true  # Flyway 이후 JPA 초기화
+
 
   flyway:
     enabled: true                    # Flyway 활성화
@@ -110,9 +51,9 @@ spring:
     encoding: UTF-8
     validate-on-migrate: true      # 마이그레이션 파일 변경 감지
     out-of-order: false           # 순서대로 실행 강제
-    group: false                  # 트랜잭션 단위로 개별 실행 TODO: 운영단계에서는 true로 변경
+    group: true                   # 트랜잭션 단위로 개별 실행
     mixed: false                  # SQL과 Java 마이그레이션 혼용 방지
-    clean-disabled: false         # TODO: 운영단계에서는 true로 변경 -> 가장 중요
+    clean-disabled: true          # TODO: 운영단계에서는 true로 변경 -> 가장 중요
     baseline-on-migrate: true
     fail-on-missing-locations: true # 마이그레이션 위치 누락시 실패
     placeholder-replacement: false  # 플레이스홀더 비활성화 (보안)
@@ -123,8 +64,8 @@ spring:
     encoding: UTF-8
 
   rabbitmq:
-    host: localhost
-    port: 5672
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
     username: ${RABBITMQ_USER}
     password: ${RABBITMQ_PASS}
     publisher-confirm-type: correlated
@@ -171,7 +112,7 @@ otel:
     name: ${spring.application.name}
   exporter:
     otlp:
-      endpoint: http://localhost:4317
+      endpoint: ${OTEL_COLLECTOR_ENDPOINT}
       protocol: grpc
   traces:
     exporter: otlp

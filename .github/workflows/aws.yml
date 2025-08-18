@@ -6,12 +6,12 @@ on:
 
 # 환경 변수 설정 - 우리 프로젝트에 맞게 설정됨
 env:
-  AWS_REGION: ap-northeast-2    # 서울 리전
-  ECR_REPOSITORY: momo          # ECR 리포지토리 이름
-  ECS_SERVICE: momo-service     # ECS 서비스 이름
-  ECS_CLUSTER: momo-cluster     # ECS 클러스터 이름
-  ECS_TASK_DEFINITION: momo-task # Task Definition 이름
-  CONTAINER_NAME: momo          # 컨테이너 이름
+  AWS_REGION: ap-northeast-2                   # 서울 리전
+  ECR_REPOSITORY: momo                         # ECR 리포지토리 이름
+  ECS_SERVICE: momo-task-service               # ECS 서비스 이름
+  ECS_CLUSTER: momo-cluster                    # ECS 클러스터 이름
+  ECS_TASK_DEFINITION: momo-task               # Task Definition 이름
+  CONTAINER_NAME: momo                         # 컨테이너 이름
 
 permissions:
   contents: read
@@ -53,6 +53,10 @@ jobs:
           echo "flyway.password=${{ secrets.FLYWAY_PASSWORD }}" >> gradle.properties
         # Flyway DB 마이그레이션용 환경변수 설정
         # GitHub Secrets에서 DB 접속 정보를 가져와서 gradle.properties 생성
+
+      # 명시적 Flyway 마이그레이션 실행
+      - name: Run Flyway Migration
+        run: ./gradlew flywayMigrate
 
       # ===========================================
       # 3. Spring Boot 애플리케이션 빌드
@@ -133,6 +137,10 @@ jobs:
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             REDIS_HOST=${{ secrets.REDIS_HOST }}
             REDIS_PORT=${{ secrets.REDIS_PORT }}
+            ELASTICSEARCH_HOST=${{ secrets.ELASTICSEARCH_HOST }}
+            ELASTICSEARCH_PORT=${{ secrets.ELASTICSEARCH_PORT }}
+            RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}
+            RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}
             RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}
             RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}
             NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
@@ -143,7 +151,10 @@ jobs:
             TOSS_CLIENT_KEY=${{ secrets.TOSS_CLIENT_KEY }}
             TOSS_BASE_URL=${{ secrets.TOSS_BASE_URL }}
             WEBCLIENT_SECRET_KEY=${{ secrets.WEBCLIENT_SECRET_KEY }}
+            WEBCLIENT_BASE_URL=${{ secrets.WEBCLIENT_BASE_URL }}
             SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
+            OTEL_COLLECTOR_ENDPOINT=${{ secrets.OTEL_COLLECTOR_ENDPOINT }}
             SPRING_PROFILES_ACTIVE=prod
           # GitHub Secrets에서 모든 환경변수를 가져와서 컨테이너에 주입
           # 이렇게 하면 application.yml의 ${변수}들이 모두 해결됨

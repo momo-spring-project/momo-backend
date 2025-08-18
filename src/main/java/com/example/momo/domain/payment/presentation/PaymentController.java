@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.payment.application.PaymentService;
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.PaymentResponseDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;
+import com.example.momo.domain.payment.domain.PaymentService;
 import com.example.momo.domain.payment.enums.PaymentStatus;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.common.dto.AuthUser;
 import com.example.momo.global.webclient.payment.dto.TossPaymentResponseDto;
 
 import lombok.RequiredArgsConstructor;

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.user.domain.UserOutboxEvent;
 import com.example.momo.domain.user.domain.UserOutboxEventRepository;
+import com.example.momo.domain.user.domain.UserOutboxService;
 import com.example.momo.domain.user.event.rabbitmq.producer.UserEventProducer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
