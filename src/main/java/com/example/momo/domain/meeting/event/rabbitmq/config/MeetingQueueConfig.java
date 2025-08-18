@@ -64,4 +64,3 @@ public class MeetingQueueConfig {
 			.with(PARTICIPANT_DLQ_KEY);
 	}
 }
-
