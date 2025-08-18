@@ -37,7 +37,7 @@ public class NotificationRabbitConfig {
 		factory.setMaxConcurrentConsumers(10);
 		factory.setPrefetchCount(50);
 
-		factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
 		factory.setDefaultRequeueRejected(false);
 		RetryOperationsInterceptor retry = RetryInterceptorBuilder.stateless()
 			.maxAttempts(3)

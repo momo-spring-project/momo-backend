@@ -25,7 +25,7 @@ public class MessageHubRabbitConfig {
 		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
 		factory.setConnectionFactory(connectionFactory);
 		factory.setMessageConverter(messageConverter);
-		factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+		factory.setAcknowledgeMode(AcknowledgeMode.AUTO);
 
 		factory.setConcurrentConsumers(3);
 		factory.setMaxConcurrentConsumers(10);
