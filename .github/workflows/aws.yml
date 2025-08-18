@@ -155,7 +155,7 @@ jobs:
             --output json > task-definition.json
           
           # ECS 등록 시 불필요한 필드들 제거 (오류 방지)
-          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)' \
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
             task-definition.json > task-definition-clean.json
           mv task-definition-clean.json task-definition.json
 
