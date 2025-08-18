@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.application.dto.request.MeetingCreateRequestDto;
 import com.example.momo.domain.meeting.application.dto.request.MeetingStatusUpdateRequestDto;
 import com.example.momo.domain.meeting.application.dto.request.MeetingUpdateRequestDto;
@@ -29,8 +27,10 @@ import com.example.momo.domain.meeting.application.dto.response.ParticipantCount
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
 import com.example.momo.domain.meeting.domain.MeetingDocument;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.common.dto.AuthUser;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;

@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
 import com.example.momo.domain.notification.application.fcm.FcmService;
 import com.example.momo.domain.notification.application.fcm.dto.FcmCreateRequestDto;
 import com.example.momo.domain.notification.application.fcm.dto.FcmDeleteRequestDto;
 import com.example.momo.domain.notification.application.fcm.dto.FcmMessageDto;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.common.dto.AuthUser;
 
 import lombok.RequiredArgsConstructor;
 

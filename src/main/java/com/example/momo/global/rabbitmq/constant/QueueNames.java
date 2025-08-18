@@ -16,8 +16,7 @@ public class QueueNames {
 
 	public static final String PARTICIPANT_PAYMENT_SUCCEED = "participant.payment.succeed.queue";
 	public static final String PARTICIPANT_PAYMENT_FAILED = "participant.payment.canceled.queue";
-	public static final String DLQ_PARTICIPANT = "participant.dlq";
+	public static final String PARTICIPANT_DLQ = "participant.dlq.queue";
 	public static final String PAYMENT_MEETING_DELETED = "payment.meeting.deleted.queue";
 	public static final String PAYMENT_DLQ = "payment.dlq.queue";
-
 }

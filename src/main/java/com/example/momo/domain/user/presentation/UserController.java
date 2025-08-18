@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
-import com.example.momo.domain.user.domain.UserService;
 import com.example.momo.domain.user.application.dto.RegisterRequestDto;
 import com.example.momo.domain.user.application.dto.UserAuthResponseDto;
 import com.example.momo.domain.user.application.dto.UserCategoryUpdateRequestDto;
@@ -33,7 +31,9 @@ import com.example.momo.domain.user.application.dto.UserRatingCreateRequestDto;
 import com.example.momo.domain.user.application.dto.UserResponseDto;
 import com.example.momo.domain.user.application.dto.WithdrawRequestDto;
 import com.example.momo.domain.user.domain.User;
+import com.example.momo.domain.user.domain.UserService;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.common.dto.AuthUser;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
