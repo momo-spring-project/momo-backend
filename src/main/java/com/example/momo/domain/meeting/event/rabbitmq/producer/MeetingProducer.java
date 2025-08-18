@@ -4,8 +4,6 @@ import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -108,26 +106,17 @@ public class MeetingProducer {
 	// 메세지 발행
 	@Transactional
 	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
-		CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
-		correlationData.getFuture().whenComplete((confirm, ex) -> {
-			if (ex != null) {
-				future.completeExceptionally(ex);
-			} else {
-				future.complete(confirm.isAck());
-			}
-		});
-
 		try {
+			CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
+
 			meetingRabbitTemplate.convertAndSend(
 				PARTICIPANT_EVENTS,
 				routingKey,
 				wrapper,
 				correlationData
 			);
-			future.get(2, TimeUnit.SECONDS);
-			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", wrapper);
+
+			log.info("[참가자 이벤트 발행] 발행 요청 완료 : event = {}", wrapper);
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
 			throw new RuntimeException(e);

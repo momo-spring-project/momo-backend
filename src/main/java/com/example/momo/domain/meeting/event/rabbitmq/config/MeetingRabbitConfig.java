@@ -1,6 +1,5 @@
 package com.example.momo.domain.meeting.event.rabbitmq.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.RetryInterceptorBuilder;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -16,6 +15,8 @@ import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 import org.springframework.retry.interceptor.RetryOperationsInterceptor;
 import org.springframework.retry.support.RetryTemplate;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Configuration
 public class MeetingRabbitConfig {
@@ -29,7 +30,7 @@ public class MeetingRabbitConfig {
 	 * - 메시지 발행 성공/실패 여부를 확인할 수 있도록 Confirm/Return 기능 활성화
 	 */
 	@Bean("participantConnectionFactory")
-	public ConnectionFactory paymentConnectionFactory(CachingConnectionFactory base) {
+	public ConnectionFactory participantConnectionFactory(CachingConnectionFactory base) {
 		CachingConnectionFactory factory =
 			new CachingConnectionFactory(base.getRabbitConnectionFactory());
 
@@ -47,7 +48,7 @@ public class MeetingRabbitConfig {
 	 * - 메시지 직렬화, 재시도 정책, 발행 결과 로그 처리 포함
 	 */
 	@Bean("participantRabbitTemplate")
-	public RabbitTemplate paymentRabbitTemplate(
+	public RabbitTemplate participantRabbitTemplate(
 		@Qualifier("participantConnectionFactory") ConnectionFactory connectionFactory,
 		MessageConverter messageConverter) {
 
@@ -90,7 +91,7 @@ public class MeetingRabbitConfig {
 	 * - 소비자 측 수신 처리, 스레드 수, ACK 전략, 재시도 설정 포함
 	 */
 	@Bean("participantListenerContainerFactory")
-	public SimpleRabbitListenerContainerFactory paymentListenerContainerFactory(
+	public SimpleRabbitListenerContainerFactory participantListenerContainerFactory(
 		@Qualifier("participantConnectionFactory") ConnectionFactory connectionFactory,
 		MessageConverter messageConverter) {
 
