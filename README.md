@@ -21,7 +21,7 @@
 <table>
 <tr>
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원1깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/Mybread2.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">팀장</strong>
 <br>
@@ -31,11 +31,19 @@
 <br>
 유저 도메인
 <br>
-베포 인프라 구축
+배포 인프라 구축
+<br><br>
+<a href="https://github.com/Mybread2">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
+<br>
+<a href="https://juno0112.tistory.com/category">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=tistory&logoColor=white" alt="Blog">
+</a>
 </td>
 
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원2깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/신영님깃허브아이디.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">부팀장</strong>
 <br>
@@ -44,11 +52,18 @@
 <strong>담당</strong>
 <br>
 결제 도메인
-
+<br><br><br>
+<a href="https://github.com/신영님깃허브아이디">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
+<br>
+<a href="신영님블로그주소">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=blogger&logoColor=white" alt="Blog">
+</a>
 </td>
 
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원3깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/동원님깃허브아이디.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">팀원</strong>
 <br>
@@ -58,13 +73,21 @@
 <br>
 인증 / 인가
 <br>
-베포 인프라 구축
+배포 인프라 구축
+<br><br>
+<a href="https://github.com/동원님깃허브아이디">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
+<br>
+<a href="동원님블로그주소">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=blogger&logoColor=white" alt="Blog">
+</a>
 </td>
 </tr>
 
 <tr>
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원4깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/지운님깃허브아이디.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">팀원</strong>
 <br>
@@ -73,10 +96,18 @@
 <strong>담당</strong>
 <br>
 알림 도메인
+<br><br><br>
+<a href="https://github.com/지운님깃허브아이디">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
+<br>
+<a href="지운님블로그주소">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=blogger&logoColor=white" alt="Blog">
+</a>
 </td>
 
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원5깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/호진님깃허브아이디.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">팀원</strong>
 <br>
@@ -87,10 +118,18 @@
 모임 참가 로직
 <br>
 모니터링 구축
+<br><br>
+<a href="https://github.com/호진님깃허브아이디">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
+<br>
+<a href="호진님블로그주소">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=blogger&logoColor=white" alt="Blog">
+</a>
 </td>
 
 <td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
-<img src="https://github.com/팀원6깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<img src="https://github.com/의현님깃허브아이디.png" width="120" style="border-radius: 10px;"/>
 <br><br>
 <strong style="font-size: 18px;">팀원</strong>
 <br>
@@ -99,8 +138,14 @@
 <strong>담당</strong>
 <br>
 모임 도메인
+<br><br><br>
+<a href="https://github.com/의현님깃허브아이디">
+<img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" alt="GitHub">
+</a>
 <br>
-
+<a href="의현님블로그주소">
+<img src="https://img.shields.io/badge/Blog-FF5722?style=flat-square&logo=blogger&logoColor=white" alt="Blog">
+</a>
 </td>
 </tr>
 </table>
@@ -201,7 +246,7 @@
 
 ## 4. 아키텍처
 
-![project_architecture.png](project_architecture.png)
+![project_architecture.png](docs/image/project_architecture.png)
 
 [![AWS 월간 비용 예상](https://img.shields.io/badge/AWS_월간_비용_예상-374151?style=for-the-badge&logo=amazonaws&logoColor=white)](https://www.notion.so/teamsparta/AWS-2542dc3ef514806bb743d46620006130)
 
@@ -211,11 +256,25 @@
 
 ## 5.1 와이어프레임
 
-<!-- 와이어프레임 이미지 및 설명 -->
+<details>
+<summary>📱 MOMO 플랫폼 와이어프레임 보기</summary>
+
+[와이어프레임 HTML 파일](./docs/wireframe/meetup_wireframe.html)
+
+**주요 화면:**
+
+- 메인 화면 (모임 목록)
+- 모임 상세 화면
+- 모임 생성 화면
+- 결제 화면
+- 프로필 화면
+- 알림 화면
+
+</details>
 
 ## 5.2 ERD
 
-<!-- ERD 이미지 및 설명 -->
+![ERD](./docs/image/ERD.png)
 
 ## 5.3 패키지 구조
 
