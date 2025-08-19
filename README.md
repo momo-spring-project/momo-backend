@@ -16,13 +16,112 @@
 
 ## 1. 팀원 소개
 
-<!-- 팀원 소개 내용 -->
+<div align="center">
+
+<table>
+<tr>
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원1깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">팀장</strong>
+<br>
+<strong style="color: #0066cc;">차준호</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+유저 도메인
+<br>
+베포 인프라 구축
+</td>
+
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원2깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">부팀장</strong>
+<br>
+<strong style="color: #0066cc;">김신영</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+결제 도메인
+
+</td>
+
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원3깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">팀원</strong>
+<br>
+<strong style="color: #0066cc;">고동원</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+인증 / 인가
+<br>
+베포 인프라 구축
+</td>
+</tr>
+
+<tr>
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원4깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">팀원</strong>
+<br>
+<strong style="color: #0066cc;">우지운</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+알림 도메인
+</td>
+
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원5깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">팀원</strong>
+<br>
+<strong style="color: #0066cc;">임호진</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+모임 참가 로직
+<br>
+모니터링 구축
+</td>
+
+<td align="center" width="200" style="border: 2px solid #ddd; padding: 20px; margin: 10px;">
+<img src="https://github.com/팀원6깃허브아이디.png" width="120" style="border-radius: 10px;"/>
+<br><br>
+<strong style="font-size: 18px;">팀원</strong>
+<br>
+<strong style="color: #0066cc;">이의현</strong>
+<br><br>
+<strong>담당</strong>
+<br>
+모임 도메인
+<br>
+
+</td>
+</tr>
+</table>
+
+</div>
 
 ---
 
 ## 2. 프로젝트 소개
 
-<!-- 프로젝트 소개 내용 -->
+### 개발 기간: 2025.07.17 ~ 2025.08.25
+
+### 왜 MOMO인가?
+
+새로운 사람들과 만나고 싶지만 어디서 어떻게 시작해야 할지 모르는 분들을 위한 **지역 기반 모임 플랫폼**입니다.
+
+### 핵심 가치
+
+- **쉬운 모임 생성**: 몇 번의 클릭으로 모임 개설
+- **안전한 만남**: 신뢰도 시스템으로 검증된 사용자
+- **편리한 결제**: 토스페이먼츠 연동으로 간편 정산
 
 ---
 
@@ -102,13 +201,25 @@
 
 ## 4. 아키텍처
 
-<!-- 아키텍처 내용 -->
+![project_architecture.png](project_architecture.png)
+
+[![AWS 월간 비용 예상](https://img.shields.io/badge/AWS_월간_비용_예상-374151?style=for-the-badge&logo=amazonaws&logoColor=white)](https://www.notion.so/teamsparta/AWS-2542dc3ef514806bb743d46620006130)
 
 ---
 
-## 5. 프로젝트 설계
+# 5. 프로젝트 설계
 
-<!-- 프로젝트 설계 내용 -->
+## 5.1 와이어프레임
+
+<!-- 와이어프레임 이미지 및 설명 -->
+
+## 5.2 ERD
+
+<!-- ERD 이미지 및 설명 -->
+
+## 5.3 패키지 구조
+
+<!-- 패키지 구조 설명 -->
 
 ---
 
@@ -120,13 +231,35 @@
 
 ## 7. 도메인 별 문서
 
-<!-- 도메인 별 문서 내용 -->
+[![인증/인가 인수인계 문서](https://img.shields.io/badge/인증/인가_인수인계_문서-F59E0B?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-2542dc3ef51480d1a123c806a4ffd440)
+
+[![User 도메인 인수인계 문서](https://img.shields.io/badge/User_도메인_인수인계_문서-000000?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-User-2542dc3ef514807b8a7bff4e6f1e4f27)
+
+[![Meeting 도메인 인수인계 문서](https://img.shields.io/badge/Meeting_도메인_인수인계_문서-4285F4?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Meeting-2542dc3ef514809d96bcd5d315f821cb)
+
+[![Category&Participant 인수인계 문서](https://img.shields.io/badge/Category&Participant_인수인계_문서-10B981?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Category-Participant-2542dc3ef514805998c1f4ea6427d1ad)
+
+[![Message Hub 인수인계 문서](https://img.shields.io/badge/Message_Hub_인수인계_문서-8B5CF6?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Message-Hub-2542dc3ef51480b088a4f5de53ab7d57)
+
+[![Notification 인수인계 문서](https://img.shields.io/badge/Notification_인수인계_문서-EF4444?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Notification-2542dc3ef5148082a188ebd5ae0096b2)
 
 ---
 
 ## 8. 기술적 의사결정
 
-<!-- 기술적 의사결정 내용 -->
+[![Redis 선택 이유](https://img.shields.io/badge/Redis_선택_이유-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://www.notion.so/teamsparta/Redis-2542dc3ef51480b793b9fec7f7eaa502)
+
+[![MySQL 선택 이유](https://img.shields.io/badge/MySQL_선택_이유-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.notion.so/teamsparta/MySQL-2542dc3ef51480a2b842c824991e8e7b)
+
+[![Flyway 도입 배경](https://img.shields.io/badge/Flyway_도입_배경-CC0200?style=for-the-badge&logo=flyway&logoColor=white)](https://www.notion.so/teamsparta/Flyway-2542dc3ef514804ebabcfbdda7e5cb1b)
+
+[![모니터링 시스템 구축](https://img.shields.io/badge/모니터링_시스템_구축-E6522C?style=for-the-badge&logo=prometheus&logoColor=white)](https://www.notion.so/teamsparta/2542dc3ef51480a1b63af542db36584d)
+
+[![WebClient 도입 이유](https://img.shields.io/badge/WebClient_도입_이유-6DB33F?style=for-the-badge&logo=spring&logoColor=white)](https://www.notion.so/teamsparta/WebClient-2542dc3ef514801488f1d06351b79436)
+
+[![FCM + SSE 선택 배경](https://img.shields.io/badge/FCM_+_SSE_선택_배경-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://www.notion.so/teamsparta/FCM-SSE-2542dc3ef5148089a524e0231f86c2c1)
+
+[![RabbitMQ 도입 배경](https://img.shields.io/badge/RabbitMQ_도입_배경-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)](https://www.notion.so/teamsparta/RabbitMQ-2542dc3ef51480d1957ddfbb4fd5bfc4)
 
 ---
 
