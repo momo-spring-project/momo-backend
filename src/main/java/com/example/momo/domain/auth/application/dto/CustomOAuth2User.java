@@ -7,6 +7,8 @@ import java.util.Map;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
+import com.example.momo.global.common.dto.AuthUser;
+
 public class CustomOAuth2User extends AuthUser implements OAuth2User {
 	private final OAuth2Response oAuth2Response;
 

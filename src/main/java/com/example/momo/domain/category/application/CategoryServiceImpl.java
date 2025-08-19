@@ -10,6 +10,7 @@ import com.example.momo.domain.category.application.dto.CategoryCreateRequestDto
 import com.example.momo.domain.category.application.dto.CategoryResponseDto;
 import com.example.momo.domain.category.application.dto.CategoryUpdateRequestDto;
 import com.example.momo.domain.category.domain.Category;
+import com.example.momo.domain.category.domain.CategoryService;
 import com.example.momo.domain.category.exception.CategoryException;
 import com.example.momo.domain.category.exception.CategoryExceptionCode;
 import com.example.momo.domain.category.infra.CategoryRepository;

@@ -1,8 +1,6 @@
-package com.example.momo.domain.user.application;
+package com.example.momo.domain.user.domain;
 
 import java.util.List;
-
-import com.example.momo.domain.user.domain.UserOutboxEvent;
 
 /**
  * 사용자 아웃박스 이벤트 서비스 인터페이스

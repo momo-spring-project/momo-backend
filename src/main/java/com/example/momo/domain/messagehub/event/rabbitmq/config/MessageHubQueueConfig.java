@@ -21,8 +21,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MessageHubQueueConfig {
 
-	public static final int HUB_QUEUE_TTL_MS = 600_000;
-
 	//Queue
 
 	@Bean
@@ -30,7 +28,6 @@ public class MessageHubQueueConfig {
 		return QueueBuilder.durable(MESSAGE_HUB_QUEUE)
 			.withArgument("x-dead-letter-exchange", DLX_MESSAGE_HUB)
 			.withArgument("x-dead-letter-routing-key", MESSAGE_HUB_ASSEMBLE_DLQ_KEY)
-			.withArgument("x-message-ttl", HUB_QUEUE_TTL_MS)
 			.build();
 	}
 
@@ -54,7 +51,7 @@ public class MessageHubQueueConfig {
 	@Bean
 	public Binding hubMainBinding() {
 		return BindingBuilder.bind(hubQueue())
-			.to(new DirectExchange(MESSAGE_HUB_EVENTS))
+			.to(new TopicExchange(MESSAGE_HUB_EVENTS))
 			.with(MESSAGE_HUB_ASSEMBLE_KEY); // 재유입 라우팅키
 	}
 

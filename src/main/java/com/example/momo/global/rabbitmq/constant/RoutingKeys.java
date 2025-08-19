@@ -16,10 +16,10 @@ public class RoutingKeys {
 	public static final String NOTIFICATION_SENT_RETRY_KEY = "notification.sent.retry.key";
 
 	// Meeting
-	public static final String PARTICIPANT_REGISTER_KEY = "participant.registered";
-	public static final String PARTICIPANT_JOIN_KEY = "participant.joined";
-	public static final String PARTICIPANT_CANCEL_KEY = "participant.canceled";
-	public static final String PARTICIPANT_DLQ_KEY = "participant.canceled";
+	public static final String PARTICIPANT_REGISTER_KEY = "participant.registered.key";
+	public static final String PARTICIPANT_JOIN_KEY = "participant.joined.key";
+	public static final String PARTICIPANT_CANCEL_KEY = "participant.canceled.key";
+	public static final String PARTICIPANT_DLQ_KEY = "participant.dlq";
 
 	public static final String MEETING_CREATE_KEY = "meeting.created.key";
 	public static final String MEETING_UPDATE_KEY = "meeting.updated.key";
@@ -30,5 +30,4 @@ public class RoutingKeys {
 	public static final String PAYMENT_FAILED_KEY = "payment.failed.key";
 	public static final String PAYMENT_REFUNDED_KEY = "payment.refunded.key";
 	public static final String PAYMENT_DLQ = "payment.dlq";
-
 }

@@ -1,4 +1,4 @@
-package com.example.momo.domain.auth.application.dto;
+package com.example.momo.global.common.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

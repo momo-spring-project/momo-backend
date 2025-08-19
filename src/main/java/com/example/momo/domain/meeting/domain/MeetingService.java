@@ -1,4 +1,4 @@
-package com.example.momo.domain.meeting.application;
+package com.example.momo.domain.meeting.domain;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,9 +10,6 @@ import com.example.momo.domain.meeting.application.dto.response.MeetingResponseD
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingDocument;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 
 public interface MeetingService {

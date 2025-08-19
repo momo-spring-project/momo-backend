@@ -1,26 +1,24 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
-import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
-
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
-import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
-
-import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -31,7 +29,6 @@ public class MeetingProducer {
 
 	@Qualifier("participantRabbitTemplate")
 	private final RabbitTemplate meetingRabbitTemplate;
-	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 
 	/**
 	 * 모임 생성 메세지 발행 메서드 MeetingAlarmMessages.Create event
@@ -90,7 +87,6 @@ public class MeetingProducer {
 	}
 
 	// 일반 발행
-	@Transactional
 	public void publishParticipantEvents(MeetingEvents.MeetingEvent event, String eventType,
 		String routingKey) {
 		try {
@@ -111,8 +107,7 @@ public class MeetingProducer {
 
 	// 메세지 발행
 	@Transactional
-	public void publishWithConfirmParticipantEvents(MeetingEvents.MeetingEvent event, String eventType,
-		String routingKey) {
+	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 
 		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
@@ -125,8 +120,6 @@ public class MeetingProducer {
 		});
 
 		try {
-			EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
-
 			meetingRabbitTemplate.convertAndSend(
 				PARTICIPANT_EVENTS,
 				routingKey,
@@ -134,12 +127,9 @@ public class MeetingProducer {
 				correlationData
 			);
 			future.get(2, TimeUnit.SECONDS);
-
-			MeetingPaymentOutbox outbox = meetingPaymentOutboxService.getMeetingPaymentOutbox(wrapper.uuId());
-			meetingPaymentOutboxService.markEventAsPublished(outbox.getEventUuid());
-			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", event);
+			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", wrapper);
 		} catch (Exception e) {
-			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", event, e);
+			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
 			throw new RuntimeException(e);
 		}
 	}

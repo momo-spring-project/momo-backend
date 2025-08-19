@@ -1,29 +1,31 @@
 package com.example.momo.domain.meeting.event.rabbitmq.consumer;
 
-import com.example.momo.domain.meeting.application.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.application.MeetingService;
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
-import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
-import com.example.momo.global.webclient.user.UserClient;
-import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
+import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
+import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+
+import java.io.IOException;
+
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingService;
+import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
+import com.example.momo.global.rabbitmq.dto.payment.PaymentEventMessages;
+import com.example.momo.global.webclient.user.UserClient;
+import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.Channel;
 
-import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
-import static com.example.momo.global.rabbitmq.constant.QueueNames.*;
-import static com.example.momo.global.rabbitmq.constant.RoutingKeys.PARTICIPANT_JOIN_KEY;
-
-// Dto 수정해야함
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -36,14 +38,6 @@ public class MeetingEventConsumer {
 	private final ObjectMapper objectMapper;
 	private final MeetingPaymentOutboxService meetingPaymentOutboxService;
 
-	/**
-	 * 이벤트 수신 과정
-	 * 1. EventWrapper<?> event 수신
-	 * 2. type(EventTypeNames) 확인
-	 * 3. JsonNode 로 변환
-	 * 4. json.data 의 필드값으로 조회해서 값 사용
-	 */
-
 	// 결제 완료 -> 참가자 추가
 	@Transactional
 	@RabbitListener(queues = PARTICIPANT_PAYMENT_SUCCEED, containerFactory = "participantListenerContainerFactory")
@@ -55,15 +49,22 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
-		log.info("[결제 완료 이벤트 수신] message: {}", event);
 
 		try {
+			meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
+			log.info("[결제 완료 이벤트 수신] message: {}", event);
+
 			processPaymentSuccessEvent(event);
 			channel.basicAck(deliveryTag, false);
 			log.info("[결제 완료 이벤트 처리 완료] event: {}", event);
 		} catch (Exception e) {
 			log.error("[결제 완료 이벤트 처리 실패] message: {}", event, e);
+			try {
+				channel.basicNack(deliveryTag, false, false);
+			} catch (IOException ex) {
+				log.error("[Nack 처리 실패] message: {}", ex.getMessage(), ex);
+				throw new RuntimeException(ex);
+			}
 			throw new RuntimeException(e);
 		}
 	}
@@ -79,26 +80,28 @@ public class MeetingEventConsumer {
 		}
 
 		long deliveryTag = message.getMessageProperties().getDeliveryTag();
-		meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
-		log.info("[결제 실패 이벤트 수신] event: {}", event);
 
 		try {
+			meetingPaymentOutboxService.markEventAsProcessed(event.uuId());
+			log.info("[결제 실패 이벤트 수신] event: {}", event);
+
 			processPaymentFailureEvent(event);
 			channel.basicAck(deliveryTag, false);
 			log.info("[결제 실패 이벤트 처리 완료] message: {}", event);
 		} catch (Exception e) {
 			log.error("[결제 실패 이벤트 처리 실패] event: {}", event, e);
+			try {
+				channel.basicNack(deliveryTag, false, false);
+			} catch (IOException ex) {
+				log.error("[Nack 처리 실패] message: {}", ex.getMessage(), ex);
+				throw new RuntimeException(ex);
+			}
 			throw new RuntimeException(e);
 		}
 	}
 
-	/**
-	 * 현재 DLQ 들어오는 목록
-	 * 큐: PARTICIPANT_PAYMENT_SUCCESS, PARTICIPANT_PAYMENT_FAIL
-	 * 작동하는지 확인 불가
-	 */
 	@Transactional
-	@RabbitListener(queues = DLQ_PARTICIPANT)
+	@RabbitListener(queues = PARTICIPANT_DLQ)
 	public void handleParticipantDlq(EventWrapper<?> event) {
 
 		if (event.type() == null) {
@@ -121,7 +124,8 @@ public class MeetingEventConsumer {
 
 	protected void processPaymentSuccessEvent(EventWrapper<?> event) {
 
-		PaymentEventMessages.Completed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Completed.class);
+		PaymentEventMessages.Completed message = objectMapper.convertValue(event.data(),
+			PaymentEventMessages.Completed.class);
 
 		Long meetingId = message.meetingId();
 		Long userId = message.userId();
@@ -144,13 +148,15 @@ public class MeetingEventConsumer {
 
 	protected void processPaymentFailureEvent(EventWrapper<?> event) {
 
-		PaymentEventMessages.Failed message = objectMapper.convertValue(event.data(), PaymentEventMessages.Failed.class);
+		PaymentEventMessages.Failed message = objectMapper.convertValue(event.data(),
+			PaymentEventMessages.Failed.class);
 
 		Long meetingId = message.meetingId();
 
 		try {
 			Meeting meeting = meetingService.getMeetingById(meetingId);
-			MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(meetingId, message.userId());
+			MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(meetingId,
+				message.userId());
 			meeting.removeMeetingParticipant(participant);
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);

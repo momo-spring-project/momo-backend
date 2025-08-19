@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
 import com.example.momo.domain.notification.application.NotificationService;
 import com.example.momo.domain.notification.application.dto.NotificationRequestDto;
 import com.example.momo.domain.notification.application.dto.NotificationResponseDto;
 import com.example.momo.global.common.dto.ApiResponse;
+import com.example.momo.global.common.dto.AuthUser;
 
 import lombok.RequiredArgsConstructor;
 
@@ -38,5 +38,5 @@ public class NotificationController {
 		@RequestBody NotificationRequestDto dto) {
 		return ResponseEntity.ok(ApiResponse.success("알림 정보 생성", notificationService.createNotification(dto)));
 	}
-	
+
 }

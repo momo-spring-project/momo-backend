@@ -8,9 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
-import com.example.momo.domain.auth.application.dto.AuthUser;
 import com.example.momo.domain.notification.application.sse.SseService;
 import com.example.momo.domain.notification.application.sse.dto.SseMessageDto;
+import com.example.momo.global.common.dto.AuthUser;
 
 import lombok.RequiredArgsConstructor;
 

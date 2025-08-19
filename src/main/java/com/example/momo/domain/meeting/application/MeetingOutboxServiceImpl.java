@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
 import com.example.momo.domain.meeting.domain.MeetingOutboxRepository;
+import com.example.momo.domain.meeting.domain.MeetingOutboxService;
 
 import lombok.RequiredArgsConstructor;
 

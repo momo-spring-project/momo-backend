@@ -1,4 +1,4 @@
-package com.example.momo.domain.auth.event.consumer;
+package com.example.momo.domain.auth.event.rabbitmq.consumer;
 
 import org.springframework.amqp.AmqpRejectAndDontRequeueException;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
@@ -11,7 +11,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.momo.domain.auth.event.config.AuthRabbitMQConfig;
+import com.example.momo.domain.auth.event.rabbitmq.config.AuthRabbitMQConfig;
 import com.example.momo.domain.auth.infra.UserSocialRepository;
 import com.example.momo.domain.auth.slack.SlackNotifier;
 import com.example.momo.global.rabbitmq.dto.User.UserEventMessage;

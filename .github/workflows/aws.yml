@@ -6,12 +6,12 @@ on:
 
 # 환경 변수 설정 - 우리 프로젝트에 맞게 설정됨
 env:
-  AWS_REGION: ap-northeast-2    # 서울 리전
-  ECR_REPOSITORY: momo          # ECR 리포지토리 이름
-  ECS_SERVICE: momo-service     # ECS 서비스 이름
-  ECS_CLUSTER: momo-cluster     # ECS 클러스터 이름
-  ECS_TASK_DEFINITION: momo-task # Task Definition 이름
-  CONTAINER_NAME: momo          # 컨테이너 이름
+  AWS_REGION: ap-northeast-2                   # 서울 리전
+  ECR_REPOSITORY: momo                         # ECR 리포지토리 이름
+  ECS_SERVICE: momo-task-service               # ECS 서비스 이름
+  ECS_CLUSTER: momo-cluster                    # ECS 클러스터 이름
+  ECS_TASK_DEFINITION: momo-task               # Task Definition 이름
+  CONTAINER_NAME: momo                         # 컨테이너 이름
 
 permissions:
   contents: read
@@ -43,27 +43,7 @@ jobs:
         # gradlew 파일에 실행 권한 부여 (Linux 환경)
 
       # ===========================================
-      # 2. Flyway DB 마이그레이션 설정
-      # ===========================================
-
-      - name: Create gradle.properties for Flyway
-        run: |
-          echo "flyway.url=${{ secrets.FLYWAY_URL }}" >> gradle.properties
-          echo "flyway.user=${{ secrets.FLYWAY_USER }}" >> gradle.properties  
-          echo "flyway.password=${{ secrets.FLYWAY_PASSWORD }}" >> gradle.properties
-        # Flyway DB 마이그레이션용 환경변수 설정
-        # GitHub Secrets에서 DB 접속 정보를 가져와서 gradle.properties 생성
-
-      # ===========================================
-      # 3. Spring Boot 애플리케이션 빌드
-      # ===========================================
-
-      - name: Build with Gradle
-        run: ./gradlew clean build -x test
-        # Spring Boot JAR 파일 생성 (테스트는 제외하여 빌드 시간 단축)
-
-      # ===========================================
-      # 4. AWS 인증 및 ECR 로그인
+      # 2. AWS 인증 설정 (Bastion 접근을 위해 먼저 설정)
       # ===========================================
 
       - name: Configure AWS credentials
@@ -72,17 +52,78 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-        # GitHub Secrets에 저장된 AWS 자격증명으로 AWS CLI 설정
+
+      # ===========================================
+      # 3. Bastion을 통한 SSH 터널링 설정
+      # ===========================================
+
+      - name: Setup SSH key for Bastion
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.BASTION_SSH_PRIVATE_KEY }}" > ~/.ssh/bastion_key
+          chmod 600 ~/.ssh/bastion_key
+          
+          # SSH 설정 파일 생성
+          cat >> ~/.ssh/config << EOF
+          Host bastion
+            HostName ${{ secrets.BASTION_HOST }}
+            User ${{ secrets.BASTION_USER }}
+            IdentityFile ~/.ssh/bastion_key
+            StrictHostKeyChecking no
+          EOF
+
+      - name: Setup SSH tunnel to database
+        run: |
+          # 백그라운드에서 SSH 터널 실행
+          ssh -f -N -L 3307:${{ secrets.DB_PRIVATE_HOST }}:3306 bastion
+          
+          # 터널이 준비될 때까지 잠시 대기
+          sleep 10
+          
+          # 터널 연결 확인
+          netstat -tulnp | grep 3307
+
+      # ===========================================
+      # 4. Flyway DB 마이그레이션 설정 (로컬 터널 사용)
+      # ===========================================
+
+      - name: Create gradle.properties for Flyway (via SSH tunnel)
+        run: |
+          echo "flyway.url=jdbc:mysql://localhost:3307/momo_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul" >> gradle.properties
+          echo "flyway.user=${{ secrets.FLYWAY_USER }}" >> gradle.properties  
+          echo "flyway.password=${{ secrets.FLYWAY_PASSWORD }}" >> gradle.properties
+        # SSH 터널을 통해 localhost:3307로 DB 접근
+
+      # 명시적 Flyway 마이그레이션 실행
+      - name: Run Flyway Migration (via SSH tunnel)
+        run: |
+          echo "🔄 Starting Flyway migration via SSH tunnel..."
+          ./gradlew flywayMigrate
+          echo "✅ Flyway migration completed successfully!"
+
+      # SSH 터널 정리 (선택사항)
+      - name: Cleanup SSH tunnel
+        if: always()
+        run: |
+          # SSH 터널 프로세스 종료
+          pkill -f "ssh.*3307" || true
+
+      # ===========================================
+      # 5. Spring Boot 애플리케이션 빌드
+      # ===========================================
+
+      - name: Build with Gradle
+        run: ./gradlew clean build -x test
+        # Spring Boot JAR 파일 생성 (테스트는 제외하여 빌드 시간 단축)
+
+      # ===========================================
+      # 6. ECR 로그인 및 Docker 이미지 빌드
+      # ===========================================
 
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
         # ECR(Elastic Container Registry)에 Docker 로그인
-        # 이후 docker push 명령어 사용 가능
-
-      # ===========================================
-      # 5. Docker 이미지 빌드 및 ECR 푸시
-      # ===========================================
 
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
@@ -102,7 +143,7 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       # ===========================================
-      # 6. ECS Task Definition 업데이트
+      # 7. ECS Task Definition 업데이트
       # ===========================================
 
       - name: Download current task definition
@@ -114,7 +155,7 @@ jobs:
             --output json > task-definition.json
           
           # ECS 등록 시 불필요한 필드들 제거 (오류 방지)
-          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy)' \
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .placementConstraints, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
             task-definition.json > task-definition-clean.json
           mv task-definition-clean.json task-definition.json
 
@@ -125,7 +166,6 @@ jobs:
           task-definition: task-definition.json
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.build-image.outputs.image }}
-          # 새로 빌드된 이미지로 Task Definition 업데이트
           environment-variables: |
             DB_URL=${{ secrets.DB_URL }}
             DB_USERNAME=${{ secrets.DB_USERNAME }}
@@ -133,6 +173,10 @@ jobs:
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             REDIS_HOST=${{ secrets.REDIS_HOST }}
             REDIS_PORT=${{ secrets.REDIS_PORT }}
+            ELASTICSEARCH_HOST=${{ secrets.ELASTICSEARCH_HOST }}
+            ELASTICSEARCH_PORT=${{ secrets.ELASTICSEARCH_PORT }}
+            RABBITMQ_HOST=${{ secrets.RABBITMQ_HOST }}
+            RABBITMQ_PORT=${{ secrets.RABBITMQ_PORT }}
             RABBITMQ_USER=${{ secrets.RABBITMQ_USER }}
             RABBITMQ_PASS=${{ secrets.RABBITMQ_PASS }}
             NAVER_CLIENT_ID=${{ secrets.NAVER_CLIENT_ID }}
@@ -143,13 +187,14 @@ jobs:
             TOSS_CLIENT_KEY=${{ secrets.TOSS_CLIENT_KEY }}
             TOSS_BASE_URL=${{ secrets.TOSS_BASE_URL }}
             WEBCLIENT_SECRET_KEY=${{ secrets.WEBCLIENT_SECRET_KEY }}
+            WEBCLIENT_BASE_URL=${{ secrets.WEBCLIENT_BASE_URL }}
             SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
+            FIREBASE_CREDENTIALS=${{ secrets.FIREBASE_CREDENTIALS }}
+            OTEL_COLLECTOR_ENDPOINT=${{ secrets.OTEL_COLLECTOR_ENDPOINT }}
             SPRING_PROFILES_ACTIVE=prod
-          # GitHub Secrets에서 모든 환경변수를 가져와서 컨테이너에 주입
-          # 이렇게 하면 application.yml의 ${변수}들이 모두 해결됨
 
       # ===========================================
-      # 7. ECS 서비스 배포 및 완료 확인
+      # 8. ECS 서비스 배포 및 완료 확인
       # ===========================================
 
       - name: Deploy Amazon ECS task definition
@@ -159,8 +204,6 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
-        # 새 Task Definition으로 ECS 서비스 업데이트
-        # wait-for-service-stability: true로 배포 완료까지 대기
 
       - name: Verify deployment
         run: |
@@ -173,4 +216,3 @@ jobs:
           echo "- ECS 콘솔에서 서비스 상태 확인"
           echo "- 로드 밸런서 DNS로 접속 테스트"
           echo "- /actuator/health 엔드포인트로 헬스체크"
-        # 배포 성공 메시지 및 다음 단계 안내
