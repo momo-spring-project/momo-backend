@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모임 플랫폼 와이어프레임</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .wireframe-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .wireframe-header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .wireframe-header p {
+            color: #7f8c8d;
+        }
+
+        .screen-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .screen {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e0e0e0;
+        }
+
+        .screen h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .mockup {
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 15px;
+            background: #fafafa;
+            margin-bottom: 15px;
+        }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .nav-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-icon {
+            width: 20px;
+            height: 20px;
+            background: #bdc3c7;
+            border-radius: 3px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .filter-btn {
+            padding: 8px 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .category-tab {
+            padding: 6px 12px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .category-tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .meeting-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+        }
+
+        .meeting-card h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .meeting-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+        }
+
+        .meeting-location {
+            font-size: 12px;
+            color: #e74c3c;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .profile-image {
+            width: 60px;
+            height: 60px;
+            background: #bdc3c7;
+            border-radius: 50%;
+        }
+
+        .profile-info h4 {
+            margin-bottom: 5px;
+        }
+
+        .user-temperature {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .user-rating {
+            color: #f39c12;
+        }
+
+        .participant-list {
+            margin-top: 15px;
+        }
+
+        .participant-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .participant-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .participant-avatar {
+            width: 30px;
+            height: 30px;
+            background: #bdc3c7;
+            border-radius: 50%;
+        }
+
+        .payment-info {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .notification-icon {
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 50%;
+        }
+
+        .notification-text {
+            flex: 1;
+        }
+
+        .notification-time {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .features-list {
+            margin-top: 15px;
+        }
+
+        .features-list li {
+            padding: 5px 0;
+            color: #7f8c8d;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tech-badge {
+            background: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="wireframe-header">
+        <h1>🤝 모임 플랫폼 와이어프레임</h1>
+        <p>문토, 당근 모임 스타일의 지역 기반 모임 플랫폼</p>
+    </div>
+
+    <div class="screen-grid">
+        <!-- 메인 화면 -->
+        <div class="screen">
+            <h3>📱 메인 화면 (모임 목록)</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div class="logo">모임플랫폼</div>
+                    <div class="nav-icons">
+                        <div class="nav-icon" title="검색"></div>
+                        <div class="nav-icon" title="알림"></div>
+                        <div class="nav-icon" title="프로필"></div>
+                    </div>
+                </div>
+
+                <div class="search-bar">
+                    <input type="text" class="search-input" placeholder="관심 있는 모임을 검색해보세요">
+                    <button class="filter-btn">필터</button>
+                </div>
+
+                <div class="category-tabs">
+                    <div class="category-tab active">전체</div>
+                    <div class="category-tab">운동</div>
+                    <div class="category-tab">게임</div>
+                    <div class="category-tab">스터디</div>
+                    <div class="category-tab">문화</div>
+                </div>
+
+                <div class="meeting-card">
+                    <h4>🏃‍♂️ 한강 러닝 모임</h4>
+                    <div class="meeting-meta">
+                        <span>3/8명</span>
+                        <span>12월 25일 19:00</span>
+                    </div>
+                    <div class="meeting-location">📍 여의도 한강공원</div>
+                </div>
+
+                <div class="meeting-card">
+                    <h4>🎮 보드게임 카페 모임</h4>
+                    <div class="meeting-meta">
+                        <span>5/6명</span>
+                        <span>12월 26일 14:00</span>
+                    </div>
+                    <div class="meeting-location">📍 강남역 근처</div>
+                </div>
+            </div>
+
+            <div class="features-list">
+                <strong>주요 기능:</strong>
+                <ul>
+                    <li>위치 기반 모임 추천</li>
+                    <li>카테고리별 필터링</li>
+                    <li>실시간 참가자 현황</li>
+                    <li>검색 및 필터 기능</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 모임 상세 화면 -->
+        <div class="screen">
+            <h3>📋 모임 상세 화면</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div>← 뒤로가기</div>
+                    <div>모임 상세</div>
+                    <div class="nav-icon" title="공유"></div>
+                </div>
+
+                <h4>🏃‍♂️ 한강 러닝 모임</h4>
+                <div class="meeting-meta">
+                    <span>참가비: 1,000원</span>
+                    <span>현재 3/8명</span>
+                </div>
+
+                <div class="profile-section">
+                    <div class="profile-image"></div>
+                    <div class="profile-info">
+                        <h4>모임장 김러너</h4>
+                        <div class="user-temperature">온도 36.8°C</div>
+                        <div class="user-rating">⭐ 4.8 (25회)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>📅 일정</label>
+                    <div>2024년 12월 25일 (수) 19:00</div>
+                </div>
+
+                <div class="form-group">
+                    <label>📍 장소</label>
+                    <div>여의도 한강공원 (지도 보기)</div>
+                </div>
+
+                <div class="form-group">
+                    <label>📝 모임 설명</label>
+                    <div>연말 스트레스 해소를 위한 가벼운 런닝 모임입니다. 초보자도 환영해요!</div>
+                </div>
+
+                <div class="participant-list">
+                    <strong>참가자 목록</strong>
+                    <div class="participant-item">
+                        <div class="participant-info">
+                            <div class="participant-avatar"></div>
+                            <span>김러너 (모임장)</span>
+                        </div>
+                        <span>36.8°C</span>
+                    </div>
+                    <div class="participant-item">
+                        <div class="participant-info">
+                            <div class="participant-avatar"></div>
+                            <span>이달림</span>
+                        </div>
+                        <span>37.2°C</span>
+                    </div>
+                </div>
+
+                <button class="btn-primary">참가 신청하기</button>
+            </div>
+        </div>
+
+        <!-- 모임 생성 화면 -->
+        <div class="screen">
+            <h3>✏️ 모임 생성 화면</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div>← 취소</div>
+                    <div>모임 만들기</div>
+                    <div>완료</div>
+                </div>
+
+                <div class="form-group">
+                    <label>모임 제목</label>
+                    <input type="text" class="form-input" placeholder="어떤 모임인지 알려주세요">
+                </div>
+
+                <div class="form-group">
+                    <label>카테고리</label>
+                    <select class="form-select">
+                        <option>운동</option>
+                        <option>게임</option>
+                        <option>스터디</option>
+                        <option>문화</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>일정</label>
+                    <input type="datetime-local" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label>장소</label>
+                    <input type="text" class="form-input" placeholder="모임 장소를 입력해주세요">
+                    <button class="btn-secondary">지도에서 선택</button>
+                </div>
+
+                <div class="form-group">
+                    <label>모집 인원</label>
+                    <select class="form-select">
+                        <option>2명</option>
+                        <option>4명</option>
+                        <option>6명</option>
+                        <option>8명</option>
+                        <option>10명</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>참가비</label>
+                    <input type="number" class="form-input" placeholder="0">
+                    <small>참가비는 모임 후 정산됩니다</small>
+                </div>
+
+                <div class="form-group">
+                    <label>모임 설명</label>
+                    <textarea class="textarea" placeholder="모임에 대해 자세히 설명해주세요"></textarea>
+                </div>
+
+                <button class="btn-primary">모임 만들기</button>
+            </div>
+        </div>
+
+        <!-- 결제 화면 -->
+        <div class="screen">
+            <h3>💳 결제 화면</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div>← 뒤로가기</div>
+                    <div>결제하기</div>
+                    <div></div>
+                </div>
+
+                <div class="payment-info">
+                    <h4>🏃‍♂️ 한강 러닝 모임</h4>
+                    <div>12월 25일 19:00 • 여의도 한강공원</div>
+                </div>
+
+                <div class="form-group">
+                    <label>결제 금액</label>
+                    <div style="font-size: 24px; font-weight: bold; color: #e74c3c;">1,000원</div>
+                </div>
+
+                <div class="form-group">
+                    <label>결제 방법</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-secondary">카드</button>
+                        <button class="btn-secondary">계좌이체</button>
+                        <button class="btn-secondary">카카오페이</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>환불 정책</label>
+                    <div style="font-size: 12px; color: #7f8c8d;">
+                        • 모임 3시간 전까지: 100% 환불<br>
+                        • 모임 1시간 전까지: 50% 환불<br>
+                        • 모임 시작 후: 환불 불가
+                    </div>
+                </div>
+
+                <button class="btn-primary">1,000원 결제하기</button>
+            </div>
+        </div>
+
+        <!-- 프로필 화면 -->
+        <div class="screen">
+            <h3>👤 프로필 화면</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div>프로필</div>
+                    <div class="nav-icon" title="설정"></div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="profile-image"></div>
+                    <div class="profile-info">
+                        <h4>김모임</h4>
+                        <div class="user-temperature">온도 36.8°C</div>
+                        <div class="user-rating">⭐ 4.8 (참여 25회)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>관심 분야</label>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <span class="category-tab active">운동</span>
+                        <span class="category-tab active">게임</span>
+                        <span class="category-tab">스터디</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>활동 지역</label>
+                    <div>강남구, 서초구</div>
+                </div>
+
+                <div class="form-group">
+                    <label>참여한 모임</label>
+                    <div class="meeting-card">
+                        <h4>🏃‍♂️ 한강 러닝 모임</h4>
+                        <div class="meeting-meta">
+                            <span>완료</span>
+                            <span>12월 20일</span>
+                        </div>
+                    </div>
+                    <div class="meeting-card">
+                        <h4>🎮 보드게임 모임</h4>
+                        <div class="meeting-meta">
+                            <span>완료</span>
+                            <span>12월 18일</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 화면 -->
+        <div class="screen">
+            <h3>🔔 알림 화면</h3>
+            <div class="mockup">
+                <div class="header-bar">
+                    <div>알림</div>
+                    <div>모두 읽음</div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon"></div>
+                    <div class="notification-text">
+                        <strong>모임 승인</strong><br>
+                        '한강 러닝 모임' 참가가 승인되었습니다.
+                    </div>
+                    <div class="notification-time">1시간 전</div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon"></div>
+                    <div class="notification-text">
+                        <strong>모임 임박</strong><br>
+                        '보드게임 모임'이 30분 후 시작됩니다.
+                    </div>
+                    <div class="notification-time">30분 전</div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon"></div>
+                    <div class="notification-text">
+                        <strong>새로운 모임</strong><br>
+                        관심 지역에 새로운 런닝 모임이 등록되었습니다.
+                    </div>
+                    <div class="notification-time">2시간 전</div>
+                </div>
+
+                <div class="notification-item">
+                    <div class="notification-icon"></div>
+                    <div class="notification-text">
+                        <strong>정산 완료</strong><br>
+                        '스터디 모임' 참가비 정산이 완료되었습니다.
+                    </div>
+                    <div class="notification-time">1일 전</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 기술 스택 및 모듈 구조 -->
+    <div class="screen" style="grid-column: 1 / -1;">
+        <h3>🛠️ 기술 스택 및 모듈 구조</h3>
+        <div class="mockup">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>주요 기술 스택</h4>
+                    <div class="tech-stack">
+                        <span class="tech-badge">Spring Boot</span>
+                        <span class="tech-badge">JWT</span>
+                        <span class="tech-badge">WebSocket</span>
+                        <span class="tech-badge">Kafka</span>
+                        <span class="tech-badge">Elasticsearch</span>
+                        <span class="tech-badge">PG 연동</span>
+                        <span class="tech-badge">Docker</span>
+                        <span class="tech-badge">NoSQL</span>
+                    </div>
+                </div>
+                <div>
+                    <h4>모듈 구조</h4>
+                    <div class="features-list">
+                        <ul>
+                            <li><strong>인증/사용자 모듈:</strong> 회원가입, 로그인, 프로필 관리</li>
+                            <li><strong>모임 핵심 모듈:</strong> 모임 CRUD, 참가자 관리</li>
+                            <li><strong>검색/필터 모듈:</strong> 위치 기반 검색, 카테고리 필터</li>
+                            <li><strong>알림/실시간 모듈:</strong> WebSocket 기반 실시간 알림</li>
+                            <li><strong>결제/정산 모듈:</strong> PG 연동, 참가비 관리</li>
+                            <li><strong>리뷰/통계 모듈:</strong> 사용자 평가, 온도 시스템</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
