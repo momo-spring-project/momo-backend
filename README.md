@@ -144,6 +144,17 @@
 
 [![로컬 환경 실행 가이드](https://img.shields.io/badge/로컬_환경_실행_가이드-4A90E2?style=for-the-badge&logo=rocket&logoColor=white)](https://www.notion.so/teamsparta/2552dc3ef5148006aaa9cb4e0cdd4214)
 
+## 개발 컨벤션
+
+[![GitHub 협업 규칙](https://img.shields.io/badge/GitHub_협업_규칙-181717?style=for-the-badge&logo=github&logoColor=white)](docs/conventions/github-rule.md)
+
+[![메서드 명명 규칙](https://img.shields.io/badge/메서드_명명_규칙-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](docs/conventions/method-naming.md)
+
+[![클래스 명명 규칙](https://img.shields.io/badge/클래스_명명_규칙-ED8B00?style=for-the-badge&logo=java&logoColor=white)](docs/conventions/class-naming.md)
+
+[![RabbitMQ 네이밍](https://img.shields.io/badge/RabbitMQ_네이밍-FF6600?style=for-the-badge&logo=rabbitmq&logoColor=white)](docs/conventions/rabbitmq-naming.md)
+
+
 ---
 
 # 3. 기술 스택
