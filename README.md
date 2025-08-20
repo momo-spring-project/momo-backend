@@ -140,6 +140,10 @@
 - **편리한 결제**: 토스페이먼츠 연동으로 간편 정산
 - **알림 시스템**: 관심 모임, 주변 모임 생성 등 다양한 알림을 통해 모임을 참석, 관리
 
+## 로컬 환경 실행 가이드
+
+[![로컬 환경 실행 가이드](https://img.shields.io/badge/로컬_환경_실행_가이드-4A90E2?style=for-the-badge&logo=rocket&logoColor=white)](https://www.notion.so/teamsparta/2552dc3ef5148006aaa9cb4e0cdd4214)
+
 ---
 
 # 3. 기술 스택
