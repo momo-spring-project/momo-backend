@@ -1,6 +1,8 @@
 # MOMO 프로젝트
 
+<p align="center">
 <img src="docs/image/momo_cover_image.png" width="300" alt="MOMO 커버 이미지">
+</p>
 
 ## 📋 목차
 
@@ -14,6 +16,7 @@
 8. [도메인 별 문서](#8-도메인-별-문서)
 9. [기술적 의사결정](#9-기술적-의사결정)
 10. [트러블 슈팅](#10-트러블-슈팅)
+11. [5분 기록보드](#11-5분-기록보드)
 
 ---
 
@@ -34,9 +37,9 @@
 
 <p align="center">
 <strong>차준호 (팀장)</strong>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <strong>김신영 (부팀장)</strong>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <strong>고동원 (팀원)</strong>
 </p>
 
@@ -44,7 +47,7 @@
 유저 도메인, 배포 인프라
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 결제 도메인
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 인증/인가, 배포 인프라
 </p>
 
@@ -83,15 +86,15 @@
 
 <p align="center">
 <strong>우지운 (팀원)</strong>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <strong>임호진 (팀원)</strong>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <strong>이의현 (팀원)</strong>
 </p>
 
 <p align="center">
 알림 도메인
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 모임 참가, 모니터링
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 모임 도메인
@@ -302,17 +305,23 @@
 
 ## 8. 도메인 별 문서
 
-[![인증/인가 문서](https://img.shields.io/badge/인증/인가_문서-F59E0B?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-2542dc3ef51480d1a123c806a4ffd440)
+[![User](https://img.shields.io/badge/User-도메인-blue?style=for-the-badge&logo=user)](https://www.notion.so/teamsparta/Momo-User-2542dc3ef514807b8a7bff4e6f1e4f27)
 
-[![User 도메인 문서](https://img.shields.io/badge/User_도메인_문서-000000?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-User-2542dc3ef514807b8a7bff4e6f1e4f27)
+[![Meeting](https://img.shields.io/badge/Meeting-도메인-green?style=for-the-badge&logo=calendar)](https://www.notion.so/teamsparta/Momo-Meeting-2542dc3ef514809d96bcd5d315f821cb)
 
-[![Meeting 도메인 문서](https://img.shields.io/badge/Meeting_도메인_문서-4285F4?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Meeting-2542dc3ef514809d96bcd5d315f821cb)
+[![Participant](https://img.shields.io/badge/Participant-도메인-orange?style=for-the-badge&logo=users)](https://www.notion.so/teamsparta/Momo-Participant-2542dc3ef514805998c1f4ea6427d1ad)
 
-[![Category&Participant 문서](https://img.shields.io/badge/Category&Participant_문서-10B981?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Category-Participant-2542dc3ef514805998c1f4ea6427d1ad)
+[![Category](https://img.shields.io/badge/Category-도메인-purple?style=for-the-badge&logo=tag)](https://www.notion.so/teamsparta/Momo-Category-2552dc3ef5148025acbddca784a4e4bc)
 
-[![Message Hub 문서](https://img.shields.io/badge/Message_Hub_문서-8B5CF6?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Message-Hub-2542dc3ef51480b088a4f5de53ab7d57)
+[![Auth](https://img.shields.io/badge/인증/인가-시스템-red?style=for-the-badge&logo=shield)](https://www.notion.so/teamsparta/Momo-2542dc3ef51480d1a123c806a4ffd440)
 
-[![Notification 문서](https://img.shields.io/badge/Notification_문서-EF4444?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Momo-Notification-2542dc3ef5148082a188ebd5ae0096b2)
+[![Message Hub](https://img.shields.io/badge/Message_Hub-시스템-yellow?style=for-the-badge&logo=message-circle)](https://www.notion.so/teamsparta/Momo-Message-Hub-2542dc3ef51480b088a4f5de53ab7d57)
+
+[![Notification](https://img.shields.io/badge/Notification-시스템-brightgreen?style=for-the-badge&logo=bell)](https://www.notion.so/teamsparta/Momo-Notification-2542dc3ef5148082a188ebd5ae0096b2)
+
+[![Payment](https://img.shields.io/badge/Payment-도메인-lightblue?style=for-the-badge&logo=credit-card)](https://www.notion.so/teamsparta/Momo-Payment-2542dc3ef51480b9ac2cd40e2139110e)
+
+[![Monitoring](https://img.shields.io/badge/Monitoring-도메인-gray?style=for-the-badge&logo=activity)](https://www.notion.so/teamsparta/Momo-Monitoring-2542dc3ef514808ab29be9120d3e1868)
 
 ---
 
@@ -344,4 +353,32 @@
 
 ## 10. 트러블 슈팅
 
-<!-- 트러블 슈팅 내용 -->
+[![결제 아웃박스 패턴](https://img.shields.io/badge/결제_시스템-아웃박스_패턴_구현-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef5148050b049ee3d55afb4b3)
+
+[![동시성 보장](https://img.shields.io/badge/결제_아웃박스-쿼리로_동시성_보장-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef514800d9847e8e374c86a39)
+
+[![공유 커널](https://img.shields.io/badge/Global_패키지-공유_커널_패턴-blue?style=for-the-badge)](https://www.notion.so/teamsparta/Global-2552dc3ef514802f8fa0e5ae4fee2584)
+
+[![JPA 문제해결](https://img.shields.io/badge/JPA-NULL_제약조건_위반_해결-blue?style=for-the-badge)](https://www.notion.so/teamsparta/JPA-NULL-2552dc3ef51480ce94c6c3d4842e4dfc)
+
+[![인프라 운영](https://img.shields.io/badge/프로덕션_배포-인프라_운영_교훈-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef5148053b6ccd2f4bdf9ee34)
+
+[![RabbitMQ](https://img.shields.io/badge/RabbitMQ-비동기_트랜잭셔널_메시징-blue?style=for-the-badge)](https://www.notion.so/teamsparta/RabbitMQ-2552dc3ef514806ca281cb35ed1880a4)
+
+[![WebClient](https://img.shields.io/badge/WebClient-내부_호출_문제_해결-blue?style=for-the-badge)](https://www.notion.so/teamsparta/Webclient-2552dc3ef51480eabd17f9860a244e9b)
+
+[![성능 개선](https://img.shields.io/badge/조회_성능-개선_지표-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef514801c88abf2d060b4cec1)
+
+[![부하 테스트](https://img.shields.io/badge/부하_테스트-병목_발생_문제-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef514800882b1ea8368847577)
+
+[![Redis 캐싱](https://img.shields.io/badge/Redis_캐싱-모임_조회_성능_개선-blue?style=for-the-badge)](https://www.notion.so/teamsparta/Redis-DB-2552dc3ef51480e1ae85db74f0d13167)
+
+[![Redis 트랜잭션](https://img.shields.io/badge/Redis-트랜잭션_처리-blue?style=for-the-badge)](https://www.notion.so/teamsparta/Redis-2552dc3ef514800a87e4f75986957bee)
+
+---
+
+## 11. 5분 기록보드
+
+[![5분 기록보드](https://img.shields.io/badge/5분_기록보드-회의_기록-green?style=for-the-badge)](https://www.notion.so/teamsparta/5-2552dc3ef51480d39471c574786b9b28)
+
+---
