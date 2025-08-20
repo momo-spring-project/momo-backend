@@ -278,11 +278,11 @@
 ---
 
 <p align="center">
-<img src="docs/image/participants_create_image.png" width="700" alt="ERD">
+<img src="docs/image/participants_create_image.png" width="800" alt="ERD">
 </p>
 
 <p align="center">
-<img src="docs/image/payment_create_image.png" width="700" alt="ERD">
+<img src="docs/image/payment_create_image.png" width="800" alt="ERD">
 </p>
 
 ---
@@ -301,7 +301,7 @@
 ---
 
 <p align="center">
-<img src="docs/image/meeting_create_image.png" width="700" alt="ERD">
+<img src="docs/image/meeting_create_image.png" width="800" alt="ERD">
 </p>
 
 ---
