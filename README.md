@@ -229,7 +229,9 @@
 
 ## 5.2 ERD
 
-![ERD](./docs/image/ERD.png)
+<p align="center">
+<img src="docs/image/ERD.png" width="600" alt="ERD">
+</p>
 
 ## 5.3 패키지 구조
 
@@ -269,8 +271,13 @@
 
 ---
 
-![모임 참가 흐름도](./docs/image/participants_create_image.png)
-![결제 상세 흐름도](./docs/image/payment_create_image.png)
+<p align="center">
+<img src="docs/image/participants_create_image.png" width="600" alt="ERD">
+</p>
+
+<p align="center">
+<img src="docs/image/payment_create_image.png" width="600" alt="ERD">
+</p>
 
 ---
 
@@ -287,7 +294,9 @@
 
 ---
 
-![모임 생성 흐름도](./docs/image/meeting_create_image.png)
+<p align="center">
+<img src="docs/image/meeting_create_image.png" width="600" alt="ERD">
+</p>
 
 ---
 
