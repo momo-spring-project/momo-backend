@@ -4,7 +4,7 @@
 <img src="docs/image/momo_cover_image.png" width="300" alt="MOMO 커버 이미지">
 </p>
 
-## 📋 목차
+# 📋 목차
 
 1. [팀원 소개](#1-팀원-소개)
 2. [프로젝트 소개](#2-프로젝트-소개)
@@ -20,7 +20,7 @@
 
 ---
 
-## 1. 팀원 소개
+# 1. 팀원 소개
 
 <p align="center">
 
@@ -125,15 +125,15 @@
 
 ---
 
-## 2. 프로젝트 소개
+# 2. 프로젝트 소개
 
-### 개발 기간: 2025.07.17 ~ 2025.08.25
+## 개발 기간: 2025.07.17 ~ 2025.08.25
 
-### 왜 MOMO인가?
+## 왜 MOMO인가?
 
 새로운 사람들과 만나고 싶지만 어디서 어떻게 시작해야 할지 모르는 분들을 위한 **지역 기반 모임 플랫폼**입니다.
 
-### 핵심 가치
+## 핵심 가치
 
 - **쉬운 모임 생성**: 몇 번의 클릭으로 모임 개설
 - **안전한 만남**: 신뢰도 시스템으로 검증된 사용자
@@ -142,7 +142,7 @@
 
 ---
 
-## 3. 기술 스택
+# 3. 기술 스택
 
 <div align="center">
 
@@ -216,9 +216,12 @@
 
 ---
 
-## 4. 아키텍처
+# 4. 아키텍처
 
-![project_architecture.png](docs/image/project_architecture.png)
+<p align="center">
+<img src="docs/image/project_architecture.png" width="1000" alt="ERD">
+</p>
+
 
 [![AWS 월간 비용 예상](https://img.shields.io/badge/AWS_월간_비용_예상-374151?style=for-the-badge&logo=amazonaws&logoColor=white)](https://www.notion.so/teamsparta/AWS-2542dc3ef514806bb743d46620006130)
 
@@ -233,7 +236,7 @@
 ## 5.2 ERD
 
 <p align="center">
-<img src="docs/image/ERD.png" width="600" alt="ERD">
+<img src="docs/image/ERD.png" width="700" alt="ERD">
 </p>
 
 ## 5.3 패키지 구조
@@ -242,7 +245,7 @@
 
 ---
 
-## 6. API 명세서
+# 6. API 명세서
 
 [![Auth 도메인 API](https://img.shields.io/badge/Auth_도메인_API-F59E0B?style=for-the-badge&logo=notion&logoColor=white)](https://www.notion.so/teamsparta/Auth-2552dc3ef51480029e58fe75a68a5e40)
 
@@ -259,9 +262,9 @@
 
 ---
 
-## 7. 주요 서비스 플로우
+# 7. 주요 서비스 플로우
 
-### 모임 참가
+## 모임 참가
 
 1. 사용자 모임 참가 신청
    사용자가 모임에 참가 신청하면 자격/정원/시간을 검증합니다.
@@ -275,16 +278,16 @@
 ---
 
 <p align="center">
-<img src="docs/image/participants_create_image.png" width="600" alt="ERD">
+<img src="docs/image/participants_create_image.png" width="700" alt="ERD">
 </p>
 
 <p align="center">
-<img src="docs/image/payment_create_image.png" width="600" alt="ERD">
+<img src="docs/image/payment_create_image.png" width="700" alt="ERD">
 </p>
 
 ---
 
-### 모임 생성
+## 모임 생성
 
 1. 모임 등록
    호스트가 모임 정보를 입력하고 모임을 생성합니다.
@@ -298,12 +301,12 @@
 ---
 
 <p align="center">
-<img src="docs/image/meeting_create_image.png" width="600" alt="ERD">
+<img src="docs/image/meeting_create_image.png" width="700" alt="ERD">
 </p>
 
 ---
 
-## 8. 도메인 별 문서
+# 8. 도메인 별 문서
 
 [![User](https://img.shields.io/badge/User-도메인-blue?style=for-the-badge&logo=user)](https://www.notion.so/teamsparta/Momo-User-2542dc3ef514807b8a7bff4e6f1e4f27)
 
@@ -325,7 +328,7 @@
 
 ---
 
-## 9. 기술적 의사결정
+# 9. 기술적 의사결정
 
 [![Redis 선택 이유](https://img.shields.io/badge/Redis_선택_이유-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://www.notion.so/teamsparta/Redis-2542dc3ef51480b793b9fec7f7eaa502)
 
@@ -351,7 +354,7 @@
 
 ---
 
-## 10. 트러블 슈팅
+# 10. 트러블 슈팅
 
 [![결제 아웃박스 패턴](https://img.shields.io/badge/결제_시스템-아웃박스_패턴_구현-blue?style=for-the-badge)](https://www.notion.so/teamsparta/2552dc3ef5148050b049ee3d55afb4b3)
 
@@ -377,7 +380,7 @@
 
 ---
 
-## 11. 5분 기록보드
+# 11. 5분 기록보드
 
 [![5분 기록보드](https://img.shields.io/badge/5분_기록보드-회의_기록-green?style=for-the-badge)](https://www.notion.so/teamsparta/5-2552dc3ef51480d39471c574786b9b28)
 
