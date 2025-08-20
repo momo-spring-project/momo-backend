@@ -16,6 +16,7 @@ public enum MeetingExceptionCode implements ErrorCode {
 	MEETING_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting is forbidden"),
 	MEETING_TIME_FORBIDDEN(HttpStatus.FORBIDDEN, "Meeting time forbidden"),
 	HOST_CANCEL_FORBIDDEN(HttpStatus.FORBIDDEN, "Host cannot cancel participation"),
+	ATTENDANCE_TIME_FORBIDDEN(HttpStatus.FORBIDDEN, "Attendance time forbidden"),
 
 	// 404
 	MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "Meeting not found"),

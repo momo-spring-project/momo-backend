@@ -6,6 +6,10 @@ import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.example.momo.domain.meeting.domain.*;
+import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,22 +30,12 @@ import com.example.momo.domain.meeting.application.dto.response.MeetingResponseD
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCountResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantCreateResponseDto;
 import com.example.momo.domain.meeting.application.dto.response.ParticipantResponseDto;
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingDocument;
-import com.example.momo.domain.meeting.domain.MeetingElasticsearchOutbox;
-import com.example.momo.domain.meeting.domain.MeetingOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingRepository;
-import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.enums.ElasticsearchEventType;
 import com.example.momo.domain.meeting.enums.MeetingStatus;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.domain.meeting.event.springEvents.MeetingElasticEvents;
 import com.example.momo.domain.meeting.exception.MeetingException;
 import com.example.momo.domain.meeting.exception.MeetingExceptionCode;
-import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingAlarmMessages;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.example.momo.global.utils.HaversineUtils;
@@ -49,11 +43,9 @@ import com.example.momo.global.webclient.category.CategoryClient;
 import com.example.momo.global.webclient.category.dto.CategoryClientResponseDto;
 import com.example.momo.global.webclient.user.UserClient;
 import com.example.momo.global.webclient.user.dto.UserClientResponseDto;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
@@ -372,11 +364,10 @@ public class MeetingServiceImpl implements MeetingService {
 					objectMapper.writeValueAsString(wrapper)
 				);
 				meetingPaymentOutboxService.savePaymentOutbox(outbox);
+				eventPublisher.publishEvent(wrapper);
 			} catch (JsonProcessingException e) {
 				throw new RuntimeException(e);
 			}
-
-			eventPublisher.publishEvent(wrapper);
 		}
 
 		// createParticipant 에서는 이벤트 발행 까지만 진행
@@ -506,8 +497,13 @@ public class MeetingServiceImpl implements MeetingService {
 		Double destLng = meeting.getLongitude();
 
 		// 위치가 목적지 근처인지 확인
-		if (!HaversineUtils.isInDistance(destLat, destLng, lat, lng, 10000000)) {
+		if (!HaversineUtils.isInDistance(destLat, destLng, lat, lng, 30)) {
 			throw new MeetingException(MeetingExceptionCode.FAR_FROM_MEETING);
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		if (now.isAfter(meeting.getMeetingDate()) && now.isBefore(meeting.getMeetingDate().minusMinutes(30))) {
+			throw new MeetingException(MeetingExceptionCode.ATTENDANCE_TIME_FORBIDDEN);
 		}
 
 		MeetingParticipant participant = getParticipantByMeetingIdAndUserId(meetingId, userId);

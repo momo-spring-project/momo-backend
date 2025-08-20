@@ -4,13 +4,7 @@ import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.momo.domain.category.domain.CategoryService;
 import com.example.momo.domain.category.application.dto.CategoryCreateRequestDto;
@@ -66,6 +60,16 @@ public class CategoryController {
 	) {
 		CategoryResponseDto responseData = categoryService.updateCategory(categoryId, request);
 		ApiResponse<CategoryResponseDto> response = ApiResponse.success("카테고리 수정을 성공했습니다", responseData);
+		return ResponseEntity.ok(response);
+	}
+
+	// 카테고리 삭제
+	@DeleteMapping("/{categoryId}")
+	public ResponseEntity<ApiResponse<Void>> deleteCategory(
+		@PathVariable Integer categoryId
+	) {
+		categoryService.deleteCategory(categoryId);
+		ApiResponse<Void> response = ApiResponse.success("카테고리 삭제를 성공했습니다", null);
 		return ResponseEntity.ok(response);
 	}
 }

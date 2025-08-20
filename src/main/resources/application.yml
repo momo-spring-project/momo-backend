@@ -31,6 +31,7 @@ spring:
       ddl-auto: none                # Flyway 사용으로 인한 DDL 비활성화
     properties:
       hibernate:
+        session_factory.statement_inspector: com.example.momo.global.monitoring.query.inspector.QueryCountInspector
         # MySQL Dialect 명시적 설정
         dialect: org.hibernate.dialect.MySQLDialect
 
@@ -105,18 +106,19 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, info # actuator health, info 만 노출
+        include: health, info, metrics # actuator health, info 만 노출
 
-otel:
-  service:
-    name: ${spring.application.name}
-  exporter:
-    otlp:
-      endpoint: ${OTEL_COLLECTOR_ENDPOINT}
-      protocol: grpc
-  traces:
-    exporter: otlp
-    sampler: always_on # Trace 에서 Scheduler 제거할 때 이거 되어있어서 해결이 안됐었나 싶음
+#otel javaagent 설정
+#otel:
+#  service:
+#    name: ${spring.application.name}
+#  exporter:
+#    otlp:
+#      endpoint: http://localhost:4317
+#      protocol: grpc
+#  traces:
+#    exporter: otlp
+#    sampler: always_on
 
 logging:
   level:

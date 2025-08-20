@@ -96,4 +96,14 @@ public class CategoryServiceImpl implements CategoryService {
 
 		return new CategoryResponseDto(category);
 	}
+
+	// Category 삭제
+	@Override
+	public void deleteCategory(Integer categoryId) {
+
+		if (!categoryRepository.existsById(categoryId)) {
+			throw new CategoryException(CategoryExceptionCode.CATEGORY_NOT_FOUND);
+		}
+		categoryRepository.deleteById(categoryId);
+	}
 }

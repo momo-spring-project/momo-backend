@@ -152,16 +152,13 @@ public class MeetingController {
 		return ResponseEntity.ok(response);
 	}
 
-	// required = false 자동 위치 입력 가능하면 제거
 	@PatchMapping("/{meetingId}/participants")
 	public ResponseEntity<ApiResponse<ParticipantResponseDto>> updateParticipantStatus(
 		@AuthenticationPrincipal AuthUser authUser,
 		@PathVariable Long meetingId,
-		@RequestParam(required = false) Double lat,
-		@RequestParam(required = false) Double lng
+		@RequestParam Double lat,
+		@RequestParam Double lng
 	) {
-		lat = 37.298219;
-		lng = 126.966289;
 		ParticipantResponseDto responseData =
 			meetingService.updateParticipantStatus(authUser.getId(), meetingId, lat, lng);
 		ApiResponse<ParticipantResponseDto> response = ApiResponse.success("모임 출석 처리되었습니다", responseData);

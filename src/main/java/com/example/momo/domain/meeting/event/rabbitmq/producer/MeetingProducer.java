@@ -1,24 +1,24 @@
 package com.example.momo.domain.meeting.event.rabbitmq.producer;
 
-import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
+import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
-import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -126,7 +126,7 @@ public class MeetingProducer {
 				wrapper,
 				correlationData
 			);
-			future.get(2, TimeUnit.SECONDS);
+
 			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", wrapper);
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);

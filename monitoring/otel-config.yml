@@ -32,13 +32,13 @@ receivers:
 # 전송 설정
 exporters:
   otlp:
-    endpoint: ${JAEGER_ENDPOINT}
+    endpoint: jaeger-collector:4317
     tls:
       insecure: true
   prometheus:
-    endpoint: ${PROMETHEUS_ENDPOINT}
+    endpoint: "0.0.0.0:8889"
   loki:
-    endpoint: ${LOKI_ENDPOINT}
+    endpoint: http://loki:3100/loki/api/v1/push
     default_labels_enabled:
       exporter: true
       job: true
