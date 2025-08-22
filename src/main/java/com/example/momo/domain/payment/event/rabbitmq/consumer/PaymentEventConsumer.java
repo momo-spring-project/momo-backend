@@ -69,6 +69,7 @@ public class PaymentEventConsumer {
 
 		//UUID 중복 및 저장 실패시 리턴
 		if (!isValidUuid(wrapper, "register")) {
+			safeAck(ch, tag);
 			return;
 		}
 		try {
@@ -140,6 +141,7 @@ public class PaymentEventConsumer {
 
 		//UUID 중복 및 저장 실패시 리턴
 		if (!isValidUuid(wrapper, "cancel")) {
+			safeAck(ch, tag);
 			return;
 		}
 
@@ -227,6 +229,7 @@ public class PaymentEventConsumer {
 
 		//UUID 중복 및 저장 실패시 리턴
 		if (!isValidUuid(wrapper, "delete")) {
+			safeAck(ch, tag);
 			return;
 		}
 

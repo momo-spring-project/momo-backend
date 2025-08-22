@@ -50,6 +50,7 @@ public class PaymentRedisService {
 		for (int attempt = 1; true; attempt++) {
 			try {
 				redisRepository.saveUuidKeyWithTodayKey(uuid, todayKey);
+				log.info("결제 컨슈머 UUID 저장성공 - UUID : {}", uuid);
 				return true;
 			} catch (Exception e) {
 				if (attempt == 3) {
