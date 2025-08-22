@@ -10,12 +10,14 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.payment.domain.PaymentService;
+import com.example.momo.domain.payment.application.PaymentRedisService;
 import com.example.momo.domain.payment.application.dto.CardPaymentTestRequestDto;
 import com.example.momo.domain.payment.application.dto.RefundRequestDto;
 import com.example.momo.domain.payment.domain.Payment;
 import com.example.momo.domain.payment.domain.PaymentRepository;
+import com.example.momo.domain.payment.domain.PaymentService;
 import com.example.momo.domain.payment.enums.PaymentStatus;
+import com.example.momo.domain.payment.enums.UuidStatus;
 import com.example.momo.domain.payment.exception.PaymentException;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
@@ -44,6 +46,7 @@ public class PaymentEventConsumer {
 
 	private final PaymentRepository paymentRepository;
 	private final PaymentService paymentService;
+	private final PaymentRedisService redisService;
 	private final ObjectMapper objectMapper;
 
 	/**
@@ -61,6 +64,11 @@ public class PaymentEventConsumer {
 		if (wrapper == null || wrapper.data() == null) {
 			log.warn("[register] null payload - ack & drop (no dlq) ");
 			safeAck(ch, tag);
+			return;
+		}
+
+		//UUID 중복 및 저장 실패시 리턴
+		if (!isValidUuid(wrapper, "register")) {
 			return;
 		}
 		try {
@@ -127,6 +135,11 @@ public class PaymentEventConsumer {
 		if (wrapper == null || wrapper.data() == null) {
 			log.warn("[cancel] null payload - ack & drop (no dlq)");
 			safeAck(ch, tag);
+			return;
+		}
+
+		//UUID 중복 및 저장 실패시 리턴
+		if (!isValidUuid(wrapper, "cancel")) {
 			return;
 		}
 
@@ -212,6 +225,11 @@ public class PaymentEventConsumer {
 			return;
 		}
 
+		//UUID 중복 및 저장 실패시 리턴
+		if (!isValidUuid(wrapper, "delete")) {
+			return;
+		}
+
 		try {
 			// 즉시 DLQ: 타입 불일치
 			if (!MEETING_DELETE.equals(wrapper.type())) {
@@ -287,5 +305,21 @@ public class PaymentEventConsumer {
 		} catch (Exception e) {
 			log.error("ACK 실패", e);
 		}
+	}
+
+	private boolean isValidUuid(EventWrapper<?> eventWrapper, String type) {
+		UuidStatus uuidStatus = redisService.createPaymentUuidOrExist(eventWrapper.uuId(), type);
+
+		//UUID 중복 혹은 NULL
+		if (uuidStatus == UuidStatus.SKIP) {
+			return false;
+		}
+
+		//UUID 저장 실패 - 재시도 발행
+		if (uuidStatus == UuidStatus.SAVE_FAIL) {
+			return false;
+		}
+
+		return true;
 	}
 }
