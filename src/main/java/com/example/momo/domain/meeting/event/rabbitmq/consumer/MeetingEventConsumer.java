@@ -100,27 +100,27 @@ public class MeetingEventConsumer {
 		}
 	}
 
-	@Transactional
-	@RabbitListener(queues = PARTICIPANT_DLQ)
-	public void handleParticipantDlq(EventWrapper<?> event) {
-
-		if (event.type() == null) {
-			log.error("[참가자 DLQ] Received: {}", event);
-			throw new RuntimeException("Wrong event type");
-		}
-		String type = event.type();
-
-		try {
-			switch (type) {
-				case PAYMENT_COMPLETED -> processPaymentSuccessEvent(event);
-				case PAYMENT_FAILED -> processPaymentFailureEvent(event);
-				default -> log.error("[참가자 DLQ] 해당하는 이벤트가 없습니다");
-			}
-		} catch (Exception e) {
-			log.error("[Dlq 처리 실패] : event: {}", event);
-			throw e;
-		}
-	}
+	// @Transactional
+	// @RabbitListener(queues = PARTICIPANT_DLQ)
+	// public void handleParticipantDlq(EventWrapper<?> event) {
+	//
+	// 	if (event.type() == null) {
+	// 		log.error("[참가자 DLQ] Received: {}", event);
+	// 		throw new RuntimeException("Wrong event type");
+	// 	}
+	// 	String type = event.type();
+	//
+	// 	try {
+	// 		switch (type) {
+	// 			case PAYMENT_COMPLETED -> processPaymentSuccessEvent(event);
+	// 			case PAYMENT_FAILED -> processPaymentFailureEvent(event);
+	// 			default -> log.error("[참가자 DLQ] 해당하는 이벤트가 없습니다");
+	// 		}
+	// 	} catch (Exception e) {
+	// 		log.error("[Dlq 처리 실패] : event: {}", event);
+	// 		throw e;
+	// 	}
+	// }
 
 	protected void processPaymentSuccessEvent(EventWrapper<?> event) {
 
