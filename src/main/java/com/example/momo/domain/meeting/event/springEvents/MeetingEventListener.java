@@ -18,6 +18,7 @@ public class MeetingEventListener {
 	private final MeetingRepository meetingRepository;
 	private final MeetingOutboxService meetingOutboxService;
 
+	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void saveMeetingEventListener(MeetingElasticEvents.Save event) {
 
@@ -31,6 +32,7 @@ public class MeetingEventListener {
 
 	}
 
+	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void deleteMeetingEventListener(MeetingElasticEvents.Delete event) {
 
