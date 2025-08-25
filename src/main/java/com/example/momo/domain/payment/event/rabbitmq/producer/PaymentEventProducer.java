@@ -60,9 +60,13 @@ public class PaymentEventProducer {
 			}
 
 			if (ack) {
-				// Confirm ACK이면 일단 발행 성공 처리
-				outboxService.markEventAsPublished(outboxId);
-				log.info("[Payment] 발행 성공(Confirm ACK) - outboxId={}", outboxId);
+				// Returns(=unroutable) 있었는지 확인
+				if (correlationData.getReturned() != null) {
+					handleRoutingFailure(outboxId, correlationData.getReturned());
+				} else {
+					log.info("[Payment] 발행 성공 - outboxId={}", outboxId);
+					outboxService.markEventAsPublished(outboxId);
+				}
 			} else {
 				log.error("[Payment] Publisher NACK - outboxId={}, cause={}", outboxId, cause);
 				outboxService.markEventAsFailed(outboxId, "브로커 NACK: " + cause);
