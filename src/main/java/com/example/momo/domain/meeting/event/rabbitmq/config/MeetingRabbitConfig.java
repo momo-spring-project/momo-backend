@@ -30,9 +30,11 @@ public class MeetingRabbitConfig {
 	 * - 메시지 발행 성공/실패 여부를 확인할 수 있도록 Confirm/Return 기능 활성화
 	 */
 	@Bean("participantConnectionFactory")
-	public ConnectionFactory participantConnectionFactory(CachingConnectionFactory base) {
-		CachingConnectionFactory factory =
-			new CachingConnectionFactory(base.getRabbitConnectionFactory());
+	public ConnectionFactory participantConnectionFactory(
+		@Qualifier("rabbitConnectionFactory") CachingConnectionFactory cachingConnectionFactory) {
+
+		CachingConnectionFactory factory = new CachingConnectionFactory(
+			cachingConnectionFactory.getRabbitConnectionFactory());
 
 		factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
 		factory.setPublisherReturns(true);

@@ -3,11 +3,6 @@ package com.example.momo.domain.meeting.event.rabbitmq.producer;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-
-import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -17,18 +12,17 @@ import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MeetingProducer {
 
-	private final RabbitTemplate rabbitTemplate;
+	private final RabbitTemplate participantRabbitTemplate;
 
-	@Qualifier("participantRabbitTemplate")
-	private final RabbitTemplate meetingRabbitTemplate;
+	public MeetingProducer(@Qualifier("participantRabbitTemplate") RabbitTemplate participantRabbitTemplate) {
+		this.participantRabbitTemplate = participantRabbitTemplate;
+	}
 
 	/**
 	 * 모임 생성 메세지 발행 메서드 MeetingAlarmMessages.Create event
@@ -37,7 +31,7 @@ public class MeetingProducer {
 
 		log.info("[Meeting] - MeetingProducer.createMeetingMQ : Meeting Create 메세지 발행");
 
-		rabbitTemplate.convertAndSend(
+		participantRabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
 			MEETING_CREATE_KEY,
 			event
@@ -51,7 +45,7 @@ public class MeetingProducer {
 
 		log.info("[Meeting] - MeetingProducer.updateMeetingMQ : Meeting Update 메세지 발행");
 
-		rabbitTemplate.convertAndSend(
+		participantRabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
 			MEETING_UPDATE_KEY,
 			event
@@ -65,7 +59,7 @@ public class MeetingProducer {
 
 		log.info("[Meeting] - MeetingProducer.deleteMeetingMQ : Meeting Delete 메세지 발행");
 
-		rabbitTemplate.convertAndSend(
+		participantRabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
 			MEETING_DELETE_KEY,
 			event
@@ -79,7 +73,7 @@ public class MeetingProducer {
 
 		log.info("[Meeting] - MeetingProducer.deleteMeetingWithRefundsMQ : Meeting Delete 시 참가자 환불 메세지 발행");
 
-		rabbitTemplate.convertAndSend(
+		participantRabbitTemplate.convertAndSend(
 			RabbitExchangeNames.MEETING_EVENTS,
 			MEETING_DELETE_KEY,
 			wrapper
@@ -92,7 +86,7 @@ public class MeetingProducer {
 		try {
 			EventWrapper<?> wrapper = EventWrapper.of(eventType, event);
 
-			meetingRabbitTemplate.convertAndSend(
+			participantRabbitTemplate.convertAndSend(
 				PARTICIPANT_EVENTS,
 				routingKey,
 				wrapper
@@ -107,38 +101,12 @@ public class MeetingProducer {
 
 	// 메세지 발행
 	@Transactional
-	public boolean publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
-		CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
-		correlationData.getFuture().whenComplete((confirm, ex) -> {
-			if (ex != null) {
-				future.completeExceptionally(ex);
-			} else {
-				future.complete(confirm != null && confirm.isAck());
-			}
-		});
-
+	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
 		try {
-			meetingRabbitTemplate.convertAndSend(
-				PARTICIPANT_EVENTS,
-				routingKey,
-				wrapper,
-				correlationData
-			);
-
-			boolean ack = future.get(10, TimeUnit.SECONDS);
-			if (ack) {
-				log.info("[참가자 이벤트 발행] Confirm ACK : {}", wrapper);
-				return true;
-			} else {
-				log.error("[참가자 이벤트 발행] Confirm NACK : {}", wrapper);
-				return false;
-			}
-
+			participantRabbitTemplate.convertAndSend(PARTICIPANT_EVENTS, routingKey, wrapper);
+			log.info("[참가자 이벤트 발행] 발행 완료 : {}", wrapper);
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
-			return false;
 		}
 	}
 }

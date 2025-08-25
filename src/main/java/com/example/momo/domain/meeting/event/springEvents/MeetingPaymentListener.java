@@ -3,9 +3,6 @@ package com.example.momo.domain.meeting.event.springEvents;
 import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -25,7 +22,6 @@ public class MeetingPaymentListener {
 	private final MeetingPaymentOutboxService service;
 	private final MeetingProducer meetingProducer;
 
-	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void deleteMeetingEventListener(EventWrapper<?> wrapper) {
 
@@ -39,13 +35,12 @@ public class MeetingPaymentListener {
 			service.markEventAsPublished(wrapper.uuId());
 		} catch (Exception e) {
 			log.error(
-				"[Meeting] : MeetingPaymentListener.deleteMeetingEventListener - Meeting Delete 이후 payment mq 에러가 발생");
+				"[Meeting] : MeetingPaymentListener.deleteMeetingEventListener - Meeting Delete 이후 payment mq 에러가 발생",
+				e);
 			throw e;
 		}
 	}
 
-	@Async
-	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void registerParticipantEventListener(EventWrapper<?> wrapper) {
 
@@ -56,21 +51,17 @@ public class MeetingPaymentListener {
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.registerParticipantEventListener : 참가자 신청 메세지 발행");
 
-			boolean ack = meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_REGISTER_KEY);
-			if (ack) {
-				service.markEventAsPublished(wrapper.uuId());   // ACK일 때만
-			} else {
-				throw new RuntimeException("publish confirm not ack"); // @Retryable 재시도
-			}
+			// Confirm 없이 바로 발행
+			meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_REGISTER_KEY);
+			service.markEventAsPublished(wrapper.uuId());
+
 		} catch (Exception e) {
 			log.error(
-				"[Meeting] : MeetingPaymentListener.registerParticipantEventListener - 참가자 신청 MQ 에러가 발생");
+				"[Meeting] : MeetingPaymentListener.registerParticipantEventListener - 참가자 신청 MQ 에러가 발생", e);
 			throw e;
 		}
 	}
 
-	@Async
-	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void cancelParticipantEventListener(EventWrapper<?> wrapper) {
 
@@ -79,17 +70,15 @@ public class MeetingPaymentListener {
 		}
 
 		try {
-			log.info("[Meeting] - MeetingPaymentListener.cancelParticipantEventListener : 참가자 신청 메세지 발행");
+			log.info("[Meeting] - MeetingPaymentListener.cancelParticipantEventListener : 참가자 취소 메세지 발행");
 
-			boolean ack = meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_CANCEL_KEY);
-			if (ack) {
-				service.markEventAsPublished(wrapper.uuId());   // ACK일 때만
-			} else {
-				throw new RuntimeException("publish confirm not ack"); // @Retryable 재시도
-			}
+			// Confirm 없이 바로 발행
+			meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_CANCEL_KEY);
+			service.markEventAsPublished(wrapper.uuId());
+
 		} catch (Exception e) {
 			log.error(
-				"[Meeting] : MeetingPaymentListener.cancelParticipantEventListener - 참가자 신청 MQ 에러가 발생");
+				"[Meeting] : MeetingPaymentListener.cancelParticipantEventListener - 참가자 취소 MQ 에러가 발생", e);
 			throw e;
 		}
 	}
