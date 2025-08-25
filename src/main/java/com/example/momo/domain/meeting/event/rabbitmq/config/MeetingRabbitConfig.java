@@ -57,8 +57,13 @@ public class MeetingRabbitConfig {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setMessageConverter(messageConverter);
 
+		template.setUsePublisherConnection(true);
+
 		// 라우팅 실패 시 ReturnCallback이 동작하도록 설정
 		template.setMandatory(true);
+
+		template.setReplyTimeout(5000);    // 5초 타임아웃
+		template.setReceiveTimeout(5000);  // 5초 타임아웃
 
 		// --- Retry 설정 (지수 백오프) ---
 		RetryTemplate retry = new RetryTemplate();

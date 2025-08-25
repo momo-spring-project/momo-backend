@@ -101,12 +101,13 @@ public class MeetingProducer {
 
 	// 메세지 발행
 	@Transactional
-	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
+	public boolean publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
 		try {
 			participantRabbitTemplate.convertAndSend(PARTICIPANT_EVENTS, routingKey, wrapper);
 			log.info("[참가자 이벤트 발행] 발행 완료 : {}", wrapper);
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
 		}
+		return false;
 	}
 }
