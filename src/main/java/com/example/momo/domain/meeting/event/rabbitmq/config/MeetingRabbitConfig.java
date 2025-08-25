@@ -30,9 +30,11 @@ public class MeetingRabbitConfig {
 	 * - 메시지 발행 성공/실패 여부를 확인할 수 있도록 Confirm/Return 기능 활성화
 	 */
 	@Bean("participantConnectionFactory")
-	public ConnectionFactory participantConnectionFactory(CachingConnectionFactory base) {
-		CachingConnectionFactory factory =
-			new CachingConnectionFactory(base.getRabbitConnectionFactory());
+	public ConnectionFactory participantConnectionFactory(
+		@Qualifier("rabbitConnectionFactory") CachingConnectionFactory cachingConnectionFactory) {
+
+		CachingConnectionFactory factory = new CachingConnectionFactory(
+			cachingConnectionFactory.getRabbitConnectionFactory());
 
 		factory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
 		factory.setPublisherReturns(true);
@@ -55,8 +57,13 @@ public class MeetingRabbitConfig {
 		RabbitTemplate template = new RabbitTemplate(connectionFactory);
 		template.setMessageConverter(messageConverter);
 
+		template.setUsePublisherConnection(true);
+
 		// 라우팅 실패 시 ReturnCallback이 동작하도록 설정
 		template.setMandatory(true);
+
+		template.setReplyTimeout(5000);    // 5초 타임아웃
+		template.setReceiveTimeout(5000);  // 5초 타임아웃
 
 		// --- Retry 설정 (지수 백오프) ---
 		RetryTemplate retry = new RetryTemplate();
