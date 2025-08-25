@@ -123,7 +123,17 @@ public class PaymentServiceImpl implements PaymentService {
 			return PaymentResponseDto.from(payment);
 
 		} catch (PaymentException pe) {
-			// 비즈니스 예외 결제 시 실패 이벤트 발행
+			// 중복 결제는 이벤트/아웃박스 미발행
+			if (pe instanceof PaymentException
+				&& pe.getErrorCode() == PaymentErrorCode.ALREADY_PAID) {
+				log.info("[중복 결제 요청 무시 - 이벤트 미발행] meetingId={}, userId={}", meetingId, userId);
+				// idempotent 성공 응답
+				Payment existing = paymentRepository.findByMeetingIdAndUserId(meetingId, userId)
+					.orElseThrow(() -> pe);
+				return PaymentResponseDto.from(existing);
+			}
+
+			// 2) 그 외 비즈니스 예외만 실패 마킹/실패 이벤트 발행
 			if (payment != null && payment.getStatus() != PaymentStatus.FAILED) {
 				payment.fail(pe.getMessage());
 			}
@@ -134,11 +144,9 @@ public class PaymentServiceImpl implements PaymentService {
 			eventPublisher.publishEvent(new PaymentEvents.Failed(
 				payment != null ? payment.getId() : null, userId, meetingId, pe.getMessage(), outboxId));
 
-			throw pe; // 비즈니스 예외만 커밋
-
-		} // catch (Exception) 없음 -> OptimisticLockException 등은 전파되어 롤백
+			throw pe;
+		}
 	}
-
 	// ==================== 환불 처리 ====================
 
 	/**

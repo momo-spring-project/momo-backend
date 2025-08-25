@@ -1,7 +1,5 @@
 package com.example.momo.domain.meeting.event.springEvents;
 
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -20,7 +18,6 @@ public class MeetingEventListener {
 	private final MeetingRepository meetingRepository;
 	private final MeetingOutboxService meetingOutboxService;
 
-	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void saveMeetingEventListener(MeetingElasticEvents.Save event) {
 
@@ -34,7 +31,6 @@ public class MeetingEventListener {
 
 	}
 
-	@Retryable(backoff = @Backoff(delay = 1000, multiplier = 2))
 	@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
 	public void deleteMeetingEventListener(MeetingElasticEvents.Delete event) {
 
