@@ -66,18 +66,6 @@ public class MeetingRabbitConfig {
 		backOff.setMaxInterval(1_000);    // 최대 대기 시간: 10초, 테스트중 변경: 1초
 		retry.setBackOffPolicy(backOff);
 		template.setRetryTemplate(retry);
-		// Confirm/Return Callback (로깅용)
-		template.setConfirmCallback((correlationData, ack, cause) -> {
-			if (!ack) {
-				log.error("[Participant] Confirm 실패 - correlationId: {}, cause: {}",
-					correlationData != null ? correlationData.getId() : "null", cause);
-			}
-		});
-
-		// --- 라우팅 실패 시 로그 출력 ---
-		template.setReturnsCallback(ret -> log.error(
-			"[Participant] 라우팅 실패 - exchange: {}, routingKey: {}, message: {}",
-			ret.getExchange(), ret.getRoutingKey(), ret.getMessage()));
 
 		return template;
 	}

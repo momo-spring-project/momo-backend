@@ -52,6 +52,7 @@ processors:
     traces:
       span:
         - 'name == "Ping"'
+        - 'name == "PING"'
         - 'name == "POST"'
         - 'name == "Create connection"'
         - 'name == "Load server variables"'

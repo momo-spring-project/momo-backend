@@ -3,32 +3,37 @@ package com.example.momo.domain.meeting.event.rabbitmq.producer;
 import static com.example.momo.global.rabbitmq.constant.RoutingKeys.*;
 import static com.example.momo.global.rabbitmq.constant.RabbitExchangeNames.PARTICIPANT_EVENTS;
 
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
 import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
+@Component
 public class MeetingProducer {
 
 	private final RabbitTemplate rabbitTemplate;
-
-	@Qualifier("participantRabbitTemplate")
 	private final RabbitTemplate meetingRabbitTemplate;
+
+	public MeetingProducer(
+		@Qualifier("participantRabbitTemplate") RabbitTemplate meetingRabbitTemplate,
+		RabbitTemplate rabbitTemplate,
+		MeetingPaymentOutboxService outboxService
+	) {
+		this.meetingRabbitTemplate = meetingRabbitTemplate;
+		this.rabbitTemplate = rabbitTemplate;
+	}
 
 	/**
 	 * 모임 생성 메세지 발행 메서드 MeetingAlarmMessages.Create event
@@ -109,8 +114,8 @@ public class MeetingProducer {
 	@Transactional
 	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
+		CorrelationData correlationData = new CorrelationData(wrapper.uuId());
 
-		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
 		correlationData.getFuture().whenComplete((confirm, ex) -> {
 			if (ex != null) {
 				future.completeExceptionally(ex);
@@ -126,8 +131,8 @@ public class MeetingProducer {
 				wrapper,
 				correlationData
 			);
-
-			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", wrapper);
+			future.get(5, TimeUnit.SECONDS);
+			log.info("[참가자 이벤트 발행] 발행 시도 : event = {}, correlationId= {}", wrapper, correlationData.getId());
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
 			throw new RuntimeException(e);

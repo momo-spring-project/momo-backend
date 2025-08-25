@@ -116,7 +116,7 @@ public class MeetingController {
 		@PathVariable Long meetingId
 	) {
 		ParticipantCreateResponseDto responseData = meetingService.createParticipant(authUser.getId(), meetingId);
-		ApiResponse<ParticipantCreateResponseDto> response = ApiResponse.success("결제요청을 완료했습니다", responseData);
+		ApiResponse<ParticipantCreateResponseDto> response = ApiResponse.success("참가 신청을 완료했습니다", responseData);
 		return ResponseEntity.ok(response);
 	}
 
