@@ -1,4 +1,4 @@
-package com.example.momo.domain.notification.application.redis;
+package com.example.momo.domain.payment.application;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -7,8 +7,8 @@ import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import com.example.momo.domain.notification.enums.UuidStatus;
-import com.example.momo.domain.notification.infra.redis.NotificationRedisRepository;
+import com.example.momo.domain.payment.enums.UuidStatus;
+import com.example.momo.domain.payment.infra.PaymentRedisRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,25 +16,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NotificationRedisService {
+public class PaymentRedisService {
 
-	private final NotificationRedisRepository redisRepository;
+	private final PaymentRedisRepository redisRepository;
 	private final ZoneId zone = ZoneId.of("Asia/Seoul");
 	private final DateTimeFormatter basicIsoDate = DateTimeFormatter.BASIC_ISO_DATE;
 
-	public UuidStatus createNotificationUuidOrExist(String uuid) {
+	public UuidStatus createPaymentUuidOrExist(String uuid, String type) {
 		if (StringUtils.isBlank(uuid)) {
-			log.info("알림 컨슈머 접근 실패 - UUID NULL");
+			log.info("결제 컨슈머 접근 실패 - UUID NULL");
 			return UuidStatus.SKIP;
 		}
 
 		LocalDate today = LocalDate.now(zone);
 		LocalDate yesterday = today.minusDays(1);
-		String todayKey = "notification:uuid:" + today.format(basicIsoDate);
-		String yesterdayKey = "notification:uuid:" + yesterday.format(basicIsoDate);
+		String todayKey = "payment:uuid:" + type + today.format(basicIsoDate);
+		String yesterdayKey = "payment:uuid:" + type + yesterday.format(basicIsoDate);
 
 		if (redisRepository.isUuidExist(uuid, todayKey, yesterdayKey)) {
-			log.info("알림 컨슈머 UUID 중복 - uuid : {}", uuid);
+			log.info("결제 컨슈머 UUID 중복 - uuid : {}", uuid);
 			return UuidStatus.SKIP;
 		}
 
@@ -50,10 +50,11 @@ public class NotificationRedisService {
 		for (int attempt = 1; true; attempt++) {
 			try {
 				redisRepository.saveUuidKeyWithTodayKey(uuid, todayKey);
+				log.info("결제 컨슈머 UUID 저장성공 - UUID : {}", uuid);
 				return true;
 			} catch (Exception e) {
 				if (attempt == 3) {
-					log.info("알림 컨슈머 UUID 저장실패 - UUID : {}", uuid);
+					log.info("결제 컨슈머 UUID 저장실패 - UUID : {}", uuid);
 					return false;
 				}
 				try {
