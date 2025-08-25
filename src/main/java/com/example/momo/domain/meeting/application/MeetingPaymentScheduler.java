@@ -4,25 +4,23 @@ import static com.example.momo.global.rabbitmq.constant.EventTypeNames.*;
 
 import java.util.List;
 
-import com.example.momo.domain.meeting.domain.Meeting;
-import com.example.momo.domain.meeting.domain.MeetingParticipant;
-import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
-import com.example.momo.domain.meeting.domain.MeetingService;
-import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
-
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.momo.domain.meeting.domain.Meeting;
+import com.example.momo.domain.meeting.domain.MeetingParticipant;
 import com.example.momo.domain.meeting.domain.MeetingPaymentOutbox;
+import com.example.momo.domain.meeting.domain.MeetingPaymentOutboxService;
+import com.example.momo.domain.meeting.domain.MeetingService;
 import com.example.momo.domain.meeting.event.rabbitmq.producer.MeetingProducer;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
+import com.example.momo.global.rabbitmq.dto.meeting.MeetingEvents;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Component
@@ -44,10 +42,9 @@ public class MeetingPaymentScheduler {
 
 			if (outbox.getEventType().equals(MEETING_DELETE)) {
 				try {
-					EventWrapper<?> wrapper =
-						objectMapper.readValue(outbox.getPayload(),
-							new TypeReference<>() {
-							});
+					EventWrapper<?> wrapper = objectMapper.readValue(outbox.getPayload(),
+						new TypeReference<EventWrapper<?>>() {
+						});
 
 					EventWrapper<?> retryWrapper = EventWrapper.of(wrapper.uuId(), MEETING_DELETE,
 						wrapper.data());
@@ -71,31 +68,38 @@ public class MeetingPaymentScheduler {
 
 		for (MeetingPaymentOutbox outbox : list) {
 			try {
+				// Wrapper 먼저 읽고, data만 해당 DTO로 변환
+				EventWrapper<?> wrapper =
+					objectMapper.readValue(outbox.getPayload(), new TypeReference<EventWrapper<?>>() {
+					});
+
 				String eventType = outbox.getEventType();
 				switch (eventType) {
 					case MEETING_PARTICIPANT_REGISTER -> {
-						MeetingEvents.Register event = objectMapper.readValue(
-							outbox.getPayload(),
-							MeetingEvents.Register.class
-						);
+						MeetingEvents.Register event =
+							objectMapper.convertValue(wrapper.data(), MeetingEvents.Register.class);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(
-							event.meetingId(), event.userId());
+						MeetingParticipant participant =
+							meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
 						meeting.removeMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 MeetingEvents.Register 롤백, outbox = {}", outbox);
 					}
 					case MEETING_PARTICIPANT_CANCEL -> {
-						MeetingEvents.Cancel event = objectMapper.readValue(
-							outbox.getPayload(),
-							MeetingEvents.Cancel.class
-						);
+						MeetingEvents.Cancel event =
+							objectMapper.convertValue(wrapper.data(), MeetingEvents.Cancel.class);
 						Meeting meeting = meetingService.getMeetingById(event.meetingId());
-						MeetingParticipant participant = meetingService.getParticipantByMeetingIdAndUserId(
-							event.meetingId(), event.userId());
+						MeetingParticipant participant =
+							meetingService.getParticipantByMeetingIdAndUserId(event.meetingId(), event.userId());
 						meeting.addMeetingParticipant(participant);
 						log.info("[Meeting] : 유실된 MeetingEvents.Cancel 롤백, outbox = {}", outbox);
 					}
+					default -> {
+						log.warn("[Meeting] : 롤백 스케줄러 - 처리 불가 이벤트 타입: {}", eventType);
+					}
 				}
+
+				// 보상 처리 이후 processed 마킹 (반복 방지)
+				meetingPaymentOutboxService.markEventAsProcessed(wrapper.uuId());
 			} catch (Exception e) {
 				log.error("[Meeting] : MeetingPaymentScheduler.rollbackLostMeetingEvents - 유실된 메세지 처리 실패");
 				throw new RuntimeException(e);

@@ -6,9 +6,9 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import com.example.momo.domain.payment.domain.PaymentOutboxService;
 import com.example.momo.domain.payment.domain.PaymentOutbox;
 import com.example.momo.domain.payment.domain.PaymentOutboxRepository;
+import com.example.momo.domain.payment.domain.PaymentOutboxService;
 import com.example.momo.global.rabbitmq.constant.RabbitExchangeNames;
 import com.example.momo.global.rabbitmq.constant.RoutingKeys;
 import com.example.momo.global.rabbitmq.dto.common.EventWrapper;
@@ -60,13 +60,9 @@ public class PaymentEventProducer {
 			}
 
 			if (ack) {
-				// Returns(=unroutable) 있었는지 확인
-				if (correlationData.getReturned() != null) {
-					handleRoutingFailure(outboxId, correlationData.getReturned());
-				} else {
-					log.info("[Payment] 발행 성공 - outboxId={}", outboxId);
-					outboxService.markEventAsPublished(outboxId);
-				}
+				// Confirm ACK이면 일단 발행 성공 처리
+				outboxService.markEventAsPublished(outboxId);
+				log.info("[Payment] 발행 성공(Confirm ACK) - outboxId={}", outboxId);
 			} else {
 				log.error("[Payment] Publisher NACK - outboxId={}, cause={}", outboxId, cause);
 				outboxService.markEventAsFailed(outboxId, "브로커 NACK: " + cause);

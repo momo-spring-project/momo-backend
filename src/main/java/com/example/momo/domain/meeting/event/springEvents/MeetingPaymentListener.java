@@ -56,8 +56,12 @@ public class MeetingPaymentListener {
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.registerParticipantEventListener : 참가자 신청 메세지 발행");
 
-			meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_REGISTER_KEY);
-			service.markEventAsPublished(wrapper.uuId());
+			boolean ack = meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_REGISTER_KEY);
+			if (ack) {
+				service.markEventAsPublished(wrapper.uuId());   // ACK일 때만
+			} else {
+				throw new RuntimeException("publish confirm not ack"); // @Retryable 재시도
+			}
 		} catch (Exception e) {
 			log.error(
 				"[Meeting] : MeetingPaymentListener.registerParticipantEventListener - 참가자 신청 MQ 에러가 발생");
@@ -77,8 +81,12 @@ public class MeetingPaymentListener {
 		try {
 			log.info("[Meeting] - MeetingPaymentListener.cancelParticipantEventListener : 참가자 신청 메세지 발행");
 
-			meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_CANCEL_KEY);
-			service.markEventAsPublished(wrapper.uuId());
+			boolean ack = meetingProducer.publishWithConfirmParticipantEvents(wrapper, PARTICIPANT_CANCEL_KEY);
+			if (ack) {
+				service.markEventAsPublished(wrapper.uuId());   // ACK일 때만
+			} else {
+				throw new RuntimeException("publish confirm not ack"); // @Retryable 재시도
+			}
 		} catch (Exception e) {
 			log.error(
 				"[Meeting] : MeetingPaymentListener.cancelParticipantEventListener - 참가자 신청 MQ 에러가 발생");

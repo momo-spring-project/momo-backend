@@ -63,6 +63,8 @@ public class RabbitMQConfig {
 		connectionFactory.setPassword(rabbitPassword);
 		System.out.println("connectionFactory.getHost() = " + connectionFactory.getHost());
 		System.out.println("connectionFactory.getPort() = " + connectionFactory.getPort());
+		connectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED);
+		connectionFactory.setPublisherReturns(true);
 		return connectionFactory;
 	}
 

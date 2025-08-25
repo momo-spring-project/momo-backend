@@ -107,7 +107,7 @@ public class MeetingProducer {
 
 	// 메세지 발행
 	@Transactional
-	public void publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
+	public boolean publishWithConfirmParticipantEvents(EventWrapper<?> wrapper, String routingKey) {
 		CompletableFuture<Boolean> future = new CompletableFuture<>();
 
 		CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
@@ -115,7 +115,7 @@ public class MeetingProducer {
 			if (ex != null) {
 				future.completeExceptionally(ex);
 			} else {
-				future.complete(confirm.isAck());
+				future.complete(confirm != null && confirm.isAck());
 			}
 		});
 
@@ -126,11 +126,19 @@ public class MeetingProducer {
 				wrapper,
 				correlationData
 			);
-			future.get(2, TimeUnit.SECONDS);
-			log.info("[참가자 이벤트 발행] 발행 성공 : event = {}", wrapper);
+
+			boolean ack = future.get(10, TimeUnit.SECONDS);
+			if (ack) {
+				log.info("[참가자 이벤트 발행] Confirm ACK : {}", wrapper);
+				return true;
+			} else {
+				log.error("[참가자 이벤트 발행] Confirm NACK : {}", wrapper);
+				return false;
+			}
+
 		} catch (Exception e) {
 			log.error("[참가자 이벤트 발행] 발행 실패 : event = {}", wrapper, e);
-			throw new RuntimeException(e);
+			return false;
 		}
 	}
 }
