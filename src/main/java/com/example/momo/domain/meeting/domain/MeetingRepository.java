@@ -26,6 +26,8 @@ public interface MeetingRepository {
 
 	List<Meeting> findMeetingsByUserId(Long userId);
 
+	List<MeetingDocument> getRecommendedMeetings(Long meetingId);
+
 	void saveMeetingElastic(Meeting meeting);
 
 	void deleteMeetingElastic(Meeting meeting);

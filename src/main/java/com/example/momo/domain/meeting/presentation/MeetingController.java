@@ -109,6 +109,13 @@ public class MeetingController {
 		return ResponseEntity.ok(ApiResponse.success("유저 식별자를 통한 모임 목록 조회가 성공적으로 완료되었습니다.", response));
 	}
 
+	@GetMapping("/{meetingId}/recommendations")
+	public ResponseEntity<ApiResponse<List<MeetingDocument>>> getRecommendedMeetings(@PathVariable Long meetingId) {
+
+		List<MeetingDocument> response = meetingService.getRecommendedMeetings(meetingId);
+		return ResponseEntity.ok(ApiResponse.success("조회한 데이터에 맞는 추천 모임 목록 조회입니다.", response));
+	}
+
 	// 모임 참가
 	@PostMapping("/{meetingId}/participants")
 	public ResponseEntity<ApiResponse<ParticipantCreateResponseDto>> createParticipant(

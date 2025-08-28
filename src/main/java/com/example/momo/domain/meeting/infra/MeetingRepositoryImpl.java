@@ -49,7 +49,7 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	@Override
 	public Page<Meeting> getMeetingsForDatabase(String title, LocalDateTime meetingDate, MeetingStatus status,
 		Integer categoryId, Pageable pageable) {
-		
+
 		return meetingQueryRepository.getMeetings(title, meetingDate, status, categoryId, pageable);
 	}
 
@@ -73,6 +73,11 @@ public class MeetingRepositoryImpl implements MeetingRepository {
 	@Override
 	public List<Meeting> findMeetingsByUserId(Long userId) {
 		return meetingQueryRepository.findMeetingsByUserId(userId);
+	}
+
+	@Override
+	public List<MeetingDocument> getRecommendedMeetings(Long meetingId) {
+		return meetingElasticCustomRepository.getRecommendedMeetings(meetingId);
 	}
 
 	/* Meeting Participant Repository */

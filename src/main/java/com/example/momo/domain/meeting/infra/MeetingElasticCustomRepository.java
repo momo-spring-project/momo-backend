@@ -1,6 +1,7 @@
 package com.example.momo.domain.meeting.infra;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,4 +14,6 @@ public interface MeetingElasticCustomRepository {
 	Page<MeetingDocument> getMeetings(String title, LocalDateTime meetingDate,
 		MeetingStatus status, Integer categoryId,
 		Pageable pageable);
+
+	List<MeetingDocument> getRecommendedMeetings(Long meetingId);
 }
