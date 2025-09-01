@@ -6,12 +6,15 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Criteria;
 import org.springframework.data.elasticsearch.core.query.CriteriaQuery;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Repository;
 
 import com.example.momo.domain.meeting.domain.MeetingDocument;
@@ -61,5 +64,35 @@ public class MeetingElasticCustomRepositoryImpl implements MeetingElasticCustomR
 			.collect(Collectors.toList());
 
 		return new PageImpl<>(content, pageable, searchHits.getTotalHits());
+	}
+
+	@Override
+	public List<MeetingDocument> getRecommendedMeetings(Long meetingId) {
+
+		System.out.println("[TEST] getRecommendedMeetings start");
+
+		Query query = NativeQuery.builder()
+			.withQuery(q -> q.bool(b -> b
+				.must(m -> m.moreLikeThis(mlt -> mlt
+					.fields("title", "description")
+					.like(l -> l.document(d -> d.index("meetings").id(meetingId.toString())))
+					.minTermFreq(1)
+					.minDocFreq(1)
+					.maxQueryTerms(50)
+					.minimumShouldMatch("30%")
+				))
+				.filter(f -> f.term(t -> t.field("status").value("IN_PROGRESS")))
+			))
+			.withPageable(PageRequest.of(0, 10))
+			.build();
+
+		SearchHits<MeetingDocument> searchHits = elasticsearchOperations.search(query, MeetingDocument.class);
+
+		System.out.println("[TEST] getRecommendedMeetings end");
+
+		return searchHits.getSearchHits()
+			.stream()
+			.map(SearchHit::getContent)
+			.toList();
 	}
 }

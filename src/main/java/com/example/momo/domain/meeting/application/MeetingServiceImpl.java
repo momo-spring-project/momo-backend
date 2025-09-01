@@ -303,6 +303,11 @@ public class MeetingServiceImpl implements MeetingService {
 		meetingRepository.deleteMeetingElastic(meeting);
 	}
 
+	@Override
+	public List<MeetingDocument> getRecommendedMeetings(Long meetingId) {
+		return meetingRepository.getRecommendedMeetings(meetingId);
+	}
+
 	/**
 	 * Meeting Participant Service
 	 */

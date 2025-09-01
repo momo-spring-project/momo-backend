@@ -40,6 +40,8 @@ public interface MeetingService {
 
 	void deleteElasticMeeting(Meeting meeting);
 
+	List<MeetingDocument> getRecommendedMeetings(Long meetingId);
+
 	/** Meeting Participant Service */
 
 	ParticipantCreateResponseDto createParticipant(Long userId, Long meetingId);
